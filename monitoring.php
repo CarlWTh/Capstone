@@ -96,8 +96,18 @@ $performance_data = [
             <header class="main-header">
                 <h2>System Monitoring</h2>
                 <div class="user-info">
-                    <span>Welcome, Admin</span>
-                    <img src="/api/placeholder/40/40" alt="Admin Avatar">
+                    <div class="profile-dropdown">
+                        <div class="dropdown-header" id="profileDropdownBtn">
+                            <span>Welcome, <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Admin'; ?></span>
+                            <img src="/api/placeholder/40/40" alt="Admin Avatar" class="avatar-img">
+                            <i class='bx bx-chevron-down'></i>
+                        </div>
+                        <div class="dropdown-content" id="profileDropdown">
+                            <a href="edit_profile.php"><i class='bx bx-user'></i> Edit Profile</a>
+                            <a href="change_avatar.php"><i class='bx bx-image'></i> Change Avatar</a>
+                            <a href="logout.php"><i class='bx bx-log-out'></i> Logout</a>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -210,7 +220,36 @@ $performance_data = [
                 </div>
             </div>
 
-            <!-- ... (keep existing scripts) ... -->
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Profile dropdown functionality
+                    const profileDropdownBtn = document.getElementById('profileDropdownBtn');
+                    const profileDropdown = document.getElementById('profileDropdown');
+                    
+                    if (profileDropdownBtn && profileDropdown) {
+                        profileDropdownBtn.addEventListener('click', function() {
+                            profileDropdown.classList.toggle('show-dropdown');
+                        });
+                        
+                        // Close the dropdown if clicked outside
+                        window.addEventListener('click', function(event) {
+                            if (!event.target.closest('.profile-dropdown')) {
+                                profileDropdown.classList.remove('show-dropdown');
+                            }
+                        });
+                    }
+                    
+                    // Existing sidebar toggle functionality
+                    const sidebarToggle = document.getElementById('sidebar-toggle');
+                    const dashboardContainer = document.querySelector('.dashboard-container');
+                    
+                    if (sidebarToggle) {
+                        sidebarToggle.addEventListener('click', function() {
+                            dashboardContainer.classList.toggle('sidebar-collapsed');
+                        });
+                    }
+                });
+            </script>
 </body>
 
 </html>

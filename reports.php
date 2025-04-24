@@ -18,7 +18,7 @@ $recycling_trends = [
 
 // Get available reports
 $available_reports = [];
-$result = $conn->query("SELECT report_type, period, generated_on FROM reports ORDER BY generated_on DESC LIMIT 5");
+$result = $conn->query("SELECT report_type, period, generated_on, file_path FROM reports ORDER BY generated_on DESC LIMIT 5");
 if ($result) {
     $available_reports = $result->fetch_all(MYSQLI_ASSOC);
 }
@@ -52,7 +52,7 @@ if ($result) {
 
             <nav>
                 <ul>
-                    <li class="active">
+                    <li>
                         <a href="dashboard.php">
                             <i class='bx bxs-dashboard'></i>
                             <span class="menu-text">Dashboard</span>
@@ -76,7 +76,7 @@ if ($result) {
                             <span class="menu-text">Settings</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="active">
                         <a href="reports.php">
                             <i class='bx bxs-report'></i>
                             <span class="menu-text">Reports</span>
@@ -96,8 +96,18 @@ if ($result) {
             <header class="main-header">
                 <h2>Reports</h2>
                 <div class="user-info">
-                    <span>Welcome, Admin</span>
-                    <img src="/api/placeholder/40/40" alt="Admin Avatar">
+                    <div class="profile-dropdown">
+                        <div class="dropdown-header" id="profileDropdownBtn">
+                            <span>Welcome, <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Admin'; ?></span>
+                            <img src="/api/placeholder/40/40" alt="Admin Avatar" class="avatar-img">
+                            <i class='bx bx-chevron-down'></i>
+                        </div>
+                        <div class="dropdown-content" id="profileDropdown">
+                            <a href="edit_profile.php"><i class='bx bx-user'></i> Edit Profile</a>
+                            <a href="change_avatar.php"><i class='bx bx-image'></i> Change Avatar</a>
+                            <a href="logout.php"><i class='bx bx-log-out'></i> Logout</a>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -161,12 +171,17 @@ if ($result) {
                     <div class="card-header">
                         <h2>Detailed Reports</h2>
                         <div class="filter-options">
-                            <select id="report-period">
-                                <option>Last Month</option>
-                                <option>Last Quarter</option>
-                                <option>Last Year</option>
+                            <select id="report-type">
+                                <option value="monthly">Monthly Report</option>
+                                <option value="quarterly">Quarterly Report</option>
+                                <option value="yearly">Yearly Report</option>
                             </select>
-                            <button class="export-btn">Generate PDF</button>
+                            <select id="report-period">
+                                <option value="last_month">Last Month</option>
+                                <option value="last_quarter">Last Quarter</option>
+                                <option value="last_year">Last Year</option>
+                            </select>
+                            <button id="generate-pdf" class="export-btn">Generate PDF</button>
                         </div>
                     </div>
                     <table>
@@ -184,7 +199,10 @@ if ($result) {
                                     <td><?php echo htmlspecialchars($report['report_type']); ?></td>
                                     <td><?php echo htmlspecialchars($report['period']); ?></td>
                                     <td><?php echo htmlspecialchars($report['generated_on']); ?></td>
-                                    <td><button class="btn-secondary">View</button></td>
+                                    <td>
+                                        <a href="<?php echo htmlspecialchars($report['file_path']); ?>" class="btn-secondary" download>Download</a>
+                                        <a href="<?php echo htmlspecialchars($report['file_path']); ?>" class="btn-secondary" target="_blank">View</a>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                             <?php if (empty($available_reports)): ?>
@@ -196,8 +214,67 @@ if ($result) {
                     </table>
                 </div>
             </div>
+        </main>
+    </div>
 
-            <!-- ... (keep existing scripts) ... -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar toggle functionality
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const dashboardContainer = document.querySelector('.dashboard-container');
+            
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    dashboardContainer.classList.toggle('sidebar-collapsed');
+                });
+            }
+            
+            // PDF generation functionality
+            const generatePdfBtn = document.getElementById('generate-pdf');
+            const reportTypeSelect = document.getElementById('report-type');
+            const reportPeriodSelect = document.getElementById('report-period');
+            
+            if (generatePdfBtn) {
+                generatePdfBtn.addEventListener('click', function() {
+                    const reportType = reportTypeSelect.value;
+                    const reportPeriod = reportPeriodSelect.value;
+                    
+                    // Redirect to the PDF generation script with parameters
+                    window.location.href = `generate_pdf.php?type=${reportType}&period=${reportPeriod}`;
+                });
+            }
+        });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Profile dropdown functionality
+        const profileDropdownBtn = document.getElementById('profileDropdownBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+        
+        if (profileDropdownBtn && profileDropdown) {
+            profileDropdownBtn.addEventListener('click', function() {
+                profileDropdown.classList.toggle('show-dropdown');
+            });
+            
+            // Close the dropdown if clicked outside
+            window.addEventListener('click', function(event) {
+                if (!event.target.closest('.profile-dropdown')) {
+                    profileDropdown.classList.remove('show-dropdown');
+                }
+            });
+        }
+        
+        // Existing sidebar toggle functionality
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const dashboardContainer = document.querySelector('.dashboard-container');
+        
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function() {
+                dashboardContainer.classList.toggle('sidebar-collapsed');
+            });
+        }
+    });
+</script>
 </body>
 
 </html>
