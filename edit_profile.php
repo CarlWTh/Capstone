@@ -22,9 +22,7 @@ $stmt->close();
 
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $full_name = trim($_POST['full_name']);
-    $email = trim($_POST['email']);
-    $phone = trim($_POST['phone']);
+    $email = trim($_POST['email']);;
     $current_password = $_POST['current_password'];
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];
@@ -200,11 +198,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="username">Username</label>
                             <input type="text" id="username" value="<?php echo htmlspecialchars($user['username']); ?>" disabled>
                             <div class="help-text">Username cannot be changed</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="full_name">Full Name</label>
-                            <input type="text" id="full_name" name="full_name" value="<?php echo htmlspecialchars($user['full_name']); ?>" required>
                         </div>
 
                         <div class="form-group">

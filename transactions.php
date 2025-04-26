@@ -22,6 +22,8 @@ switch ($filter) {
         break;
 }
 
+$user_avatar = getUserAvatar($_SESSION['user_id'], $conn);
+
 // Get total count for pagination
 $result = $conn->query("SELECT COUNT(*) as total FROM transactions" . $where);
 $total_transactions = $result->fetch_assoc()['total'];
@@ -71,13 +73,13 @@ if ($result) {
             
             <nav>
                 <ul>
-                    <li class="active">
+                    <li>
                         <a href="dashboard.php">
                             <i class='bx bxs-dashboard'></i>
                             <span class="menu-text">Dashboard</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="active">
                         <a href="transactions.php">
                             <i class='bx bx-transfer-alt'></i>
                             <span class="menu-text">Transactions</span>
@@ -118,7 +120,7 @@ if ($result) {
                     <div class="profile-dropdown">
                         <div class="dropdown-header" id="profileDropdownBtn">
                             <span>Welcome, <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Admin'; ?></span>
-                            <img src="/api/placeholder/40/40" alt="Admin Avatar" class="avatar-img">
+                            <img src="<?php echo htmlspecialchars($user_avatar); ?>" alt="Admin Avatar" class="avatar-img">
                             <i class='bx bx-chevron-down'></i>
                         </div>
                         <div class="dropdown-content" id="profileDropdown">
@@ -213,14 +215,26 @@ if ($result) {
             });
         }
         
-        // Existing sidebar toggle functionality
+        // Sidebar toggle functionality
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const dashboardContainer = document.querySelector('.dashboard-container');
+        const sidebar = document.querySelector('.sidebar');
         
         if (sidebarToggle) {
             sidebarToggle.addEventListener('click', function() {
                 dashboardContainer.classList.toggle('sidebar-collapsed');
+                sidebar.classList.toggle('collapsed');
+                
+                // Store the state in localStorage
+                const isCollapsed = dashboardContainer.classList.contains('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
             });
+        }
+        
+        // Check localStorage for saved state
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            dashboardContainer.classList.add('sidebar-collapsed');
+            sidebar.classList.add('collapsed');
         }
     });
 </script>

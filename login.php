@@ -8,6 +8,56 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $error = '';
+$success = '';
+
+// Check for password reset success
+if (isset($_GET['password_reset']) && $_GET['password_reset'] === 'success') {
+    $success = "Password reset successful! Please log in with your new password.";
+}
+
+// Check for remember me cookie first
+if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
+    $token = $_COOKIE['remember_token'];
+    
+    $stmt = $conn->prepare("SELECT id, username, is_admin FROM users WHERE remember_token = ? AND token_expiry > NOW()");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 1) {
+        $user = $result->fetch_assoc();
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['is_admin'] = $user['is_admin'];
+        
+        // Refresh the remember_me token for security
+        $new_token = bin2hex(random_bytes(32));
+        $expiry = time() + 60 * 60 * 24 * 30; // 30 days
+        
+        setcookie(
+            'remember_token', 
+            $new_token, 
+            [
+                'expires' => $expiry,
+                'path' => '/',
+                'domain' => $_SERVER['HTTP_HOST'],
+                'secure' => isset($_SERVER['HTTPS']),
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]
+        );
+        
+        $update_stmt = $conn->prepare("UPDATE users SET remember_token = ?, token_expiry = ? WHERE id = ?");
+        $expiry_date = date('Y-m-d H:i:s', $expiry);
+        $update_stmt->bind_param("ssi", $new_token, $expiry_date, $user['id']);
+        $update_stmt->execute();
+        $update_stmt->close();
+        
+        header("Location: dashboard.php");
+        exit();
+    }
+    $stmt->close();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
@@ -34,10 +84,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $token = bin2hex(random_bytes(32));
                     $expiry = time() + 60 * 60 * 24 * 30; // 30 days
                     
-                    setcookie('remember_token', $token, $expiry, '/');
+                    setcookie(
+                        'remember_token', 
+                        $token, 
+                        [
+                            'expires' => $expiry,
+                            'path' => '/',
+                            'domain' => $_SERVER['HTTP_HOST'],
+                            'secure' => isset($_SERVER['HTTPS']),
+                            'httponly' => true,
+                            'samesite' => 'Lax'
+                        ]
+                    );
                     
                     $stmt = $conn->prepare("UPDATE users SET remember_token = ?, token_expiry = ? WHERE id = ?");
-                    $stmt->bind_param("ssi", $token, date('Y-m-d H:i:s', $expiry), $user['id']);
+                    $expiry_date = date('Y-m-d H:i:s', $expiry);
+                    $stmt->bind_param("ssi", $token, $expiry_date, $user['id']);
                     $stmt->execute();
                     $stmt->close();
                 }
@@ -52,27 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close();
     }
-}
-
-// Check for remember me cookie
-if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
-    $token = $_COOKIE['remember_token'];
-    
-    $stmt = $conn->prepare("SELECT id, username, is_admin FROM users WHERE remember_token = ? AND token_expiry > NOW()");
-    $stmt->bind_param("s", $token);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['is_admin'] = $user['is_admin'];
-        
-        header("Location: dashboard.php");
-        exit();
-    }
-    $stmt->close();
 }
 ?>
 
@@ -92,6 +133,12 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             <?php if (!empty($error)): ?>
                 <div class="error-message">
                     <p><?php echo htmlspecialchars($error); ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($success)): ?>
+                <div class="success-message">
+                    <p><?php echo htmlspecialchars($success); ?></p>
                 </div>
             <?php endif; ?>
             
@@ -129,12 +176,12 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             <div class="form-extras">
                 <div class="remember-forgot">
                     <label class="checkbox-container">
-                        <input type="checkbox" name="remember">
+                        <input type="checkbox" name="remember" id="remember">
                         <span class="checkmark"></span>
                         Remember Me
                     </label>
                     
-                    <a href="forgot-password.html" class="forgot-password">Forgot Password?</a>
+                    <a href="forgot-password.php" class="forgot-password">Forgot Password?</a>
                 </div>
             </div>
             

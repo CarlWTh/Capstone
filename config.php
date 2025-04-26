@@ -28,4 +28,17 @@ function checkAdminAuth() {
         exit();
     }
 }
+
+// Add this function to config.php
+function getUserAvatar($user_id, $conn) {
+    $stmt = $conn->prepare("SELECT avatar_path FROM users WHERE id = ?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+    $avatar = $user['avatar_path'] ?? '/api/placeholder/200/200';
+    $stmt->close();
+    return $avatar;
+}
 ?>
+

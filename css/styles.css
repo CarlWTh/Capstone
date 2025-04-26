@@ -89,7 +89,6 @@ body {
     background-color: #009688;
 }
 
-/* Add this to styles.css */
 .remember-forgot {
     display: flex;
     justify-content: space-between;
@@ -938,4 +937,39 @@ body {
 
 .show-dropdown {
     display: block;
+}
+
+/* Add this for the collapsed sidebar state */
+.dashboard-container.sidebar-collapsed .sidebar {
+    width: 70px;
+}
+
+.dashboard-container.sidebar-collapsed .main-content {
+    margin-left: 70px;
+    width: calc(100% - 70px);
+}
+
+.dashboard-container.sidebar-collapsed .sidebar .logo h1 {
+    display: none;
+}
+
+.dashboard-container.sidebar-collapsed .sidebar .logo-short {
+    display: block;
+}
+
+.dashboard-container.sidebar-collapsed .sidebar nav ul li {
+    padding: 10px 0;
+    text-align: center;
+}
+
+.dashboard-container.sidebar-collapsed .sidebar nav ul li a .menu-text {
+    display: none;
+}
+
+.dashboard-container.sidebar-collapsed .sidebar nav ul li a {
+    justify-content: center;
+}
+
+.dashboard-container.sidebar-collapsed .sidebar nav ul li a i {
+    margin-right: 0;
 }

@@ -1,7 +1,7 @@
 <?php
 require_once 'config.php';
 checkAdminAuth();
-
+$user_avatar = getUserAvatar($_SESSION['user_id'], $conn);
 // Get monthly summary data
 $monthly_summary = [
     'total_bottles' => 4752,
@@ -99,7 +99,7 @@ if ($result) {
                     <div class="profile-dropdown">
                         <div class="dropdown-header" id="profileDropdownBtn">
                             <span>Welcome, <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Admin'; ?></span>
-                            <img src="/api/placeholder/40/40" alt="Admin Avatar" class="avatar-img">
+                            <img src="<?php echo htmlspecialchars($user_avatar); ?>" alt="Admin Avatar" class="avatar-img">
                             <i class='bx bx-chevron-down'></i>
                         </div>
                         <div class="dropdown-content" id="profileDropdown">
@@ -264,14 +264,26 @@ if ($result) {
             });
         }
         
-        // Existing sidebar toggle functionality
+        // Sidebar toggle functionality
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const dashboardContainer = document.querySelector('.dashboard-container');
+        const sidebar = document.querySelector('.sidebar');
         
         if (sidebarToggle) {
             sidebarToggle.addEventListener('click', function() {
                 dashboardContainer.classList.toggle('sidebar-collapsed');
+                sidebar.classList.toggle('collapsed');
+                
+                // Store the state in localStorage
+                const isCollapsed = dashboardContainer.classList.contains('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
             });
+        }
+        
+        // Check localStorage for saved state
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            dashboardContainer.classList.add('sidebar-collapsed');
+            sidebar.classList.add('collapsed');
         }
     });
 </script>

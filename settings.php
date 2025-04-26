@@ -2,9 +2,11 @@
 require_once 'config.php';
 checkAdminAuth();
 
+
 $message = '';
 $error = '';
 
+$user_avatar = getUserAvatar($_SESSION['user_id'], $conn);
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_rates'])) {
@@ -129,7 +131,7 @@ if ($result && $row = $result->fetch_assoc()) {
             
             <nav>
                 <ul>
-                    <li class="active">
+                    <li>
                         <a href="dashboard.php">
                             <i class='bx bxs-dashboard'></i>
                             <span class="menu-text">Dashboard</span>
@@ -147,7 +149,7 @@ if ($result && $row = $result->fetch_assoc()) {
                             <span class="menu-text">System Monitoring</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="active">
                         <a href="settings.php">
                             <i class='bx bx-cog'></i>
                             <span class="menu-text">Settings</span>
@@ -176,7 +178,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     <div class="profile-dropdown">
                         <div class="dropdown-header" id="profileDropdownBtn">
                             <span>Welcome, <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Admin'; ?></span>
-                            <img src="/api/placeholder/40/40" alt="Admin Avatar" class="avatar-img">
+                            <img src="<?php echo htmlspecialchars($user_avatar); ?>" alt="Admin Avatar" class="avatar-img">
                             <i class='bx bx-chevron-down'></i>
                         </div>
                         <div class="dropdown-content" id="profileDropdown">
@@ -206,13 +208,13 @@ if ($result && $row = $result->fetch_assoc()) {
             <div class="settings-body">
                 <form method="POST">
                     <div class="form-group">
-                        <label for="small-bottle-rate">Credits per Bottles</label>
+                        <label for="small-bottle-rate">Minutes per Bottles</label>
                         <div class="input-with-button">
                             <input type="number" id="small-bottle-rate" name="credit_rate" 
                                    value="<?php echo htmlspecialchars($credit_rate); ?>" min="1" max="100">
-                            <span class="input-suffix">credits</span>
+                            <span class="input-suffix">minutes</span>
                         </div>
-                        <p class="help-text">Current: 1 Bottle = <?php echo $credit_rate; ?> Credits</p>
+                        <p class="help-text">Current: 1 Bottle = <?php echo $credit_rate; ?> Minutes</p>
                     </div>
                     <div class="form-actions">
                         <button type="submit" name="update_rates" class="btn-primary">Update Rates</button>
@@ -263,42 +265,6 @@ if ($result && $row = $result->fetch_assoc()) {
             </div>
         </div>
 
-        <div class="card settings-card">
-            <div class="settings-header">
-                <h2>Change Admin Password</h2>
-                <div class="settings-icon">
-                    <i class="icon-lock"></i>
-                </div>
-            </div>
-            <div class="settings-body">
-                <form method="POST">
-                    <div class="form-group">
-                        <label for="current-password">Current Password</label>
-                        <input type="password" id="current-password" name="current_password" placeholder="Enter current password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-password">New Password</label>
-                        <input type="password" id="new-password" name="new_password" placeholder="Enter new password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm-password">Confirm New Password</label>
-                        <input type="password" id="confirm-password" name="confirm_password" placeholder="Confirm new password" required>
-                    </div>
-                    <div class="password-strength">
-                        <div class="strength-meter">
-                            <div class="strength-segment"></div>
-                            <div class="strength-segment"></div>
-                            <div class="strength-segment"></div>
-                            <div class="strength-segment"></div>
-                        </div>
-                        <span>Password Strength: <strong>Medium</strong></span>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" name="change_password" class="btn-primary">Change Password</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
         <div class="card settings-card">
             <div class="settings-header">
@@ -387,14 +353,26 @@ if ($result && $row = $result->fetch_assoc()) {
             });
         }
         
-        // Existing sidebar toggle functionality
+        // Sidebar toggle functionality
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const dashboardContainer = document.querySelector('.dashboard-container');
+        const sidebar = document.querySelector('.sidebar');
         
         if (sidebarToggle) {
             sidebarToggle.addEventListener('click', function() {
                 dashboardContainer.classList.toggle('sidebar-collapsed');
+                sidebar.classList.toggle('collapsed');
+                
+                // Store the state in localStorage
+                const isCollapsed = dashboardContainer.classList.contains('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
             });
+        }
+        
+        // Check localStorage for saved state
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            dashboardContainer.classList.add('sidebar-collapsed');
+            sidebar.classList.add('collapsed');
         }
     });
 </script>
