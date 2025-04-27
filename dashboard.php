@@ -59,7 +59,7 @@ foreach ($chart_data as $row) {
     $chart_labels[] = $row['date'];
     $chart_values[] = $row['bottles'];
 }
-
+//TANGINA
 // Determine bin status (simplified for demo)
 $bin_status = 'Half-Full'; // In a real system, this would come from IoT device data
 ?>
