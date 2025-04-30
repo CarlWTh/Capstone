@@ -25,29 +25,61 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Email settings for PHPMailer
-define('SMTP_HOST', 'smtp.gmail.com');  // Change this to your SMTP server
-define('SMTP_USERNAME', 'carljusper.basc@gmail.com');  // Change to your email
-define('SMTP_PASSWORD', 'ztsl hxns bbkw tdqd');  // Change to your email password or app password
-define('SMTP_PORT', 587);  // Common ports: 25, 465, 587
-define('EMAIL_FROM', 'carljusper.basc@gmail.com');  // Change to your sending email
+define('SMTP_HOST', 'smtp.gmail.com');
+define('SMTP_USERNAME', 'carljusper.basc@gmail.com');
+define('SMTP_PASSWORD', 'ztsl hxns bbkw tdqd');
+define('SMTP_PORT', 587);
+define('EMAIL_FROM', 'carljusper.basc@gmail.com');
 
-// Authentication check function
+// Site settings
+define('SITE_NAME', 'Bottle Recycling System');
+define('SITE_URL', 'http://localhost/bottle-recycling');
+
+// Check admin authentication
 function checkAdminAuth() {
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
+        $_SESSION['redirect_url'] = $_SERVER['REQUEST_URI'];
         header("Location: login.php");
         exit();
     }
 }
 
-// Add this function to config.php
-function getUserAvatar($user_id, $conn) {
-    $stmt = $conn->prepare("SELECT avatar_path FROM users WHERE id = ?");
-    $stmt->bind_param("i", $user_id);
+// Add to existing config.php, don't remove anything else
+function getMinutesPerBottle() {
+    global $conn;
+    $result = $conn->query("SELECT value FROM SystemSettings WHERE name = 'minutes_per_bottle'");
+    return $result->num_rows > 0 ? (int)$result->fetch_row()[0] : 2; // Default 2 minutes
+}
+
+define('MINUTES_PER_BOTTLE', getMinutesPerBottle());
+
+
+// Log admin activity
+function logAdminActivity($action, $details = '') {
+    global $conn;
+    $stmt = $conn->prepare("INSERT INTO AdminActivityLog (admin_id, action, details) VALUES (?, ?, ?)");
+    $stmt->bind_param("iss", $_SESSION['user_id'], $action, $details);
     $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-    $avatar = $user['avatar_path'] ?? '/api/placeholder/200/200';
     $stmt->close();
-    return $avatar;
+}
+
+// Redirect function with message
+function redirectWithMessage($url, $type, $message) {
+    $_SESSION['flash_message'] = [
+        'type' => $type,
+        'message' => $message
+    ];
+    header("Location: $url");
+    exit();
+}
+
+// Display flash message
+function displayFlashMessage() {
+    if (isset($_SESSION['flash_message'])) {
+        $message = $_SESSION['flash_message'];
+        echo '<div class="alert alert-' . htmlspecialchars($message['type']) . '">' . 
+             htmlspecialchars($message['message']) . '</div>';
+        unset($_SESSION['flash_message']);
+    }
 }
 ?>

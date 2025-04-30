@@ -1,299 +1,293 @@
 <?php
-session_start();
 require_once 'config.php';
+checkAdminAuth();
 
-// Redirect to login if not authenticated
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
+// Get dashboard statistics
+$stats = [];
+$stats['total_deposits'] = $conn->query("SELECT COUNT(*) FROM BottleDeposit")->fetch_row()[0];
+$stats['total_bottles'] = $conn->query("SELECT SUM(bottle_count) FROM BottleDeposit")->fetch_row()[0];
+$stats['total_vouchers'] = $conn->query("SELECT COUNT(*) FROM Voucher")->fetch_row()[0];
+$stats['active_sessions'] = $conn->query("SELECT COUNT(*) FROM InternetSession WHERE end_time IS NULL")->fetch_row()[0];
 
-// Check if user is admin
-if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-    die("Access denied. Admin privileges required.");
-}
+// Get recent deposits
+$recent_deposits = $conn->query("
+    SELECT d.deposit_id, d.timestamp, b.type, d.bottle_count, d.total_weight, d.status, t.bin_id
+    FROM BottleDeposit d
+    JOIN Bottle b ON d.bottle_id = b.bottle_id
+    JOIN TrashBin t ON d.bin_id = t.bin_id
+    ORDER BY d.timestamp DESC
+    LIMIT 5
+")->fetch_all(MYSQLI_ASSOC);
 
-$user_avatar = getUserAvatar($_SESSION['user_id'], $conn);
+// Get bin status
+$bin_status = $conn->query("
+    SELECT bin_id, capacity, current_level, status 
+    FROM TrashBin 
+    ORDER BY status DESC, current_level DESC
+")->fetch_all(MYSQLI_ASSOC);
 
-// Get total bottles and credits
-$total_bottles = 0;
-$total_credits = 0;
-
-$result = $conn->query("SELECT SUM(bottle_count) as total_bottles, SUM(credits_earned) as total_credits FROM transactions");
-if ($result && $row = $result->fetch_assoc()) {
-    $total_bottles = $row['total_bottles'] ?? 0;
-    $total_credits = $row['total_credits'] ?? 0;
-}
-
-// Get recent transactions
-$recent_transactions = [];
-$result = $conn->query("SELECT transaction_date, bottle_count, credits_earned FROM transactions ORDER BY transaction_date DESC LIMIT 5");
-if ($result) {
-    $recent_transactions = $result->fetch_all(MYSQLI_ASSOC);
-}
-
-// Get system status
-$system_status = [];
-$result = $conn->query("SELECT device_name, status FROM system_status");
-if ($result) {
-    $system_status = $result->fetch_all(MYSQLI_ASSOC);
-}
-
-// Get bottle collection data for chart
-$chart_data = [];
-$result = $conn->query("
-    SELECT DATE(transaction_date) as date, SUM(bottle_count) as bottles 
-    FROM transactions 
-    WHERE transaction_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-    GROUP BY DATE(transaction_date)
-    ORDER BY date
-");
-if ($result) {
-    $chart_data = $result->fetch_all(MYSQLI_ASSOC);
-}
-
-// Prepare chart labels and data
-$chart_labels = [];
-$chart_values = [];
-foreach ($chart_data as $row) {
-    $chart_labels[] = $row['date'];
-    $chart_values[] = $row['bottles'];
-}
-//TANGINA
-// Determine bin status (simplified for demo)
-$bin_status = 'Half-Full'; // In a real system, this would come from IoT device data
+// Log dashboard access
+logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bottle Recycling Admin Dashboard</title>
-    <link rel="stylesheet" href="/css/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <title>Admin Dashboard - <?php echo SITE_NAME; ?></title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="./css/styles.css">
 </head>
-
 <body>
     <div class="dashboard-container">
-        <aside class="sidebar">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <h1>Recycling Admin</h1>
+                    <h1><?php echo SITE_NAME; ?></h1>
                     <span class="logo-short"></span>
                 </div>
-                
-                <button id="sidebar-toggle" class="sidebar-toggle">
-                    <i class='bx bx-menu'></i>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
                 </button>
             </div>
-            
             <nav>
                 <ul>
                     <li class="active">
-                        <a href="/dashboard.php">
-                            <i class='bx bxs-dashboard'></i>
-                            <span class="menu-text">Dashboard</span>
+                        <a href="dashboard.php">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
                         </a>
                     </li>
                     <li>
-                        <a href="/transactions.php">
-                            <i class='bx bx-transfer-alt'></i>
-                            <span class="menu-text">Transactions</span>
+                        <a href="deposits.php">
+                            <i class="bi bi-recycle"></i>
+                            <span>Bottle Deposits</span>
                         </a>
                     </li>
                     <li>
-                        <a href="/monitoring.php">
-                            <i class='bx bx-line-chart'></i>
-                            <span class="menu-text">System Monitoring</span>
+                        <a href="vouchers.php">
+                            <i class="bi bi-ticket-perforated"></i>
+                            <span>Vouchers</span>
                         </a>
                     </li>
                     <li>
-                        <a href="/settings.php">
-                            <i class='bx bx-cog'></i>
-                            <span class="menu-text">Settings</span>
+                        <a href="bins.php">
+                            <i class="bi bi-trash"></i>
+                            <span>Trash Bins</span>
                         </a>
                     </li>
                     <li>
-                        <a href="/reports.php">
-                            <i class='bx bxs-report'></i>
-                            <span class="menu-text">Reports</span>
+                        <a href="student_sessions.php">
+                            <i class="bi bi-phone"></i>
+                            <span class="menu-text">Student Sessions</span>
                         </a>
                     </li>
-                    <li class="logout">
+                    <li>
+                        <a href="sessions.php">
+                            <i class="bi bi-wifi"></i>
+                            <span>Internet Sessions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="bottles.php">
+                            <i class="bi bi-cup-straw"></i>
+                            <span>Bottle Types</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="users.php">
+                            <i class="bi bi-people"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="activity_logs.php">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Activity Logs</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="logout.php">
-                            <i class='bx bx-log-out'></i>
-                            <span class="menu-text">Logout</span>
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
                         </a>
                     </li>
                 </ul>
             </nav>
-        </aside>
+        </div>
 
-        <main class="main-content">
-            <header class="main-header">
-                <h2>Dashboard Overview</h2>
-                <div class="user-info">
-                    <div class="profile-dropdown">
-                        <div class="dropdown-header" id="profileDropdownBtn">
-                            <span>Welcome, <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Admin'; ?></span>
-                            <img src="<?php echo htmlspecialchars($user_avatar); ?>" alt="Admin Avatar" class="avatar-img">
-                            <i class='bx bx-chevron-down'></i>
-                        </div>
-                        <div class="dropdown-content" id="profileDropdown">
-                            <a href="edit_profile.php"><i class='bx bx-user'></i> Edit Profile</a>
-                            <a href="change_avatar.php"><i class='bx bx-image'></i> Change Avatar</a>
-                            <a href="logout.php"><i class='bx bx-log-out'></i> Logout</a>
-                        </div>
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <div class="main-header">
+                <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+
+                <div class="profile-dropdown">
+                    <div class="dropdown-header" id="profileDropdown">
+                        <img src="./img/avatar.jpg" alt="Profile" class="avatar-img">
+                        <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                        <i class="bi bi-chevron-down"></i>
                     </div>
-                </div>
-            </header>
-
-            <div class="dashboard-grid">
-                <div class="card overview-section">
-                    <h2>Overview</h2>
-                    <div class="stat-grid">
-                        <div class="stat-item">
-                            <h3>Total Bottles</h3>
-                            <p><?php echo number_format($total_bottles); ?></p>
-                        </div>
-                        <div class="stat-item">
-                            <h3>Total Credits</h3>
-                            <p><?php echo number_format($total_credits); ?></p>
-                        </div>
-                        <div class="stat-item">
-                            <h3>Bin Status</h3>
-                            <p class="status half-full"><?php echo htmlspecialchars($bin_status); ?></p>
-                        </div>
+                    <div class="dropdown-content" id="profileDropdownContent">
+                        <a href="profile.php"><i class="bi bi-person"></i> Profile</a>
+                        <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
+                        <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                     </div>
-                </div>
-
-                <div class="card system-health">
-                    <h2>System Health</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Device</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($system_status as $device): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($device['device_name']); ?></td>
-                                <td class="status green"><?php echo htmlspecialchars($device['status']); ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="card transaction-logs">
-                    <div class="card-header">
-                        <h2>Recent Transactions</h2>
-                        <div class="filter-options">
-                            <select>
-                                <option>Last 7 Days</option>
-                                <option>Last 30 Days</option>
-                                <option>This Month</option>
-                            </select>
-                            <button class="export-btn">Export CSV</button>
-                        </div>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Timestamp</th>
-                                <th>Bottles</th>
-                                <th>Credits</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($recent_transactions as $transaction): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($transaction['transaction_date']); ?></td>
-                                <td><?php echo htmlspecialchars($transaction['bottle_count']); ?></td>
-                                <td><?php echo htmlspecialchars($transaction['credits_earned']); ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="card analytics-chart">
-                    <h2>Bottles Collected Over Time</h2>
-                    <canvas id="bottlesChart"></canvas>
-                    <script>
-                        const ctx = document.getElementById('bottlesChart').getContext('2d');
-                        const bottlesChart = new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: <?php echo json_encode($chart_labels); ?>,
-                                datasets: [{
-                                    label: 'Bottles Collected',
-                                    data: <?php echo json_encode($chart_values); ?>,
-                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                                    borderColor: 'rgba(75, 192, 192, 1)',
-                                    borderWidth: 1,
-                                    tension: 0.1
-                                }]
-                            },
-                            options: {
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
-                    </script>
                 </div>
             </div>
-        </main>
+
+            <?php displayFlashMessage(); ?>
+
+            <!-- Stats Cards -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card text-white bg-primary">
+                        <div class="card-body text-center">
+                            <i class="bi bi-recycle card-icon"></i>
+                            <h5 class="card-title">Total Deposits</h5>
+                            <h2><?php echo $stats['total_deposits']; ?></h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-success">
+                        <div class="card-body text-center">
+                            <i class="bi bi-cup-straw card-icon"></i>
+                            <h5 class="card-title">Total Bottles</h5>
+                            <h2><?php echo $stats['total_bottles']; ?></h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body text-center">
+                            <i class="bi bi-ticket-perforated card-icon"></i>
+                            <h5 class="card-title">Vouchers Issued</h5>
+                            <h2><?php echo $stats['total_vouchers']; ?></h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body text-center">
+                            <i class="bi bi-wifi card-icon"></i>
+                            <h5 class="card-title">Active Sessions</h5>
+                            <h2><?php echo $stats['active_sessions']; ?></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Deposits and Bin Status -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Recent Bottle Deposits</h3>
+                            <div class="filter-options">
+                                <input type="text" id="searchDeposits" placeholder="Search deposits...">
+                                <button class="btn btn-sm btn-outline-primary">Filter</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Time</th>
+                                            <th>Type</th>
+                                            <th>Count</th>
+                                            <th>Weight</th>
+                                            <th>Status</th>
+                                            <th>Bin</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recent_deposits as $deposit): ?>
+                                        <tr>
+                                            <td><?php echo $deposit['deposit_id']; ?></td>
+                                            <td><?php echo date('M j, H:i', strtotime($deposit['timestamp'])); ?></td>
+                                            <td><?php echo htmlspecialchars($deposit['type']); ?></td>
+                                            <td><?php echo $deposit['bottle_count']; ?></td>
+                                            <td><?php echo $deposit['total_weight']; ?> kg</td>
+                                            <td>
+                                                <span class="status <?php 
+                                                    echo $deposit['status'] == 'processed' ? 'green' : 
+                                                         ($deposit['status'] == 'rejected' ? 'red' : 'orange'); 
+                                                ?>">
+                                                    <?php echo ucfirst($deposit['status']); ?>
+                                                </span>
+                                            </td>
+                                            <td>Bin #<?php echo $deposit['bin_id']; ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <a href="deposits.php" class="btn btn-outline-primary">View All Deposits</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Bin Status</h3>
+                        </div>
+                        <div class="card-body">
+                            <?php foreach ($bin_status as $bin): ?>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Bin #<?php echo $bin['bin_id']; ?></span>
+                                    <span><?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-<?php 
+                                        echo $bin['status'] == 'full' ? 'danger' : 
+                                             ($bin['status'] == 'partial' ? 'warning' : 'success'); 
+                                    ?>" 
+                                    role="progressbar" 
+                                    style="width: <?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%" 
+                                    aria-valuenow="<?php echo $bin['current_level']; ?>" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="<?php echo $bin['capacity']; ?>">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    Status: <?php echo ucfirst($bin['status']); ?> - 
+                                    <?php echo $bin['current_level']; ?> / <?php echo $bin['capacity']; ?> kg
+                                </small>
+                            </div>
+                            <?php endforeach; ?>
+                            <a href="bins.php" class="btn btn-outline-primary mt-2">Manage Bins</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="/js/dashboard.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Profile dropdown functionality
-            const profileDropdownBtn = document.getElementById('profileDropdownBtn');
-            const profileDropdown = document.getElementById('profileDropdown');
-            
-            if (profileDropdownBtn && profileDropdown) {
-                profileDropdownBtn.addEventListener('click', function() {
-                    profileDropdown.classList.toggle('show-dropdown');
-                });
-                
-                // Close the dropdown if clicked outside
-                window.addEventListener('click', function(event) {
-                    if (!event.target.closest('.profile-dropdown')) {
-                        profileDropdown.classList.remove('show-dropdown');
-                    }
-                });
-            }
-            
-            // Sidebar toggle functionality
-            const sidebarToggle = document.getElementById('sidebar-toggle');
-            const dashboardContainer = document.querySelector('.dashboard-container');
-            const sidebar = document.querySelector('.sidebar');
-            
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    dashboardContainer.classList.toggle('sidebar-collapsed');
-                    sidebar.classList.toggle('collapsed');
-                    
-                    // Store the state in localStorage
-                    const isCollapsed = dashboardContainer.classList.contains('sidebar-collapsed');
-                    localStorage.setItem('sidebarCollapsed', isCollapsed);
-                });
-            }
-            
-            // Check localStorage for saved state
-            if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                dashboardContainer.classList.add('sidebar-collapsed');
-                sidebar.classList.add('collapsed');
+        // Toggle sidebar
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        });
+
+        // Toggle profile dropdown
+        document.getElementById('profileDropdown').addEventListener('click', function() {
+            document.getElementById('profileDropdownContent').classList.toggle('show-dropdown');
+        });
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function(event) {
+            if (!event.target.closest('.profile-dropdown')) {
+                const dropdown = document.getElementById('profileDropdownContent');
+                if (dropdown.classList.contains('show-dropdown')) {
+                    dropdown.classList.remove('show-dropdown');
+                }
             }
         });
     </script>

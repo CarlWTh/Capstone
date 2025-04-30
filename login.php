@@ -10,12 +10,10 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 $success = '';
 
-// Check for password reset success
 if (isset($_GET['password_reset']) && $_GET['password_reset'] === 'success') {
     $success = "Password reset successful! Please log in with your new password.";
 }
 
-// Check for remember me cookie first
 if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
     $token = $_COOKIE['remember_token'];
     
@@ -30,9 +28,8 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
         $_SESSION['username'] = $user['username'];
         $_SESSION['is_admin'] = $user['is_admin'];
         
-        // Refresh the remember_me token for security
         $new_token = bin2hex(random_bytes(32));
-        $expiry = time() + 60 * 60 * 24 * 30; // 30 days
+        $expiry = time() + 60 * 60 * 24 * 30;
         
         setcookie(
             'remember_token', 
@@ -79,10 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['is_admin'] = $user['is_admin'];
                 
-                // Remember me functionality
                 if (isset($_POST['remember'])) {
                     $token = bin2hex(random_bytes(32));
-                    $expiry = time() + 60 * 60 * 24 * 30; // 30 days
+                    $expiry = time() + 60 * 60 * 24 * 30;
                     
                     setcookie(
                         'remember_token', 

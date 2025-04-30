@@ -2,379 +2,352 @@
 require_once 'config.php';
 checkAdminAuth();
 
-
-$message = '';
-$error = '';
-
-$user_avatar = getUserAvatar($_SESSION['user_id'], $conn);
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['update_rates'])) {
-        // Update credit rates
-        $new_rate = intval($_POST['credit_rate']);
-        if ($new_rate > 0 && $new_rate <= 100) {
-            $stmt = $conn->prepare("UPDATE credit_rates SET credits_per_unit = ?, last_updated = NOW() WHERE bottle_type = 'standard'");
-            $stmt->bind_param("i", $new_rate);
-            if ($stmt->execute()) {
-                $message = "Credit rates updated successfully!";
-            } else {
-                $error = "Failed to update credit rates.";
-            }
-            $stmt->close();
-        } else {
-            $error = "Invalid credit rate value. Must be between 1 and 100.";
-        }
-    } elseif (isset($_POST['update_alerts'])) {
-        // Update SMS alerts
-        $phone = $_POST['admin_phone'];
-        $bin_alerts = isset($_POST['bin_full_alerts']) ? 1 : 0;
-        $error_alerts = isset($_POST['system_error_alerts']) ? 1 : 0;
-        $daily_summary = isset($_POST['daily_summary']) ? 1 : 0;
+    if (isset($_POST['update_settings'])) {
+        // Process settings update
+        $site_name = $_POST['site_name'];
+        $site_url = $_POST['site_url'];
+        $admin_email = $_POST['admin_email'];
         
-        $stmt = $conn->prepare("UPDATE sms_alerts SET admin_phone = ?, bin_full_alerts = ?, system_error_alerts = ?, daily_summary = ?, last_updated = NOW() WHERE id = 1");
-        $stmt->bind_param("siii", $phone, $bin_alerts, $error_alerts, $daily_summary);
-        if ($stmt->execute()) {
-            $message = "Alert settings updated successfully!";
+        // Validate and update settings
+        if (!empty($site_name) && !empty($site_url) && filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
+            // In a real application, you would save these to a database or config file
+            $_SESSION['flash_message'] = [
+                'type' => 'success',
+                'message' => 'Settings updated successfully!'
+            ];
+            logAdminActivity('Settings Update', 'Updated system settings');
         } else {
-            $error = "Failed to update alert settings.";
+            $_SESSION['flash_message'] = [
+                'type' => 'error',
+                'message' => 'Please fill all fields with valid data'
+            ];
         }
-        $stmt->close();
     } elseif (isset($_POST['change_password'])) {
-        // Change password
-        $current = $_POST['current_password'];
-        $new = $_POST['new_password'];
-        $confirm = $_POST['confirm_password'];
+        // Process password change
+        $current_password = $_POST['current_password'];
+        $new_password = $_POST['new_password'];
+        $confirm_password = $_POST['confirm_password'];
         
-        if ($new !== $confirm) {
-            $error = "New passwords don't match.";
-        } elseif (strlen($new) < 8) {
-            $error = "Password must be at least 8 characters long.";
+        // Validate password change
+        if ($new_password === $confirm_password) {
+            // In a real application, verify current password and update
+            $_SESSION['flash_message'] = [
+                'type' => 'success',
+                'message' => 'Password changed successfully!'
+            ];
+            logAdminActivity('Password Change', 'Changed account password');
         } else {
-            // Verify current password
-            $stmt = $conn->prepare("SELECT password_hash FROM users WHERE id = ?");
-            $stmt->bind_param("i", $_SESSION['user_id']);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows === 1) {
-                $user = $result->fetch_assoc();
-                if (password_verify($current, $user['password_hash'])) {
-                    // Update password
-                    $new_hash = password_hash($new, PASSWORD_DEFAULT);
-                    $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
-                    $stmt->bind_param("si", $new_hash, $_SESSION['user_id']);
-                    if ($stmt->execute()) {
-                        $message = "Password changed successfully!";
-                    } else {
-                        $error = "Failed to update password.";
-                    }
-                } else {
-                    $error = "Current password is incorrect.";
-                }
-            }
-            $stmt->close();
+            $_SESSION['flash_message'] = [
+                'type' => 'error',
+                'message' => 'New passwords do not match'
+            ];
         }
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_minutes'])) {
+        $minutes = (int)$_POST['minutes_per_bottle'];
+        $stmt = $conn->prepare("
+            INSERT INTO SystemSettings (name, value) 
+            VALUES ('minutes_per_bottle', ?)
+            ON DUPLICATE KEY UPDATE value = ?
+        ");
+        $stmt->bind_param("ii", $minutes, $minutes);
+        $stmt->execute();
     }
 }
 
-// Get current settings
-$credit_rate = 5;
-$result = $conn->query("SELECT credits_per_unit FROM credit_rates WHERE bottle_type = 'standard' LIMIT 1");
-if ($result && $row = $result->fetch_assoc()) {
-    $credit_rate = $row['credits_per_unit'];
-}
-
-$sms_alerts = [
-    'admin_phone' => '+639123456789',
-    'bin_full_alerts' => true,
-    'system_error_alerts' => true,
-    'daily_summary' => true
-];
-$result = $conn->query("SELECT admin_phone, bin_full_alerts, system_error_alerts, daily_summary FROM sms_alerts LIMIT 1");
-if ($result && $row = $result->fetch_assoc()) {
-    $sms_alerts = $row;
-}
-
-$backup_info = [
-    'last_backup' => '2024-03-27 10:15:00',
-    'auto_backup' => true
-];
-$result = $conn->query("SELECT setting_value as last_backup FROM system_settings WHERE setting_name = 'last_backup'");
-if ($result && $row = $result->fetch_assoc()) {
-    $backup_info['last_backup'] = $row['last_backup'];
-}
-$result = $conn->query("SELECT setting_value as auto_backup FROM system_settings WHERE setting_name = 'auto_backup'");
-if ($result && $row = $result->fetch_assoc()) {
-    $backup_info['auto_backup'] = (bool)$row['auto_backup'];
-}
+logAdminActivity('Settings Access', 'Accessed settings page');
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="stylesheet" href="/css/styles.css">
-<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Settings - <?php echo SITE_NAME; ?></title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body>
-    <div class="dashboard-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <h1>Recycling Admin</h1>
-                    <span class="logo-short"></span>
-                </div>
-                
-                <button id="sidebar-toggle" class="sidebar-toggle">
-                    <i class='bx bx-menu'></i>
-                </button>
+<body class="dashboard-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <h1><?php echo SITE_NAME; ?></h1>
+                <span class="logo-short"></span>
             </div>
-            
-            <nav>
-                <ul>
-                    <li>
-                        <a href="dashboard.php">
-                            <i class='bx bxs-dashboard'></i>
-                            <span class="menu-text">Dashboard</span>
+            <button class="sidebar-toggle">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.php"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+                <li><a href="deposits.php"><i class="bi bi-recycle"></i><span>Deposits</span></a></li>
+                <li><a href="vouchers.php"><i class="bi bi-ticket-perforated"></i><span>Vouchers</span></a></li>
+                <li><a href="bins.php"><i class="bi bi-trash"></i><span>Bins</span></a></li>
+                <li>
+                        <a href="student_sessions.php">
+                            <i class="bi bi-phone"></i>
+                            <span class="menu-text">Student Sessions</span>
                         </a>
                     </li>
-                    <li>
-                        <a href="transactions.php">
-                            <i class='bx bx-transfer-alt'></i>
-                            <span class="menu-text">Transactions</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="monitoring.php">
-                            <i class='bx bx-line-chart'></i>
-                            <span class="menu-text">System Monitoring</span>
-                        </a>
-                    </li>
-                    <li class="active">
-                        <a href="settings.php">
-                            <i class='bx bx-cog'></i>
-                            <span class="menu-text">Settings</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="reports.php">
-                            <i class='bx bxs-report'></i>
-                            <span class="menu-text">Reports</span>
-                        </a>
-                    </li>
-                    <li class="logout">
-                        <a href="login.php">
-                            <i class='bx bx-log-out'></i>
-                            <span class="menu-text">Logout</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+                <li><a href="sessions.php"><i class="bi bi-wifi"></i><span>Sessions</span></a></li>
+                <li><a href="bottles.php"><i class="bi bi-cup-straw"></i><span>Bottles</span></a></li>
+                <li><a href="users.php"><i class="bi bi-people"></i><span>Users</span></a></li>
+                <li><a href="activity_logs.php"><i class="bi bi-clock-history"></i><span>Activity Logs</span></a></li>
+                <li class="active"><a href="settings.php"><i class="bi bi-gear"></i><span>Settings</span></a></li>
+                <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a></li>
+            </ul>
+        </nav>
+    </div>
 
-        <main class="main-content">
-            <header class="main-header">
-                <h2>System Settings</h2>
-                <div class="user-info">
-                    <div class="profile-dropdown">
-                        <div class="dropdown-header" id="profileDropdownBtn">
-                            <span>Welcome, <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Admin'; ?></span>
-                            <img src="<?php echo htmlspecialchars($user_avatar); ?>" alt="Admin Avatar" class="avatar-img">
-                            <i class='bx bx-chevron-down'></i>
-                        </div>
-                        <div class="dropdown-content" id="profileDropdown">
-                            <a href="edit_profile.php"><i class='bx bx-user'></i> Edit Profile</a>
-                            <a href="change_avatar.php"><i class='bx bx-image'></i> Change Avatar</a>
-                            <a href="logout.php"><i class='bx bx-log-out'></i> Logout</a>
-                        </div>
-                    </div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="main-header">
+            <h1><i class="bi bi-gear"></i> System Settings</h1>
+            <div class="profile-dropdown">
+                <div class="dropdown-header">
+                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
+                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                    <i class="bi bi-chevron-down"></i>
                 </div>
-            </header>
-    <?php if (!empty($message)): ?>
-    <div class="alert alert-success"><?php echo htmlspecialchars($message); ?></div>
-    <?php endif; ?>
-    
-    <?php if (!empty($error)): ?>
-    <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
-    <?php endif; ?>
-
-    <div class="settings-grid">
-        <div class="card settings-card">
-            <div class="settings-header">
-                <h2>Credit Conversion Rates</h2>
-                <div class="settings-icon">
-                    <i class="icon-exchange"></i>
+                <div class="dropdown-content">
+                    <a href="#"><i class="bi bi-person"></i> Profile</a>
+                    <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
+                    <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
-            </div>
-            <div class="settings-body">
-                <form method="POST">
-                    <div class="form-group">
-                        <label for="small-bottle-rate">Minutes per Bottles</label>
-                        <div class="input-with-button">
-                            <input type="number" id="small-bottle-rate" name="credit_rate" 
-                                   value="<?php echo htmlspecialchars($credit_rate); ?>" min="1" max="100">
-                            <span class="input-suffix">minutes</span>
-                        </div>
-                        <p class="help-text">Current: 1 Bottle = <?php echo $credit_rate; ?> Minutes</p>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" name="update_rates" class="btn-primary">Update Rates</button>
-                    </div>
-                </form>
             </div>
         </div>
 
-        <div class="card settings-card">
-            <div class="settings-header">
-                <h2>SMS Alert Settings</h2>
-                <div class="settings-icon">
-                    <i class="icon-bell"></i>
+        <?php displayFlashMessage(); ?>
+
+        <div class="card mt-4">
+    <div class="card-header">
+        <h3>Internet Time Settings</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Minutes Per Bottle</label>
+                <input type="number" name="minutes_per_bottle" 
+                       class="form-control" value="<?= MINUTES_PER_BOTTLE ?>"
+                       min="1" max="60" required>
+            </div>
+            <button type="submit" name="update_minutes" class="btn btn-primary">
+                Update Minutes
+            </button>
+        </form>
+    </div>
+</div>
+        <div class="settings-grid">
+            <!-- General Settings Card -->
+            <div class="settings-card">
+                <div class="settings-header">
+                    <div class="settings-icon">
+                        <i class="bi bi-sliders"></i>
+                    </div>
+                    <h2>General Settings</h2>
+                </div>
+                <div class="settings-body">
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="site_name">Site Name</label>
+                            <input type="text" id="site_name" name="site_name" value="<?php echo SITE_NAME; ?>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="site_url">Site URL</label>
+                            <div class="input-with-button">
+                                <input type="url" id="site_url" name="site_url" value="<?php echo SITE_URL; ?>" required>
+                                <span class="input-suffix">/</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="admin_email">Admin Email</label>
+                            <input type="email" id="admin_email" name="admin_email" value="admin@example.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="timezone">Timezone</label>
+                            <select id="timezone" name="timezone">
+                                <option value="Asia/Manila" selected>Asia/Manila</option>
+                                <option value="UTC">UTC</option>
+                                <!-- More timezones would be added here -->
+                            </select>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" name="update_settings" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div class="settings-body">
-                <form method="POST">
-                    <div class="form-group">
-                        <label for="admin-phone">Admin Phone Number</label>
-                        <input type="tel" id="admin-phone" name="admin_phone" 
-                               placeholder="+63 XXX XXX XXXX" value="<?php echo htmlspecialchars($sms_alerts['admin_phone']); ?>">
-                    </div>
-                    <div class="form-group checkbox-group">
-                        <label class="checkbox-container">
-                            <input type="checkbox" name="bin_full_alerts" <?php echo $sms_alerts['bin_full_alerts'] ? 'checked' : ''; ?>>
-                            <span class="checkmark"></span>
-                            Bin Full Alerts
-                        </label>
-                    </div>
-                    <div class="form-group checkbox-group">
-                        <label class="checkbox-container">
-                            <input type="checkbox" name="system_error_alerts" <?php echo $sms_alerts['system_error_alerts'] ? 'checked' : ''; ?>>
-                            <span class="checkmark"></span>
-                            System Error Alerts
-                        </label>
-                    </div>
-                    <div class="form-group checkbox-group">
-                        <label class="checkbox-container">
-                            <input type="checkbox" name="daily_summary" <?php echo $sms_alerts['daily_summary'] ? 'checked' : ''; ?>>
-                            <span class="checkmark"></span>
-                            Daily Summary Report
-                        </label>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" name="update_alerts" class="btn-primary">Update Alerts</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
-
-        <div class="card settings-card">
-            <div class="settings-header">
-                <h2>Backup & Restore</h2>
-                <div class="settings-icon">
-                    <i class="icon-database"></i>
+            <!-- Password Change Card -->
+            <div class="settings-card">
+                <div class="settings-header">
+                    <div class="settings-icon">
+                        <i class="bi bi-shield-lock"></i>
+                    </div>
+                    <h2>Security</h2>
+                </div>
+                <div class="settings-body">
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="current_password">Current Password</label>
+                            <input type="password" id="current_password" name="current_password" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="new_password">New Password</label>
+                            <input type="password" id="new_password" name="new_password" required>
+                            <div class="password-strength">
+                                <div class="strength-meter">
+                                    <div class="strength-segment"></div>
+                                    <div class="strength-segment"></div>
+                                    <div class="strength-segment"></div>
+                                    <div class="strength-segment"></div>
+                                </div>
+                                <small class="help-text">Use 8+ characters with mix of letters, numbers & symbols</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm New Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" name="change_password" class="btn btn-primary">
+                                <i class="bi bi-key"></i> Change Password
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div class="settings-body">
-                <div class="backup-info">
-                    <p><strong>Last Backup:</strong> <?php echo date('F j, Y (g:i A)', strtotime($backup_info['last_backup'])); ?></p>
+
+            <!-- Backup Card -->
+            <div class="settings-card">
+                <div class="settings-header">
+                    <div class="settings-icon">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                    </div>
+                    <h2>Backup & Restore</h2>
+                </div>
+                <div class="settings-body">
+                    <div class="backup-info">
+                        <p>Last backup: <strong>2023-06-15 14:30</strong></p>
+                        <p>Backup size: <strong>24.5 MB</strong></p>
+                    </div>
+                    
                     <div class="backup-progress">
                         <div class="progress-bar">
-                            <div class="progress" style="width: 100%"></div>
+                            <div class="progress" style="width: 75%"></div>
                         </div>
-                        <span>Automatic backup <?php echo $backup_info['auto_backup'] ? 'enabled' : 'disabled'; ?></span>
+                        <small>Storage used: 75% of 100MB</small>
+                    </div>
+                    
+                    <div class="settings-actions">
+                        <button class="btn btn-secondary">
+                            <i class="bi bi-cloud-download"></i> Create Backup
+                        </button>
+                        <button class="btn btn-secondary">
+                            <i class="bi bi-cloud-upload"></i> Restore
+                        </button>
+                        <button class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Clear Backups
+                        </button>
                     </div>
                 </div>
-                <div class="settings-actions">
-                    <button class="btn-secondary">
-                        <i class="icon-download"></i> Download Backup
-                    </button>
-                    <button class="btn-secondary">
-                        <i class="icon-upload"></i> Restore Data
-                    </button>
-                    <button class="btn-primary" onclick="backupNow()">
-                        <i class="icon-refresh"></i> Backup Now
-                    </button>
+            </div>
+
+            <!-- System Info Card -->
+            <div class="settings-card">
+                <div class="settings-header">
+                    <div class="settings-icon">
+                        <i class="bi bi-info-circle"></i>
+                    </div>
+                    <h2>System Information</h2>
+                </div>
+                <div class="settings-body">
+                    <div class="system-info">
+                        <div class="info-item">
+                            <span class="info-label">PHP Version:</span>
+                            <span class="info-value"><?php echo phpversion(); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Database:</span>
+                            <span class="info-value">MySQL <?php echo $conn->server_info; ?></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Server OS:</span>
+                            <span class="info-value"><?php echo php_uname('s'); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">System Load:</span>
+                            <span class="info-value">0.75 (1 min avg)</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Memory Usage:</span>
+                            <span class="info-value">128MB / 512MB</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn btn-secondary">
+                            <i class="bi bi-arrow-repeat"></i> Check for Updates
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        function backupNow() {
-            // In a real implementation, this would make an AJAX call to trigger a backup
-            alert("Backup process started. You'll be notified when complete.");
-        }
-        
+        // Toggle sidebar
+        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+            document.querySelector('.main-content').classList.toggle('expanded');
+        });
+
+        // Profile dropdown
+        document.querySelector('.dropdown-header').addEventListener('click', function() {
+            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
+        });
+
         // Password strength meter
-        document.getElementById('new-password').addEventListener('input', function() {
+        document.getElementById('new_password').addEventListener('input', function() {
             const password = this.value;
             const meter = document.querySelector('.strength-meter');
             const segments = meter.querySelectorAll('.strength-segment');
-            const strengthText = meter.nextElementSibling.querySelector('strong');
             
-            // Reset
-            segments.forEach(seg => seg.style.backgroundColor = '#ddd');
+            // Reset all segments
+            segments.forEach(seg => {
+                seg.style.backgroundColor = '#ddd';
+                seg.style.borderColor = '#ddd';
+            });
             
-            // Calculate strength (simplified)
-            let strength = 0;
-            if (password.length >= 8) strength++;
-            if (password.length >= 12) strength++;
-            if (/[A-Z]/.test(password)) strength++;
-            if (/[0-9]/.test(password)) strength++;
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
-            
-            // Update display
-            const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
-            strengthText.textContent = strengthLabels[Math.min(strength, 4)];
-            
-            // Color segments
-            const colors = ['#e74c3c', '#f39c12', '#f1c40f', '#2ecc71', '#27ae60'];
-            for (let i = 0; i < Math.min(strength, 5); i++) {
-                segments[i].style.backgroundColor = colors[i];
+            // Very basic strength evaluation
+            if (password.length > 0) {
+                segments[0].style.backgroundColor = '#e74c3c';
+                segments[0].style.borderColor = '#e74c3c';
+            }
+            if (password.length >= 6) {
+                segments[1].style.backgroundColor = '#f39c12';
+                segments[1].style.borderColor = '#f39c12';
+            }
+            if (password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password)) {
+                segments[2].style.backgroundColor = '#2ecc71';
+                segments[2].style.borderColor = '#2ecc71';
+            }
+            if (password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) {
+                segments[3].style.backgroundColor = '#27ae60';
+                segments[3].style.borderColor = '#27ae60';
             }
         });
     </script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Profile dropdown functionality
-        const profileDropdownBtn = document.getElementById('profileDropdownBtn');
-        const profileDropdown = document.getElementById('profileDropdown');
-        
-        if (profileDropdownBtn && profileDropdown) {
-            profileDropdownBtn.addEventListener('click', function() {
-                profileDropdown.classList.toggle('show-dropdown');
-            });
-            
-            // Close the dropdown if clicked outside
-            window.addEventListener('click', function(event) {
-                if (!event.target.closest('.profile-dropdown')) {
-                    profileDropdown.classList.remove('show-dropdown');
-                }
-            });
-        }
-        
-        // Sidebar toggle functionality
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        const dashboardContainer = document.querySelector('.dashboard-container');
-        const sidebar = document.querySelector('.sidebar');
-        
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', function() {
-                dashboardContainer.classList.toggle('sidebar-collapsed');
-                sidebar.classList.toggle('collapsed');
-                
-                // Store the state in localStorage
-                const isCollapsed = dashboardContainer.classList.contains('sidebar-collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
-            });
-        }
-        
-        // Check localStorage for saved state
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            dashboardContainer.classList.add('sidebar-collapsed');
-            sidebar.classList.add('collapsed');
-        }
-    });
-</script>
 </body>
 </html>

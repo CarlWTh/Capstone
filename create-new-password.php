@@ -8,58 +8,42 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Ensure user has verified their code
-if (!isset($_SESSION['reset_user_id'])) {
+// Check if email is provided
+if (!isset($_GET['email'])) {
     header("Location: forgot-password.php");
     exit();
 }
 
+$email = $_GET['email'];
 $error = '';
-$success = '';
-$user_id = $_SESSION['reset_user_id'];
 $debug_output = '';
-
-// Get user information for debugging
-$user_stmt = $conn->prepare("SELECT username FROM users WHERE id = ?");
-$user_stmt->bind_param("i", $user_id);
-$user_stmt->execute();
-$user_result = $user_stmt->get_result();
-$user = $user_result->fetch_assoc();
-$debug_output .= "User ID for password reset: $user_id<br>";
-$debug_output .= "Username: " . ($user ? $user['username'] : "Unknown") . "<br>";
-$user_stmt->close();
 
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
+    $code = trim($_POST['code']);
     
-    // Validate password
-    if (strlen($password) < 8) {
-        $error = "Password must be at least 8 characters long.";
-    } elseif ($password !== $confirm_password) {
-        $error = "Passwords do not match.";
+    if (empty($code)) {
+        $error = "Please enter the verification code";
     } else {
-        // Update the password
-        $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        
-        $stmt = $conn->prepare("UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?");
-        $stmt->bind_param("si", $password_hash, $user_id);
+        // Check if the code is valid
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ? AND reset_token = ? AND reset_token_expires > NOW()");
+        $stmt->bind_param("ss", $email, $code);
         $stmt->execute();
+        $result = $stmt->get_result();
         
-        if ($stmt->affected_rows === 1) {
-            $debug_output .= "Password updated successfully.<br>";
+        if ($result->num_rows === 1) {
+            $user = $result->fetch_assoc();
             
-            // Clear session variables
-            unset($_SESSION['reset_user_id']);
-            unset($_SESSION['reset_email']);
+            // Store user ID in session for password reset
+            $_SESSION['reset_user_id'] = $user['id'];
+            $_SESSION['reset_email'] = $email;
             
-            // Password reset successful
-            header("Location: login.php?password_reset=success");
+            // Redirect to create new password
+            header("Location: create-new-password.php");
             exit();
         } else {
-            $error = "Failed to update password. Please try again.";
-            $debug_output .= "Error updating password. Affected rows: " . $stmt->affected_rows . "<br>";
+            $error = "Invalid or expired verification code";
+            $debug_output = "Code verification failed for email: $email with code: $code<br>";
         }
         $stmt->close();
     }
@@ -71,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Password - Bottle Recycling System</title>
+    <title>Verify Code - Bottle Recycling System</title>
     <link rel="stylesheet" href="/css/styles.css">
     <style>
         .debug-info {
@@ -93,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="login-body">
     <div class="login-container">
         <form class="login-form" method="POST">
-            <h2>Create New Password</h2>
+            <h2>Verify Code</h2>
             
             <?php if (!empty($error)): ?>
                 <div class="error-message">
@@ -101,38 +85,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
             
-            <div class="form-group">
-                <label for="password">New Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Enter your new password" 
-                    required
-                    minlength="8"
-                >
-                <i class="icon-lock"></i>
-            </div>
+            <p>We've sent a verification code to <?php echo htmlspecialchars($email); ?>. Please enter it below.</p>
             
             <div class="form-group">
-                <label for="confirm_password">Confirm Password</label>
+                <label for="code">Verification Code</label>
                 <input 
-                    type="password" 
-                    id="confirm_password" 
-                    name="confirm_password" 
-                    placeholder="Confirm your new password" 
+                    type="text" 
+                    id="code" 
+                    name="code" 
+                    placeholder="Enter 6-digit code" 
                     required
-                    minlength="8"
+                    pattern="\d{6}"
+                    title="Please enter a 6-digit code"
                 >
                 <i class="icon-lock"></i>
             </div>
             
             <button type="submit" class="login-button">
-                Reset Password
+                Verify Code
             </button>
             
             <p style="text-align: center; margin-top: 10px;">
-                <a href="login.php">Back to Login</a>
+                <a href="forgot-password.php">Request a new code</a>
             </p>
             
             <?php if (!empty($debug_output)): ?>

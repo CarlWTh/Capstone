@@ -1,18 +1,13 @@
 <?php
 require_once 'config.php';
 
-
-
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get form data
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm-password'];
 
-    // Validate inputs
     $errors = [];
 
     if (empty($username)) {
@@ -39,7 +34,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Passwords do not match";
     }
 
-    // Check if username or email already exists
     $stmt = $conn->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
     $stmt->bind_param("ss", $username, $email);
     $stmt->execute();
@@ -50,10 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $stmt->close();
 
-    // If no errors, register user
     if (empty($errors)) {
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        $is_admin = true; // Since this is admin registration
+        $is_admin = true;
 
         $stmt = $conn->prepare("INSERT INTO users (username, email, phone, password_hash, is_admin) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssi", $username, $email, $phone, $password_hash, $is_admin);
@@ -71,14 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Registration - Bottle Recycling System</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
-
 <body class="login-body">
     <div class="login-container">
         <form class="register-form" method="POST" action="register.php">
@@ -154,5 +145,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </body>
-
 </html>
