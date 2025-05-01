@@ -13,12 +13,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_minutes'])) {
     $stmt->bind_param("ii", $minutes, $minutes);
     
     if ($stmt->execute()) {
-        redirectWithMessage('bottles.php', 'success', 'Minutes updated!');
+        redirectWithMessage('bottles.php', 'success', 'Minutes per bottle updated successfully!');
+    } else {
+        redirectWithMessage('bottles.php', 'error', 'Failed to update minutes per bottle.');
+    }
+}
+
+// Handle add bottle
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_bottle'])) {
+    $min_weight = (float)$_POST['min_weight'];
+    $max_weight = (float)$_POST['max_weight'];
+    $base_minutes = (int)$_POST['base_minutes'];
+
+    $stmt = $conn->prepare("INSERT INTO Bottles (accepted_weight_range_min, accepted_weight_range_max, base_minutes) VALUES (?, ?, ?)");
+    $stmt->bind_param("ddi", $min_weight, $max_weight, $base_minutes);
+    
+    if ($stmt->execute()) {
+        redirectWithMessage('bottles.php', 'success', 'Bottle added successfully!');
+    } else {
+        redirectWithMessage('bottles.php', 'error', 'Failed to add bottle.');
+    }
+}
+
+// Handle update bottle
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bottle'])) {
+    $bottle_id = (int)$_POST['bottle_id'];
+    $min_weight = (float)$_POST['min_weight'];
+    $max_weight = (float)$_POST['max_weight'];
+    $base_minutes = (int)$_POST['base_minutes'];
+
+    $stmt = $conn->prepare("UPDATE Bottles SET accepted_weight_range_min = ?, accepted_weight_range_max = ?, base_minutes = ? WHERE id = ?");
+    $stmt->bind_param("ddii", $min_weight, $max_weight, $base_minutes, $bottle_id);
+    
+    if ($stmt->execute()) {
+        redirectWithMessage('bottles.php', 'success', 'Bottle updated successfully!');
+    } else {
+        redirectWithMessage('bottles.php', 'error', 'Failed to update bottle.');
+    }
+}
+
+// Handle delete bottle
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_bottle'])) {
+    $bottle_id = (int)$_POST['bottle_id'];
+
+    $stmt = $conn->prepare("DELETE FROM Bottles WHERE id = ?");
+    $stmt->bind_param("i", $bottle_id);
+    
+    if ($stmt->execute()) {
+        redirectWithMessage('bottles.php', 'success', 'Bottle deleted successfully!');
+    } else {
+        redirectWithMessage('bottles.php', 'error', 'Failed to delete bottle.');
     }
 }
 
 // Get current bottles (simplified)
-$bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
+$bottles = $conn->query("SELECT * FROM Bottles")->fetch_all(MYSQLI_ASSOC);
+
+// Get minutes per bottle from settings
+$minutes_per_bottle = 0;
+$stmt = $conn->prepare("SELECT value FROM SystemSettings WHERE name = 'minutes_per_bottle'");
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    $minutes_per_bottle = (int)$row['value'];
+}
+
+if($minutes_per_bottle == 0){
+    $minutes_per_bottle = 30;
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -135,10 +200,17 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBottleModal">
                     <i class="bi bi-plus"></i> Add Bottle Type
                 </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editMinutesModal">
+                <i class="bi bi-clock"></i> Update Minutes Per Bottle
+                </button>
             </div>
             <div class="card-body">
+                <div class="mb-3">
+                    <p>Current minutes per bottle: <strong><?php echo $minutes_per_bottle; ?></strong> minutes</p>
+                 </div>
+
                 <div class="table-responsive">
-                    <table class="transaction-logs">
+                    <table class="transaction-logs" id="bottlesTable">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -151,14 +223,13 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
                         <tbody>
                             <?php foreach ($bottles as $bottle): ?>
                             <tr>
-                                <td><?php echo $bottle['bottle_id']; ?></td>
-                                <td><?php echo htmlspecialchars($bottle['type']); ?></td>
+                                <td><?php echo $bottle['id']; ?></td>
+                                <td>Any</td>
                                 <td><?php echo $bottle['accepted_weight_range_min']; ?> - <?php echo $bottle['accepted_weight_range_max']; ?></td>
                                 <td><?php echo $bottle['base_minutes']; ?></td>
                                 <td>
                                     <button class="btn btn-sm btn-primary edit-bottle"
-                                            data-bottle-id="<?php echo $bottle['bottle_id']; ?>"
-                                            data-type="<?php echo htmlspecialchars($bottle['type']); ?>"
+                                            data-bottle-id="<?php echo $bottle['id']; ?>"
                                             data-min-weight="<?php echo $bottle['accepted_weight_range_min']; ?>"
                                             data-max-weight="<?php echo $bottle['accepted_weight_range_max']; ?>"
                                             data-base-minutes="<?php echo $bottle['base_minutes']; ?>">
@@ -166,7 +237,7 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
                                     </button>
                                     <button class="btn btn-sm btn-danger delete-bottle"
                                             data-bottle-id="<?php echo $bottle['bottle_id']; ?>"
-                                            data-type="<?php echo htmlspecialchars($bottle['type']); ?>">
+                                            >
                                         <i class="bi bi-trash"></i> Delete
                                     </button>
                                 </td>
@@ -175,6 +246,30 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Minutes Modal -->
+    <div class="modal fade" id="editMinutesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Minutes per Bottle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="bottles.php">
+                    <div class="modal-body">
+                        <div class="form-group mb-3">
+                            <label for="minutes_per_bottle" class="form-label">Minutes per Bottle</label>
+                            <input type="number" class="form-control" id="minutes_per_bottle" name="minutes_per_bottle" value="<?php echo $minutes_per_bottle; ?>" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" name="update_minutes">Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -190,10 +285,6 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
                 <form method="POST" action="bottles.php">
                     <input type="hidden" name="add_bottle" value="1">
                     <div class="modal-body">
-                        <div class="form-group mb-3">
-                            <label for="type" class="form-label">Bottle Type</label>
-                            <input type="text" class="form-control" id="type" name="type" required>
-                        </div>
                         <div class="form-group mb-3">
                             <label for="min_weight" class="form-label">Minimum Weight (kg)</label>
                             <input type="number" step="0.01" class="form-control" id="min_weight" name="min_weight" required>
@@ -229,10 +320,6 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
                     <input type="hidden" name="bottle_id" id="editBottleId">
                     <div class="modal-body">
                         <div class="form-group mb-3">
-                            <label for="editType" class="form-label">Bottle Type</label>
-                            <input type="text" class="form-control" id="editType" name="type" required>
-                        </div>
-                        <div class="form-group mb-3">
                             <label for="editMinWeight" class="form-label">Minimum Weight (kg)</label>
                             <input type="number" step="0.01" class="form-control" id="editMinWeight" name="min_weight" required>
                         </div>
@@ -267,7 +354,7 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
                     <input type="hidden" name="bottle_id" id="deleteBottleId">
                     <div class="modal-body">
                         <p>Are you sure you want to delete the bottle type "<span id="deleteBottleType"></span>"?</p>
-                        <p class="text-danger">Warning: This action cannot be undone!</p>
+                        <p class="text-danger">Warning: This action cannot be undone! All deposit records using this bottle type will be affected.</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -295,7 +382,6 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
         document.querySelectorAll('.edit-bottle').forEach(button => {
             button.addEventListener('click', function() {
                 document.getElementById('editBottleId').value = this.getAttribute('data-bottle-id');
-                document.getElementById('editType').value = this.getAttribute('data-type');
                 document.getElementById('editMinWeight').value = this.getAttribute('data-min-weight');
                 document.getElementById('editMaxWeight').value = this.getAttribute('data-max-weight');
                 document.getElementById('editBaseMinutes').value = this.getAttribute('data-base-minutes');
@@ -309,7 +395,6 @@ $bottles = $conn->query("SELECT * FROM Bottle")->fetch_all(MYSQLI_ASSOC);
         document.querySelectorAll('.delete-bottle').forEach(button => {
             button.addEventListener('click', function() {
                 document.getElementById('deleteBottleId').value = this.getAttribute('data-bottle-id');
-                document.getElementById('deleteBottleType').textContent = this.getAttribute('data-type');
                 
                 const modal = new bootstrap.Modal(document.getElementById('deleteBottleModal'));
                 modal.show();

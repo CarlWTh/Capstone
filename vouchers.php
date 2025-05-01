@@ -2,9 +2,10 @@
 require_once 'config.php';
 checkAdminAuth();
 
+
 // Get all vouchers with pagination
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$per_page = 10;
+$per_page = 20;
 $offset = ($page - 1) * $per_page;
 
 $total_vouchers = $conn->query("SELECT COUNT(*) FROM Voucher")->fetch_row()[0];
@@ -12,10 +13,9 @@ $total_pages = ceil($total_vouchers / $per_page);
 
 $vouchers = $conn->query("
     SELECT v.voucher_id, v.code, v.internet_minutes, v.expiry_time, v.is_used,
-           b.type as bottle_type, d.timestamp as deposit_time
+           d.timestamp as deposit_time
     FROM Voucher v
-    JOIN BottleDeposit d ON v.deposit_id = d.deposit_id
-    JOIN Bottle b ON v.bottle_id = b.bottle_id
+    JOIN deposits d ON v.deposit_id = d.id
     ORDER BY v.expiry_time DESC
     LIMIT $per_page OFFSET $offset
 ")->fetch_all(MYSQLI_ASSOC);
@@ -59,12 +59,6 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                         <span class="menu-text">Bottle Deposits</span>
                     </a>
                 </li>
-                <li class="active">
-                    <a href="vouchers.php">
-                        <i class="bi bi-ticket-perforated"></i>
-                        <span class="menu-text">Vouchers</span>
-                    </a>
-                </li>
                 <li>
                     <a href="bins.php">
                         <i class="bi bi-trash"></i>
@@ -81,12 +75,6 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                     <a href="sessions.php">
                         <i class="bi bi-wifi"></i>
                         <span class="menu-text">Internet Sessions</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="bottles.php">
-                        <i class="bi bi-cup-straw"></i>
-                        <span class="menu-text">Bottle Types</span>
                     </a>
                 </li>
                 <li>
@@ -144,9 +132,6 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                     <button class="export-btn">
                         <i class="bi bi-download"></i> Export
                     </button>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateVoucherModal">
-                        <i class="bi bi-plus"></i> Generate Voucher
-                    </button>
                 </div>
             </div>
             <div class="card-body">
@@ -155,7 +140,6 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                         <thead>
                             <tr>
                                 <th>Code</th>
-                                <th>Bottle Type</th>
                                 <th>Minutes</th>
                                 <th>Expiry</th>
                                 <th>Status</th>
@@ -167,7 +151,6 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                             <?php foreach ($vouchers as $voucher): ?>
                             <tr>
                                 <td><?php echo $voucher['code']; ?></td>
-                                <td><?php echo htmlspecialchars($voucher['bottle_type']); ?></td>
                                 <td><?php echo $voucher['internet_minutes']; ?></td>
                                 <td><?php echo date('M j, Y', strtotime($voucher['expiry_time'])); ?></td>
                                 <td>
@@ -199,46 +182,6 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                     <button class="btn btn-secondary" <?php echo $page >= $total_pages ? 'disabled' : ''; ?>>
                         Next <i class="bi bi-chevron-right"></i>
                     </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Generate Voucher Modal -->
-    <div class="modal fade" id="generateVoucherModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Generate New Voucher</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="voucherForm">
-                        <div class="form-group mb-3">
-                            <label for="bottleType" class="form-label">Bottle Type</label>
-                            <select class="form-select" id="bottleType" required>
-                                <option value="">Select Bottle Type</option>
-                                <?php
-                                $bottle_types = $conn->query("SELECT * FROM Bottle");
-                                while ($type = $bottle_types->fetch_assoc()) {
-                                    echo '<option value="'.$type['bottle_id'].'">'.$type['type'].'</option>';
-                                }
-                                ?>
-                            </select>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="minutes" class="form-label">Internet Minutes</label>
-                            <input type="number" class="form-control" id="minutes" required>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="expiry" class="form-label">Expiry Date</label>
-                            <input type="date" class="form-control" id="expiry" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary">Generate</button>
                 </div>
             </div>
         </div>
