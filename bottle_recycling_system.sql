@@ -17,9 +17,9 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bottle table
-CREATE TABLE Bottle (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+-- Bottle types table
+CREATE TABLE BottleType (
+    bottle_id INT AUTO_INCREMENT PRIMARY KEY,
     accepted_weight_range_min DECIMAL(5,2) NOT NULL,
     accepted_weight_range_max DECIMAL(5,2) NOT NULL
 );
@@ -43,8 +43,8 @@ CREATE TABLE StudentSession (
 );
 
 -- Bottle deposits table
-CREATE TABLE BottleDeposit (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE BottleDeposit (   
+    deposit_id INT AUTO_INCREMENT PRIMARY KEY,
     session_id INT NOT NULL,
     
     bin_id INT NOT NULL,
@@ -56,13 +56,14 @@ CREATE TABLE BottleDeposit (
     FOREIGN KEY (bin_id) REFERENCES TrashBin(bin_id)
 );
 -- Vouchers table
-CREATE TABLE Voucher (
+CREATE TABLE Voucher (    
     voucher_id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) NOT NULL UNIQUE,
     deposit_id INT NOT NULL,
     bottle_id INT NOT NULL,
     internet_minutes INT NOT NULL,
     expiry_time DATETIME NOT NULL,
+    FOREIGN KEY (bottle_id) REFERENCES BottleType(bottle_id),
     is_used BOOLEAN DEFAULT FALSE,    
     FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(id)
 );

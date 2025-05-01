@@ -1,3 +1,4 @@
+php
 <?php
 require_once 'config.php';
 checkAdminAuth();
@@ -11,9 +12,9 @@ $stats['active_sessions'] = $conn->query("SELECT COUNT(*) FROM InternetSession W
 
 // Get recent deposits
 $recent_deposits = $conn->query("
-    SELECT d.deposit_id, d.timestamp, b.type, d.bottle_count, d.total_weight, d.status, t.bin_id
+    SELECT d.deposit_id, d.timestamp, bt.bottle_id AS bottle_type_id, d.bottle_count, d.total_weight, d.status, t.bin_id
     FROM BottleDeposit d
-    JOIN Bottle b ON d.bottle_id = b.bottle_id
+    JOIN BottleType bt ON d.bottle_id = bt.bottle_id
     JOIN TrashBin t ON d.bin_id = t.bin_id
     ORDER BY d.timestamp DESC
     LIMIT 5
@@ -208,7 +209,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                         <tr>
                                             <td><?php echo $deposit['deposit_id']; ?></td>
                                             <td><?php echo date('M j, H:i', strtotime($deposit['timestamp'])); ?></td>
-                                            <td><?php echo htmlspecialchars($deposit['type']); ?></td>
+                                            <td><?php echo htmlspecialchars($deposit['bottle_type_id']); ?></td>
                                             <td><?php echo $deposit['bottle_count']; ?></td>
                                             <td><?php echo $deposit['total_weight']; ?> kg</td>
                                             <td>
