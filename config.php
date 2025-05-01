@@ -57,10 +57,32 @@ define('MINUTES_PER_BOTTLE', getMinutesPerBottle());
 // Log admin activity
 function logAdminActivity($action, $details = '') {
     global $conn;
-    $stmt = $conn->prepare("INSERT INTO AdminActivityLog (admin_id, action, details) VALUES (?, ?, ?)");
-    $stmt->bind_param("iss", $_SESSION['user_id'], $action, $details);
-    $stmt->execute();
-    $stmt->close();
+    if (isset($_SESSION['user_id'])) {
+        $admin_id = $_SESSION['user_id'];
+        // Ensure admin_id exists in the users table
+        $check_sql = "SELECT id FROM users WHERE id = ?";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("i", $admin_id);
+        $check_stmt->execute();
+        $check_stmt->store_result();
+
+        if ($check_stmt->num_rows > 0) {
+            $check_stmt->close();
+            $stmt = $conn->prepare("INSERT INTO AdminActivityLog (admin_id, action, details) VALUES (?, ?, ?)");
+            $stmt->bind_param("iss", $admin_id, $action, $details);
+
+            if ($stmt->execute()) {
+                $stmt->close();
+            } else {
+                error_log("Admin activity could not be logged: " . $stmt->error);
+            }
+        } else {
+            error_log("Admin activity could not be logged: admin_id does not exist in users table.");
+            $check_stmt->close();
+        }
+    } else {
+        error_log("Admin activity could not be logged: user_id not set in session.");
+    }
 }
 
 // Redirect function with message
