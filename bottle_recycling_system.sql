@@ -21,7 +21,7 @@ CREATE TABLE users (
 CREATE TABLE Bottle (
     id INT AUTO_INCREMENT PRIMARY KEY,
     accepted_weight_range_min DECIMAL(5,2) NOT NULL,
-    accepted_weight_range_max DECIMAL(5,2) NOT NULL,
+    accepted_weight_range_max DECIMAL(5,2) NOT NULL
 );
 
 -- Trash bins table
