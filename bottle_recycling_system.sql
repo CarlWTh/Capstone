@@ -5,18 +5,10 @@ USE bottle_recycling_system;
 -- Users table
 CREATE TABLE users (
 <<<<<<< HEAD
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    phone VARCHAR(20),
-    password_hash VARCHAR(255) NOT NULL,
-    is_admin BOOLEAN DEFAULT FALSE,
-    reset_token VARCHAR(100),
-    reset_token_expires DATETIME,
-    remember_token VARCHAR(100),
-    token_expiry DATETIME,
-=======
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,    phone VARCHAR(20),
+    password_hash VARCHAR(255) NOT NULL,    is_admin BOOLEAN DEFAULT FALSE,
+    reset_token VARCHAR(100),    reset_token_expires DATETIME,    remember_token VARCHAR(100),    token_expiry DATETIME,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     phone VARCHAR(20),
@@ -25,16 +17,9 @@ CREATE TABLE users (
 >>>>>>> parent of 324a933 (fix: change the sql file to remove bottle type, weight, and link to bottle)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-<<<<<<< HEAD
-=======
--- Bottle types table
-CREATE TABLE BottleType (
-    bottle_id INT AUTO_INCREMENT PRIMARY KEY,
-    accepted_weight_range_min DECIMAL(5,2) NOT NULL,
-    accepted_weight_range_max DECIMAL(5,2) NOT NULL
-);
->>>>>>> c52a3ab93de7e4354a2e69ab5aa1045c72515021
+-- Remove the BottleType table
+DROP TABLE BottleType;
+-- Modify the BottleDeposit table
 
 -- Trash bins table
 CREATE TABLE TrashBin (
@@ -58,14 +43,11 @@ CREATE TABLE StudentSession (
 CREATE TABLE BottleDeposit (   
     deposit_id INT AUTO_INCREMENT PRIMARY KEY,
     session_id INT NOT NULL,
-<<<<<<< HEAD
-    
     bin_id INT ,
-    
-=======
+    bottle_count INT NOT NULL,
     bottle_id INT NOT NULL,
     bin_id INT NOT NULL,
->>>>>>> c52a3ab93de7e4354a2e69ab5aa1045c72515021
+
     bottle_count INT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('pending', 'processed', 'rejected') DEFAULT 'pending',
@@ -120,18 +102,9 @@ INSERT INTO SystemSettings (name, value) VALUES ('minutes_per_bottle', '2');
 -- Create an initial admin user (password: admin123)
 INSERT INTO users (username, email, phone, password_hash, is_admin)
 VALUES ('admin', 'admin@example.com', '1234567890', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE);
-<<<<<<< HEAD
-
-<<<<<<< HEAD
--- Remove the BottleType table
-DROP TABLE BottleType;
--- Modify the BottleDeposit table
 ALTER TABLE BottleDeposit
 DROP COLUMN total_weight;
-=======
 ALTER TABLE BottleDeposit DROP COLUMN total_weight;
 ALTER TABLE Voucher DROP COLUMN internet_minutes, DROP COLUMN bottle_id;
 DROP TABLE BottleType;
->>>>>>> parent of 324a933 (fix: change the sql file to remove bottle type, weight, and link to bottle)
-=======
->>>>>>> c52a3ab93de7e4354a2e69ab5aa1045c72515021
+
