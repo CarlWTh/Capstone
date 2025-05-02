@@ -185,9 +185,9 @@ function generateUniqueVoucherCode($conn)
                                 <td>
                                     <?php echo $deposit['bottle_count']; ?>
                                 </td>
-                                <td>
-                                    <?php echo date('Y-m-d H:i:s', strtotime($deposit['created_at'])); ?>
-                                </td>
+<td>
+    <?php echo date('Y-m-d H:i:s', strtotime($deposit['timestamp'])); ?>
+</td>
                             </tr>
                         <?php endforeach;?>
                     </tbody>
