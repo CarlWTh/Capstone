@@ -38,15 +38,11 @@ CREATE TABLE BottleDeposit (
     deposit_id INT AUTO_INCREMENT PRIMARY KEY,
     session_id INT NOT NULL,
     bin_id INT ,
-  
-   
-  
     bottle_count INT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('pending', 'processed', 'rejected') DEFAULT 'pending',
     FOREIGN KEY (session_id) REFERENCES StudentSession(session_id),
-    FOREIGN KEY (bin_id) REFERENCES TrashBin(bin_id),
-    FOREIGN KEY (bottle_id) REFERENCES BottleType(bottle_id)
+    FOREIGN KEY (bin_id) REFERENCES TrashBin(bin_id)
 );
 
 
@@ -58,7 +54,6 @@ CREATE TABLE Voucher (
     expiry_time DATETIME ,
     is_used BOOLEAN DEFAULT FALSE,    
     FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id),
-    FOREIGN KEY (bottle_id) REFERENCES BottleType(bottle_id)
 );
 
 -- Internet sessions table
