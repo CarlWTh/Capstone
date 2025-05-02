@@ -26,6 +26,15 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+<<<<<<< HEAD
+=======
+-- Bottle types table
+CREATE TABLE BottleType (
+    bottle_id INT AUTO_INCREMENT PRIMARY KEY,
+    accepted_weight_range_min DECIMAL(5,2) NOT NULL,
+    accepted_weight_range_max DECIMAL(5,2) NOT NULL
+);
+>>>>>>> c52a3ab93de7e4354a2e69ab5aa1045c72515021
 
 -- Trash bins table
 CREATE TABLE TrashBin (
@@ -49,25 +58,32 @@ CREATE TABLE StudentSession (
 CREATE TABLE BottleDeposit (   
     deposit_id INT AUTO_INCREMENT PRIMARY KEY,
     session_id INT NOT NULL,
+<<<<<<< HEAD
     
     bin_id INT ,
     
+=======
+    bottle_id INT NOT NULL,
+    bin_id INT NOT NULL,
+>>>>>>> c52a3ab93de7e4354a2e69ab5aa1045c72515021
     bottle_count INT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('pending', 'processed', 'rejected') DEFAULT 'pending',
     FOREIGN KEY (session_id) REFERENCES StudentSession(session_id),
-    FOREIGN KEY (bin_id) REFERENCES TrashBin(bin_id)
+    FOREIGN KEY (bin_id) REFERENCES TrashBin(bin_id),
+    FOREIGN KEY (bottle_id) REFERENCES BottleType(bottle_id)
 );
 
 
 -- Vouchers table
-CREATE TABLE Voucher (
+CREATE TABLE Voucher (    
     voucher_id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) NOT NULL UNIQUE,
     deposit_id INT NOT NULL,
     expiry_time DATETIME ,
     is_used BOOLEAN DEFAULT FALSE,    
-    FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(id)
+    FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id),
+    FOREIGN KEY (bottle_id) REFERENCES BottleType(bottle_id)
 );
 
 -- Internet sessions table
@@ -104,6 +120,7 @@ INSERT INTO SystemSettings (name, value) VALUES ('minutes_per_bottle', '2');
 -- Create an initial admin user (password: admin123)
 INSERT INTO users (username, email, phone, password_hash, is_admin)
 VALUES ('admin', 'admin@example.com', '1234567890', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE);
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 -- Remove the BottleType table
@@ -116,3 +133,5 @@ ALTER TABLE BottleDeposit DROP COLUMN total_weight;
 ALTER TABLE Voucher DROP COLUMN internet_minutes, DROP COLUMN bottle_id;
 DROP TABLE BottleType;
 >>>>>>> parent of 324a933 (fix: change the sql file to remove bottle type, weight, and link to bottle)
+=======
+>>>>>>> c52a3ab93de7e4354a2e69ab5aa1045c72515021

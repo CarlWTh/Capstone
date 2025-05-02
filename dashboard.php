@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 php
+=======
+
+>>>>>>> c52a3ab93de7e4354a2e69ab5aa1045c72515021
 <?php
 require_once 'config.php';
 checkAdminAuth();
