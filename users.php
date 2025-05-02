@@ -61,11 +61,13 @@ logAdminActivity('Users Access', 'Viewed users list');
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="dashboard-container">
-    <!-- Sidebar -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <h1><?= SITE_NAME ?></h1>
+                <h1>
+                    <?php echo SITE_NAME; ?>
+                </h1>
+
                 <span class="logo-short"></span>
             </div>
             <button class="sidebar-toggle">
@@ -73,16 +75,30 @@ logAdminActivity('Users Access', 'Viewed users list');
             </button>
         </div>
         <nav>
+
             <ul>
-                <li><a href="dashboard.php"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-                <li><a href="deposits.php"><i class="bi bi-recycle"></i><span>Bottle Deposits</span></a></li>
-                <li><a href="vouchers.php"><i class="bi bi-ticket-perforated"></i><span>Vouchers</span></a></li>
-                <li><a href="bins.php"><i class="bi bi-trash"></i><span>Trash Bins</span></a></li>
+                <li class="">
+                    <a href="dashboard.php">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="">
+                    <a href="deposits.php">
+                        <i class="bi bi-recycle"></i>
+                        <span>Bottle Deposits</span>
+                    </a>
+                </li>
                 <li>
-                        <a href="student_sessions.php">
-                            <i class="bi bi-phone"></i>
-                            <span class="menu-text">Student Sessions</span>
-                        </a>
+                    <a href="vouchers.php">
+                        <i class="bi bi-ticket-perforated"></i>
+                        <span>Vouchers</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="bins.php">
+                        <i class="bi bi-trash"></i>
+                        <span>Trash Bins</span>
                     </li>
                 <li><a href="sessions.php"><i class="bi bi-wifi"></i><span>Internet Sessions</span></a></li>
                 <li><a href="bottles.php"><i class="bi bi-cup-straw"></i><span>Bottle Types</span></a></li>
@@ -93,6 +109,45 @@ logAdminActivity('Users Access', 'Viewed users list');
         </nav>
     </div>
 
+
+            <nav>
+                <ul>
+                    <li class="">
+                        <a href="dashboard.php">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="deposits.php">
+                            <i class="bi bi-recycle"></i>
+                            <span>Bottle Deposits</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vouchers.php">
+                            <i class="bi bi-ticket-perforated"></i>
+                            <span>Vouchers</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="bins.php">
+                            <i class="bi bi-trash"></i>
+                            <span>Trash Bins</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="student_sessions.php">
+                            <i class="bi bi-phone"></i>
+                            <span class="menu-text">Student Sessions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="sessions.php">
+                            <i class="bi bi-wifi"></i>
+                            <span>Internet Sessions</span>
+                        </a>
+                    </li>
     <!-- Main Content -->
     <div class="main-content">
         <div class="main-header">
@@ -114,7 +169,19 @@ logAdminActivity('Users Access', 'Viewed users list');
         <?php displayFlashMessage(); ?>
 
         <div class="card">
+        <li class="active">
+                        <a href="users.php">
+                            <i class="bi bi-people"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="activity_logs.php">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Activity Logs</span>
+                        </a>
             <div class="card-header">
+
                 <h3>System Users</h3>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
                     <i class="bi bi-plus"></i> Add User

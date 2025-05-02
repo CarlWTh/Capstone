@@ -82,7 +82,7 @@ function generateUniqueVoucherCode($conn)
                             <span>Dashboard</span>
                         </a>
                     </li>
-                    <li class="active">
+                    <li class="">
                         <a href="deposits.php">
                             <i class="bi bi-recycle"></i>
                             <span>Bottle Deposits</span>
@@ -94,7 +94,7 @@ function generateUniqueVoucherCode($conn)
                             <span>Vouchers</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="active">
                         <a href="bins.php">
                             <i class="bi bi-trash"></i>
                             <span>Trash Bins</span>

@@ -33,35 +33,74 @@ logAdminActivity('Sessions Access', 'Viewed student sessions');
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="dashboard-container">
-<div class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <h1><?php echo SITE_NAME; ?></h1>
-                <span class="logo-short">BRS</span>
+<div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <h1><?php echo SITE_NAME; ?></h1>
+                    <span class="logo-short"></span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
             </div>
-            <button class="sidebar-toggle">
-                <i class="bi bi-list"></i>
-            </button>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="dashboard.php"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-                <li><a href="deposits.php"><i class="bi bi-recycle"></i><span>Deposits</span></a></li>
-                <li><a href="vouchers.php"><i class="bi bi-ticket-perforated"></i><span>Vouchers</span></a></li>
-                <li><a href="bins.php"><i class="bi bi-trash"></i><span>Trash Bins</span></a></li>
-                <li class="active">
+            <nav>
+                <ul>
+                    <li class="">
+                        <a href="dashboard.php">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="deposits.php">
+                            <i class="bi bi-recycle"></i>
+                            <span>Bottle Deposits</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vouchers.php">
+                            <i class="bi bi-ticket-perforated"></i>
+                            <span>Vouchers</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="bins.php">
+                            <i class="bi bi-trash"></i>
+                            <span>Trash Bins</span>
+                        </a>
+                    </li>
+                    <li class="active">
                         <a href="student_sessions.php">
                             <i class="bi bi-phone"></i>
                             <span class="menu-text">Student Sessions</span>
                         </a>
                     </li>
-                <li><a href="sessions.php"><i class="bi bi-wifi"></i><span>Internet Sessions</span></a></li>
-                <li><a href="bottles.php"><i class="bi bi-cup-straw"></i><span>Bottles</span></a></li>
-                <li><a href="users.php"><i class="bi bi-people"></i><span>Users</span></a></li>
-                <li><a href="activity_logs.php"><i class="bi bi-clock-history"></i><span>Activity Logs</span></a></li>
-                <li><a href="logout.php"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a></li>
-            </ul>
-        </nav>
+                    <li>
+                        <a href="sessions.php">
+                            <i class="bi bi-wifi"></i>
+                            <span>Internet Sessions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="users.php">
+                            <i class="bi bi-people"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="activity_logs.php">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Activity Logs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
     </div>
     <!-- Sidebar (same as others) -->
     
