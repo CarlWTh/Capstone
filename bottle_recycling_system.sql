@@ -53,7 +53,7 @@ CREATE TABLE Voucher (
     deposit_id INT NOT NULL,
     expiry_time DATETIME ,
     is_used BOOLEAN DEFAULT FALSE,    
-    FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id),
+    FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id)
 ); -- Removed the comma here
 
 -- Internet sessions table
@@ -90,6 +90,3 @@ INSERT INTO SystemSettings (name, value) VALUES ('minutes_per_bottle', '2');
 -- Create an initial admin user (password: admin123)
 INSERT INTO users (username, email, phone, password_hash, is_admin)
 VALUES ('admin', 'admin@example.com', '1234567890', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE);
-
-ALTER TABLE BottleDeposit DROP COLUMN total_weight;
-ALTER TABLE Voucher DROP COLUMN internet_minutes, DROP COLUMN bottle_id;
