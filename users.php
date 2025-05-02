@@ -73,30 +73,31 @@ logAdminActivity('Users Access', 'Viewed users list');
             </div>
             <nav>
                 <ul>
-                    <li class="active">
-                        <a href="dashboard.php" class="">
+                    <li class="">
+                        <a href="dashboard.php">
                             <i class="bi bi-speedometer2"></i>
                             <span>Dashboard</span>
                         </a>
                     </li>
                     <li class="">
-                        <a href="deposits.php">
-                            <i class="bi bi-recycle" ></i>
+                        <a href="bottle_deposits.php">
+                            <i class="bi bi-recycle"></i>
                             <span>Bottle Deposits</span>
                         </a>
                     </li>
                     <li>
                         <a href="vouchers.php">
                             <i class="bi bi-ticket-perforated"></i>
-                            <span>Vouchers</span>
+                            <span>Vouchers</span> 
                         </a>
                     </li>
                     <li>
                         <a href="bins.php">
                             <i class="bi bi-trash"></i>
-                            <span>Trash Bins</span>
+                            <span>Trash Bins</span> 
                         </a>
                     </li>
+
                     <li>
                         <a href="student_sessions.php">
                             <i class="bi bi-phone"></i>
@@ -108,7 +109,7 @@ logAdminActivity('Users Access', 'Viewed users list');
                             <i class="bi bi-wifi"></i>
                             <span>Internet Sessions</span>
                         </a>
-                    </li>
+                    </li> 
                     <li>
                         <a href="users.php">
                             <i class="bi bi-people"></i>
@@ -126,6 +127,7 @@ logAdminActivity('Users Access', 'Viewed users list');
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Logout</span>
                         </a>
+
                     </li>
                 </ul>
             </nav>

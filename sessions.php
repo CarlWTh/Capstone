@@ -32,7 +32,7 @@ logAdminActivity('Sessions Access', 'Viewed internet sessions');
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="dashboard-container">
-    <!-- Sidebar -->
+     <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -48,13 +48,13 @@ logAdminActivity('Sessions Access', 'Viewed internet sessions');
                     <li class="">
                         <a href="dashboard.php">
                             <i class="bi bi-speedometer2"></i>
-                            <span>Dashboard</span>
+                            <span class="menu-text">Dashboard</span>
                         </a>
                     </li>
                     <li class="">
-                        <a href="deposits.php">
+                        <a href="bottle_deposits.php">
                             <i class="bi bi-recycle"></i>
-                            <span>Bottle Deposits</span>
+                            <span class="menu-text">Bottle Deposits</span>
                         </a>
                     </li>
                     <li>
@@ -64,18 +64,18 @@ logAdminActivity('Sessions Access', 'Viewed internet sessions');
                         </a>
                     </li>
                     <li>
-                        <a href="bins.php">
+                        <a href="bins.php" >
                             <i class="bi bi-trash"></i>
-                            <span>Trash Bins</span>
+                            <span class="menu-text">Trash Bins</span>
                         </a>
                     </li>
                     <li class="">
                         <a href="student_sessions.php">
                             <i class="bi bi-phone"></i>
-                            <span class="menu-text">Student Sessions</span>
+                            <span>Student Sessions</span>
                         </a>
                     </li>
-                    <li class="active">
+                    <li class="active" >
                         <a href="sessions.php">
                             <i class="bi bi-wifi"></i>
                             <span>Internet Sessions</span>
@@ -84,7 +84,7 @@ logAdminActivity('Sessions Access', 'Viewed internet sessions');
                     <li>
                         <a href="users.php">
                             <i class="bi bi-people"></i>
-                            <span>Users</span>
+                            <span class="menu-text">Users</span>
                         </a>
                     </li>
                     <li>
@@ -97,7 +97,7 @@ logAdminActivity('Sessions Access', 'Viewed internet sessions');
                         <a href="logout.php">
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Logout</span>
-                        </a>
+                       </a>
                     </li>
                 </ul>
             </nav>
@@ -181,6 +181,7 @@ logAdminActivity('Sessions Access', 'Viewed internet sessions');
     </div>
 
     <script>
+        
         // Toggle sidebar
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');

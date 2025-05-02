@@ -52,7 +52,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                 </button>
             </div>
             <nav>
-                <ul>
+                <ul class="list-unstyled">
                     <li class="active">
                         <a href="dashboard.php" class="">
                             <i class="bi bi-speedometer2"></i>
@@ -60,7 +60,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                         </a>
                     </li>
                     <li class="">
-                        <a href="deposits.php">
+                        <a href="bottle_deposits.php">
                             <i class="bi bi-recycle" ></i>
                             <span>Bottle Deposits</span>
                         </a>

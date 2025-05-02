@@ -1,4 +1,4 @@
-<?php
+   <?php
 require_once 'config.php';
 checkAdminAuth();
 
@@ -54,13 +54,13 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                         </a>
                     </li>
                     <li class="">
-                        <a href="deposits.php">
+                        <a href="bottle_deposits.php">
                             <i class="bi bi-recycle"></i>
                             <span>Bottle Deposits</span>
                         </a>
                     </li>
                     <li class="active">
-                        <a href="vouchers.php">
+                         <a href="vouchers.php">
                             <i class="bi bi-ticket-perforated"></i>
                             <span>Vouchers</span>
                         </a>

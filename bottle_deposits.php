@@ -77,12 +77,12 @@ function generateUniqueVoucherCode($conn)
             </div>
             <nav>
                 <ul>
-                    <li class="">
+                    <li>
                         <a href="dashboard.php">
                             <i class="bi bi-speedometer2"></i>
                             <span>Dashboard</span>
                             </a>
-                    </li>
+                     </li>
                     <li class="active">
                         <a href="bottle_deposits.php">
                             <i class="bi bi-recycle"></i>

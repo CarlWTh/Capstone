@@ -50,26 +50,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                 <button class="sidebar-toggle" id="sidebarToggle">
                     <i class="bi bi-list"></i>
                 </button>
-            </div>
+            </div> 
         <nav>
                 <ul>
-                <li>
+                    <li>
                         <a href="dashboard.php">
                             <i class="bi bi-speedometer2"></i>
                             <span class="menu-text">Dashboard</span>
                         </a>
-                </li>
-                <li>
-                    <a href="bottle_deposits.php">
+                    </li>
+                    <li>
+                        <a href="bottle_deposits.php">
                             <i class="bi bi-recycle"></i>
-                            <span class="menu-text">Bottle Deposits</span>
-                    </a>
-                </li>
-                <li>
-                        <a href="vouchers.php">
-                            <i class="bi bi-ticket-perforated"></i>   
-                            <span class="menu-text">Vouchers</span>
+                            <span>Bottle Deposits</span>
                         </a>
+                    </li>
+                    <li>
+                        <a href="vouchers.php">
+                            <i class="bi bi-ticket-perforated"></i>
+                            <span>Vouchers</span>
+                        </a>
+                    </li>
                     <li class="active">
                         <a href="bins.php">
                             <i class="bi bi-trash"></i>
@@ -77,29 +78,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                         </a>
                     </li>
                     <li>
-                        <a href="student_sessions.php">
-                            <i class="bi bi-phone"></i>
-                            <span class="menu-text">Student Sessions</span>
+                     <a href="student_sessions.php">
+                        <i class="bi bi-phone"></i>
+                        <span>Student Sessions</span>
                         </a>
                     </li>
                     <li>
-                    <a href="bottles.php">
-                        <i class="bi bi-cup-straw"></i>
-                        <span class="menu-text">Bottle Types</span>
-                    </a>
-                    </li>
-                    <li>
-                        <a href="sessions.php">
-                            <i class="bi bi-wifi"></i>
-                           <span class="menu-text">Internet Sessions</span>
-                     </a>
+                     <a href="sessions.php">
+                        <i class="bi bi-wifi"></i>
+                        <span>Internet Sessions</span>
+                      </a>
                     </li>
                     <li>
                         <a href="users.php">
                             <i class="bi bi-people"></i>
                             <span>Users</span>
                         </a>
-                    </li>
+                     </li>
                     <li>
                         <a href="activity_logs.php">
                             <i class="bi bi-clock-history"></i>
@@ -113,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                         </a>
                     </li>
                 </ul>
-            </nav>
+        </nav>
     </div>
     <!-- Main Content -->
     <div class="main-content">
@@ -121,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
             <h2>Trash Bins</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
-                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
+                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img"> 
                     <span><?php echo htmlspecialchars($_SESSION['username']);?></span>
                     <i class="bi bi-chevron-down"></i>
                 </div>
@@ -132,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                 </div>
             </div>
         </div>
-        <?php displayFlashMessage();?>
+        <?php displayFlashMessage(); ?>
         <div class="card">
             <div class="card-header">
                 <h3>Bin Status Overview</h3>
@@ -144,15 +139,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                 <div class="row">
                     <?php foreach ($bins as $bin): ?>
                     <div class="col-md-4 mb-4">
-                        <div class="health-card">
+                       <div class="health-card">
                             <div>
                                 <h4>Bin #<?php echo $bin['bin_id']; ?></h4>
                                 <div class="d-flex justify-content-between mb-1">
-                                    <span>Capacity</span>
-                                    <span><?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress" style="width: <?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%"></div>
+                                   <span>Capacity</span>
+                                    <span><?php
+                                    $percentage = ($bin['capacity'] > 0) ? round(($bin['current_level'] / $bin['capacity']) * 100) : 0;
+                                    echo $percentage;
+                                    ?>%</span>
+                                </div> 
+                                 <div class="progress-bar">
+                                  <div class="progress" style="width: <?php
+                                        echo $percentage;
+                                    ?>%"></div>
                                 </div>
                                 <small class="text-muted">
                                     <?php echo $bin['current_level']; ?> / <?php echo $bin['capacity']; ?> kg
@@ -166,11 +166,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                                     </span>
                                 </div>
                             </div>
-                            <div>
+                            <div> 
                                 <button class="btn btn-sm btn-primary edit-bin" 
                                         data-bin-id="<?php echo $bin['bin_id']; ?>"
                                         data-capacity="<?php echo $bin['capacity']; ?>"
-                                        data-current-level="<?php echo $bin['current_level']; ?>"
+                                        data-current-level="<?php echo $bin['current_level']; ?>" 
                                         data-status="<?php echo $bin['status']; ?>">
                                     <i class="bi bi-pencil"></i>
                                 </button>
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
             </div>
         </div>
     </div>
-
+        
     <!-- Add Bin Modal -->
     <div class="modal fade" id="addBinModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
@@ -195,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                         <div class="modal-body">
                             <div class="form-group mb-3">
                                 <label for="capacity" class="form-label">Capacity (kg)</label>
-                                <input type="number" step="0.01" class="form-control" id="capacity" name="capacity" required>
+                                <input type="number" step="0.01" class="form-control" id="capacity" name="capacity" required> 
                             </div>
                             <div class="form-group mb-3">
                                 <label for="current_level" class="form-label">Current Level (kg)</label>
@@ -277,10 +277,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                 const capacity = this.getAttribute('data-capacity');
                 const currentLevel = this.getAttribute('data-current-level');
                 const status = this.getAttribute('data-status');
-                
+               
                 document.getElementById('editBinId').textContent = binId;
                 document.getElementById('editBinIdInput').value = binId;
-                document.getElementById('editCapacity').value = capacity;
+                document.getElementById('editCapacity').value = capacity; 
                 document.getElementById('editCurrentLevel').value = currentLevel;
                 document.getElementById('editStatus').value = status;
                 
