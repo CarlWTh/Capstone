@@ -2,43 +2,60 @@
 require_once 'config.php';
 checkAdminAuth();
 
-// Get all trash bins
-$bins = $conn->query("
-    SELECT bin_id, capacity, current_level, status, sensor_config
-    FROM TrashBin
-    ORDER BY status DESC, current_level DESC
-")->fetch_all(MYSQLI_ASSOC);
+// Handle new deposit addition
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit']))
+{
+    $bottleCount = (int) $_POST['bottle_count'];
 
-// Log activity
-logAdminActivity('Bins Access', 'Viewed trash bins list');
-
-// Handle bin update
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
-    $bin_id = (int)$_POST['bin_id'];
-    $capacity = (float)$_POST['capacity'];
-    $current_level = (float)$_POST['current_level'];
-    $status = $_POST['status'];
-    
-    $stmt = $conn->prepare("UPDATE TrashBin SET capacity = ?, current_level = ?, status = ? WHERE bin_id = ?");
-    $stmt->bind_param("ddsi", $capacity, $current_level, $status, $bin_id);
-    
-    if ($stmt->execute()) {
-        logAdminActivity('Bin Update', "Updated bin #$bin_id");
-        redirectWithMessage('bins.php', 'success', 'Bin updated successfully!');
-    } else {
-        redirectWithMessage('bins.php', 'error', 'Failed to update bin.');
+    if ($bottleCount > 0)
+    {
+        $stmt = $conn->prepare("INSERT INTO BottleDeposit (bottle_count) VALUES (?)"); // Insert the deposit
+        $stmt->bind_param("i", $bottleCount); // Bind parameters
+        if ($stmt->execute()) // Execute the statement
+        {
+            logAdminActivity('Deposit Added', "Added a new bottle deposit of $bottleCount bottles"); // Log activity
+            $depositId = $conn->insert_id; // Get the last inserted ID (deposit_id)
+            for ($i = 0; $i < $bottleCount; $i++)
+            {
+                $voucherCode = generateUniqueVoucherCode($conn); // Generate a unique voucher code
+                $voucherStmt = $conn->prepare("INSERT INTO Voucher (code, deposit_id) VALUES (?, ?)"); // Insert the voucher
+                $voucherStmt->bind_param("si", $voucherCode, $depositId); // Bind parameters
+                $voucherStmt->execute(); // Execute the statement
+            }
+            redirectWithMessage('bins.php', 'success', 'Deposit added and vouchers created successfully!'); // Redirect with success message
+        }
+        else
+        {
+            redirectWithMessage('bins.php', 'error', 'Failed to add deposit.'); // Redirect with error message
+        }
     }
+}
+
+$deposits = $conn->query("
+    SELECT deposit_id, bottle_count, created_at
+    FROM BottleDeposit
+    ORDER BY created_at DESC
+")->fetch_all(MYSQLI_ASSOC);
+logAdminActivity('Bottle Deposits Access', 'Viewed bottle deposits list');
+function generateUniqueVoucherCode($conn)
+{
+    do {
+        $voucherCode = substr(md5(uniqid(rand(), true)), 0, 10);
+        $stmt = $conn->prepare("SELECT 1 FROM Voucher WHERE code = ?");
+        $stmt->bind_param("s", $voucherCode);
+        $stmt->execute();
+        $stmt->store_result();
+    } while ($stmt->num_rows > 0);
+    return $voucherCode; // Return the voucher code
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trash Bins - <?php echo SITE_NAME; ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/css/styles.css">
+    <title>Bottle Deposits - <?php echo SITE_NAME; ?></title>
 </head>
 <body class="dashboard-container">
     <!-- Sidebar -->
@@ -74,15 +91,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                 </li>
                 <li class="active">
                     <a href="bins.php">
-                        <i class="bi bi-trash"></i>
-                        <span class="menu-text">Trash Bins</span>
+                        <i class="bi bi-recycle"></i>
+                        <span class="menu-text">Bottle Deposits</span>
                     </a>
                 </li>
                 <li>
                     <a href="student_sessions.php">
                         <i class="bi bi-phone"></i>
                         <span class="menu-text">Student Sessions</span>
-                    </a>
+                   </a>
                 <li>
                     <a href="sessions.php">
                         <i class="bi bi-wifi"></i>
@@ -90,10 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                     </a>
                 </li>
                 <li>
-                    <a href="bottles.php">
-                        <i class="bi bi-cup-straw"></i>
-                        <span class="menu-text">Bottle Types</span>
-                    </a>
                 </li>
                 <li>
                     <a href="users.php">
@@ -103,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                 </li>
                 <li>
                     <a href="activity_logs.php">
-                        <i class="bi bi-clock-history"></i>
+                        <i class="bi bi-clock-history"></i> 
                         <span class="menu-text">Activity Logs</span>
                     </a>
                 </li>
@@ -120,7 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
     <!-- Main Content -->
     <div class="main-content">
         <div class="main-header">
-            <h2>Trash Bins</h2>
+
+            <h2>Bottle Deposits</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
                     <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
@@ -135,130 +149,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
             </div>
         </div>
 
-        <?php displayFlashMessage(); ?>
+        <?php displayFlashMessage();?>
 
         <div class="card">
+
             <div class="card-header">
-                <h3>Bin Status Overview</h3>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBinModal">
-                    <i class="bi bi-plus"></i> Add New Bin
+                <h3>Add New Deposit</h3>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDepositModal">
+                    <i class="bi bi-plus"></i> Add Deposit
+
                 </button>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <?php foreach ($bins as $bin): ?>
-                    <div class="col-md-4 mb-4">
-                        <div class="health-card">
-                            <div>
-                                <h4>Bin #<?php echo $bin['bin_id']; ?></h4>
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Capacity</span>
-                                    <span><?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress" style="width: <?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%"></div>
-                                </div>
-                                <small class="text-muted">
-                                    <?php echo $bin['current_level']; ?> / <?php echo $bin['capacity']; ?> kg
-                                </small>
-                                <div class="mt-2">
-                                    <span class="status <?php 
-                                        echo $bin['status'] == 'full' ? 'red' : 
-                                             ($bin['status'] == 'partial' ? 'orange' : 'green'); 
-                                    ?>">
-                                        <?php echo ucfirst($bin['status']); ?>
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <button class="btn btn-sm btn-primary edit-bin" 
-                                        data-bin-id="<?php echo $bin['bin_id']; ?>"
-                                        data-capacity="<?php echo $bin['capacity']; ?>"
-                                        data-current-level="<?php echo $bin['current_level']; ?>"
-                                        data-status="<?php echo $bin['status']; ?>">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Deposit ID</th>
+                            <th>Number of Bottles</th>
+                            <th>Date Added</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($deposits as $deposit):?>
+
+                            <tr>
+
+                                <td>
+                                    <?php echo $deposit['deposit_id']; ?>
+                                </td>
+                                <td>
+                                    <?php echo $deposit['bottle_count']; ?>
+                                </td>
+                                <td>
+                                    <?php echo date('Y-m-d H:i:s', strtotime($deposit['created_at'])); ?>
+                                </td>
+                            </tr>
+                        <?php endforeach;?>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
 
-    <!-- Add Bin Modal -->
-    <div class="modal fade" id="addBinModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add New Bin</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="POST" action="add_bin.php">
-                    <div class="modal-body">
-                        <div class="form-group mb-3">
-                            <label for="capacity" class="form-label">Capacity (kg)</label>
-                            <input type="number" step="0.01" class="form-control" id="capacity" name="capacity" required>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="current_level" class="form-label">Current Level (kg)</label>
-                            <input type="number" step="0.01" class="form-control" id="current_level" name="current_level" required>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-select" id="status" name="status" required>
-                                <option value="empty">Empty</option>
-                                <option value="partial">Partial</option>
-                                <option value="full">Full</option>
-                                <option value="maintenance">Maintenance</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add Bin</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+        <!-- Add Deposit Modal -->
+        <div class="modal fade" id="addDepositModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
 
-    <!-- Edit Bin Modal -->
-    <div class="modal fade" id="editBinModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Bin #<span id="editBinId"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">Add New Deposit</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST" action="bins.php">
+
+                        <input type="hidden" name="add_deposit" value="1">
+                        <div class="modal-body">
+                            <div class="form-group mb-3">
+
+                                <label for="bottle_count" class="form-label">Number of Bottles</label>
+                                <input type="number" class="form-control" id="bottle_count" name="bottle_count"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button> 
+                            <button type="submit" class="btn btn-primary">Add Deposit</button>
+
+                        </div>
+                    </form>
                 </div>
-                <form method="POST" action="bins.php">
-                    <input type="hidden" name="bin_id" id="editBinIdInput">
-                    <input type="hidden" name="update_bin" value="1">
-                    <div class="modal-body">
-                        <div class="form-group mb-3">
-                            <label for="editCapacity" class="form-label">Capacity (kg)</label>
-                            <input type="number" step="0.01" class="form-control" id="editCapacity" name="capacity" required>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="editCurrentLevel" class="form-label">Current Level (kg)</label>
-                            <input type="number" step="0.01" class="form-control" id="editCurrentLevel" name="current_level" required>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="editStatus" class="form-label">Status</label>
-                            <select class="form-select" id="editStatus" name="status" required>
-                                <option value="empty">Empty</option>
-                                <option value="partial">Partial</option>
-                                <option value="full">Full</option>
-                                <option value="maintenance">Maintenance</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
@@ -266,34 +224,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Toggle sidebar
-        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
+        document.querySelector('.sidebar-toggle').addEventListener('click', function () {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
 
         // Profile dropdown
-        document.querySelector('.dropdown-header').addEventListener('click', function() {
+        document.querySelector('.dropdown-header').addEventListener('click', function () {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
-
-        // Edit bin modal
-        document.querySelectorAll('.edit-bin').forEach(button => {
-            button.addEventListener('click', function() {
-                const binId = this.getAttribute('data-bin-id');
-                const capacity = this.getAttribute('data-capacity');
-                const currentLevel = this.getAttribute('data-current-level');
-                const status = this.getAttribute('data-status');
-                
-                document.getElementById('editBinId').textContent = binId;
-                document.getElementById('editBinIdInput').value = binId;
-                document.getElementById('editCapacity').value = capacity;
-                document.getElementById('editCurrentLevel').value = currentLevel;
-                document.getElementById('editStatus').value = status;
-                
-                const modal = new bootstrap.Modal(document.getElementById('editBinModal'));
-                modal.show();
-            });
-        });
     </script>
-</body>
+</body> 
 </html>
