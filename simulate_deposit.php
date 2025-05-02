@@ -6,7 +6,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $numBottles = isset($_POST['numBottles']) ? intval($_POST['numBottles']) : 0;
 
     if ($numBottles <= 0) {
-        echo "Error: Number of bottles must be greater than zero.";
+        echo "Number of bottles must be greater than zero.";
+        exit;
+    }
+
+    if (!defined('DB_HOST') || !defined('DB_USER') || !defined('DB_PASSWORD') || !defined('DB_NAME')) {
+        echo "Error: Could not find database credentials.";
         exit;
     }
 

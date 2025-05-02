@@ -1,6 +1,5 @@
 php
 <?php
-<?php
   // Database configuration
   $db_host = 'localhost';
   $db_name = 'bottle_recycling_system';
