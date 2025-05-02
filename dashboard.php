@@ -233,7 +233,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between mb-1">
                                     <span>Bin #<?php echo $bin['bin_id']; ?></span>
-                                    <span><?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%</span>
+                                    <span><?php echo ($bin['capacity'] != 0) ? round(($bin['current_level'] / $bin['capacity']) * 100) : 0; ?>%</span>
                                 </div>
                                 <div class="progress">
                                     <div class="progress-bar bg-<?php 
