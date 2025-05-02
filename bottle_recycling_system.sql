@@ -54,7 +54,7 @@ CREATE TABLE Voucher (
     expiry_time DATETIME ,
     is_used BOOLEAN DEFAULT FALSE,    
     FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id),
-);
+); -- Removed the comma here
 
 -- Internet sessions table
 CREATE TABLE InternetSession (
