@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-php
-=======
 
->>>>>>> c52a3ab93de7e4354a2e69ab5aa1045c72515021
 <?php
 require_once 'config.php';
 checkAdminAuth();
@@ -16,9 +12,8 @@ $stats['active_sessions'] = $conn->query("SELECT COUNT(*) FROM InternetSession W
 
 // Get recent deposits
 $recent_deposits = $conn->query("
-    SELECT d.deposit_id, d.timestamp, bt.bottle_id AS bottle_type_id, d.bottle_count, d.total_weight, d.status, t.bin_id
+    SELECT d.deposit_id, d.timestamp, d.bottle_count, d.status, t.bin_id
     FROM BottleDeposit d
-    JOIN BottleType bt ON d.bottle_id = bt.bottle_id
     JOIN TrashBin t ON d.bin_id = t.bin_id
     ORDER BY d.timestamp DESC
     LIMIT 5
@@ -92,12 +87,6 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                         <a href="sessions.php">
                             <i class="bi bi-wifi"></i>
                             <span>Internet Sessions</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="bottles.php">
-                            <i class="bi bi-cup-straw"></i>
-                            <span>Bottle Types</span>
                         </a>
                     </li>
                     <li>
@@ -203,7 +192,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                             <th>Time</th>
                                             <th>Type</th>
                                             <th>Count</th>
-                                            <th>Weight</th>
+                                            
                                             <th>Status</th>
                                             <th>Bin</th>
                                         </tr>
@@ -215,12 +204,12 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                             <td><?php echo date('M j, H:i', strtotime($deposit['timestamp'])); ?></td>
                                             <td><?php echo htmlspecialchars($deposit['bottle_type_id']); ?></td>
                                             <td><?php echo $deposit['bottle_count']; ?></td>
-                                            <td><?php echo $deposit['total_weight']; ?> kg</td>
+                                            
                                             <td>
                                                 <span class="status <?php 
-                                                    echo $deposit['status'] == 'processed' ? 'green' : 
-                                                         ($deposit['status'] == 'rejected' ? 'red' : 'orange'); 
-                                                ?>">
+                                                        echo $deposit['status'] == 'processed' ? 'green' : 
+                                                            ($deposit['status'] == 'rejected' ? 'red' : 'orange'); 
+                                                    ?>">
                                                     <?php echo ucfirst($deposit['status']); ?>
                                                 </span>
                                             </td>

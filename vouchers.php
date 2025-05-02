@@ -12,10 +12,10 @@ $total_vouchers = $conn->query("SELECT COUNT(*) FROM Voucher")->fetch_row()[0];
 $total_pages = ceil($total_vouchers / $per_page);
 
 $vouchers = $conn->query("
-    SELECT v.voucher_id, v.code, v.internet_minutes, v.expiry_time, v.is_used,
-           d.timestamp as deposit_time
+    SELECT v.voucher_id, v.code, v.expiry_time, v.is_used,
+           d.timestamp as deposit_time 
     FROM Voucher v
-    JOIN deposits d ON v.deposit_id = d.id
+    JOIN BottleDeposit d ON v.deposit_id = d.deposit_id
     ORDER BY v.expiry_time DESC
     LIMIT $per_page OFFSET $offset
 ")->fetch_all(MYSQLI_ASSOC);
@@ -35,68 +35,74 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
 </head>
 <body class="dashboard-container">
     <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <h1><?php echo SITE_NAME; ?></h1>
-                <span class="logo-short"></span>
+    <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <h1><?php echo SITE_NAME; ?></h1>
+                    <span class="logo-short"></span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
             </div>
-            <button class="sidebar-toggle">
-                <i class="bi bi-list"></i>
-            </button>
-        </div>
-        <nav>
-            <ul>
-                <li>
-                    <a href="dashboard.php">
-                        <i class="bi bi-speedometer2"></i>
-                        <span class="menu-text">Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="deposits.php">
-                        <i class="bi bi-recycle"></i>
-                        <span class="menu-text">Bottle Deposits</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="bins.php">
-                        <i class="bi bi-trash"></i>
-                        <span class="menu-text">Trash Bins</span>
-                    </a>
-                </li>
-                <li>
+            <nav>
+                <ul>
+                    <li class="">
+                        <a href="dashboard.php">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="deposits.php">
+                            <i class="bi bi-recycle"></i>
+                            <span>Bottle Deposits</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="vouchers.php">
+                            <i class="bi bi-ticket-perforated"></i>
+                            <span>Vouchers</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="bins.php">
+                            <i class="bi bi-trash"></i>
+                            <span>Trash Bins</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="student_sessions.php">
                             <i class="bi bi-phone"></i>
                             <span class="menu-text">Student Sessions</span>
                         </a>
                     </li>
-                <li>
-                    <a href="sessions.php">
-                        <i class="bi bi-wifi"></i>
-                        <span class="menu-text">Internet Sessions</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="users.php">
-                        <i class="bi bi-people"></i>
-                        <span class="menu-text">Users</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="activity_logs.php">
-                        <i class="bi bi-clock-history"></i>
-                        <span class="menu-text">Activity Logs</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="logout.php">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span class="menu-text">Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
+                    <li>
+                        <a href="sessions.php">
+                            <i class="bi bi-wifi"></i>
+                            <span>Internet Sessions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="users.php">
+                            <i class="bi bi-people"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="activity_logs.php">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Activity Logs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
     </div>
 
     <!-- Main Content -->
@@ -140,7 +146,7 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                         <thead>
                             <tr>
                                 <th>Code</th>
-                                <th>Minutes</th>
+                                
                                 <th>Expiry</th>
                                 <th>Status</th>
                                 <th>Deposit Time</th>
@@ -151,7 +157,7 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                             <?php foreach ($vouchers as $voucher): ?>
                             <tr>
                                 <td><?php echo $voucher['code']; ?></td>
-                                <td><?php echo $voucher['internet_minutes']; ?></td>
+                               
                                 <td><?php echo date('M j, Y', strtotime($voucher['expiry_time'])); ?></td>
                                 <td>
                                     <?php if ($voucher['is_used']): ?>

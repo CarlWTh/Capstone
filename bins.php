@@ -32,10 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit']))
 }
 
 $deposits = $conn->query("
-    SELECT deposit_id, bottle_count, created_at
+    SELECT deposit_id, bottle_count, timestamp  
     FROM BottleDeposit
-    ORDER BY created_at DESC
+    ORDER BY timestamp DESC  
 ")->fetch_all(MYSQLI_ASSOC);
+
 logAdminActivity('Bottle Deposits Access', 'Viewed bottle deposits list');
 function generateUniqueVoucherCode($conn)
 {
@@ -56,78 +57,81 @@ function generateUniqueVoucherCode($conn)
 
     <meta charset="UTF-8">
     <title>Bottle Deposits - <?php echo SITE_NAME; ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="dashboard-container">
     <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <h1><?php echo SITE_NAME; ?></h1>
-                <span class="logo-short"></span>
+    <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <h1><?php echo SITE_NAME; ?></h1>
+                    <span class="logo-short"></span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
             </div>
-            <button class="sidebar-toggle">
-                <i class="bi bi-list"></i>
-            </button>
-        </div>
-        <nav>
-            <ul>
-                <li>
-                    <a href="dashboard.php">
-                        <i class="bi bi-speedometer2"></i>
-                        <span class="menu-text">Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="deposits.php">
-                        <i class="bi bi-recycle"></i>
-                        <span class="menu-text">Bottle Deposits</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="vouchers.php">
-                        <i class="bi bi-ticket-perforated"></i>
-                        <span class="menu-text">Vouchers</span>
-                    </a>
-                </li>
-                <li class="active">
-                    <a href="bins.php">
-                        <i class="bi bi-recycle"></i>
-                        <span class="menu-text">Bottle Deposits</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="student_sessions.php">
-                        <i class="bi bi-phone"></i>
-                        <span class="menu-text">Student Sessions</span>
-                   </a>
-                <li>
-                    <a href="sessions.php">
-                        <i class="bi bi-wifi"></i>
-                        <span class="menu-text">Internet Sessions</span>
-                    </a>
-                </li>
-                <li>
-                </li>
-                <li>
-                    <a href="users.php">
-                        <i class="bi bi-people"></i>
-                        <span class="menu-text">Users</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="activity_logs.php">
-                        <i class="bi bi-clock-history"></i> 
-                        <span class="menu-text">Activity Logs</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="logout.php">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span class="menu-text">Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
+            <nav>
+                <ul>
+                    <li class="">
+                        <a href="dashboard.php">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="deposits.php">
+                            <i class="bi bi-recycle"></i>
+                            <span>Bottle Deposits</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vouchers.php">
+                            <i class="bi bi-ticket-perforated"></i>
+                            <span>Vouchers</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="bins.php">
+                            <i class="bi bi-trash"></i>
+                            <span>Trash Bins</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="student_sessions.php">
+                            <i class="bi bi-phone"></i>
+                            <span class="menu-text">Student Sessions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="sessions.php">
+                            <i class="bi bi-wifi"></i>
+                            <span>Internet Sessions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="users.php">
+                            <i class="bi bi-people"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="activity_logs.php">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Activity Logs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
     </div>
 
     <!-- Main Content -->

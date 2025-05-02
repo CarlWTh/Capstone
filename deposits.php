@@ -11,9 +11,8 @@ $total_deposits = $conn->query("SELECT COUNT(*) FROM BottleDeposit")->fetch_row(
 $total_pages = ceil($total_deposits / $per_page);
 
 $deposits = $conn->query("
-    SELECT d.deposit_id, d.timestamp, b.type, d.bottle_count, d.total_weight, d.status, t.bin_id, s.anonymous_token
+    SELECT d.deposit_id, d.timestamp, d.bottle_count, d.status, t.bin_id, s.anonymous_token
     FROM BottleDeposit d
-    JOIN Bottle b ON d.bottle_id = b.bottle_id
     JOIN TrashBin t ON d.bin_id = t.bin_id
     JOIN StudentSession s ON d.session_id = s.session_id
     ORDER BY d.timestamp DESC
@@ -35,80 +34,74 @@ logAdminActivity('Deposits Access', 'Viewed bottle deposits list');
 </head>
 <body class="dashboard-container">
     <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <h1><?php echo SITE_NAME; ?></h1>
-                <span class="logo-short"></span>
+    <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <h1><?php echo SITE_NAME; ?></h1>
+                    <span class="logo-short"></span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
             </div>
-            <button class="sidebar-toggle">
-                <i class="bi bi-list"></i>
-            </button>
-        </div>
-        <nav>
-            <ul>
-                <li>
-                    <a href="dashboard.php">
-                        <i class="bi bi-speedometer2"></i>
-                        <span class="menu-text">Dashboard</span>
-                    </a>
-                </li>
-                <li class="active">
-                    <a href="deposits.php">
-                        <i class="bi bi-recycle"></i>
-                        <span class="menu-text">Bottle Deposits</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="vouchers.php">
-                        <i class="bi bi-ticket-perforated"></i>
-                        <span class="menu-text">Vouchers</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="bins.php">
-                        <i class="bi bi-trash"></i>
-                        <span class="menu-text">Trash Bins</span>
-                    </a>
-                </li>
-                <li>
+            <nav>
+                <ul>
+                    <li class="">
+                        <a href="dashboard.php">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="deposits.php">
+                            <i class="bi bi-recycle"></i>
+                            <span>Bottle Deposits</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vouchers.php">
+                            <i class="bi bi-ticket-perforated"></i>
+                            <span>Vouchers</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="bins.php">
+                            <i class="bi bi-trash"></i>
+                            <span>Trash Bins</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="student_sessions.php">
                             <i class="bi bi-phone"></i>
                             <span class="menu-text">Student Sessions</span>
                         </a>
                     </li>
-                <li>
-                    <a href="sessions.php">
-                        <i class="bi bi-wifi"></i>
-                        <span class="menu-text">Internet Sessions</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="bottles.php">
-                        <i class="bi bi-cup-straw"></i>
-                        <span class="menu-text">Bottle Types</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="users.php">
-                        <i class="bi bi-people"></i>
-                        <span class="menu-text">Users</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="activity_logs.php">
-                        <i class="bi bi-clock-history"></i>
-                        <span class="menu-text">Activity Logs</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="logout.php">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span class="menu-text">Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
+                    <li>
+                        <a href="sessions.php">
+                            <i class="bi bi-wifi"></i>
+                            <span>Internet Sessions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="users.php">
+                            <i class="bi bi-people"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="activity_logs.php">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Activity Logs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
     </div>
 
     <!-- Main Content -->
@@ -154,9 +147,9 @@ logAdminActivity('Deposits Access', 'Viewed bottle deposits list');
                                 <th>ID</th>
                                 <th>Timestamp</th>
                                 <th>Session</th>
-                                <th>Bottle Type</th>
+                                
                                 <th>Count</th>
-                                <th>Weight</th>
+                              
                                 <th>Bin</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -168,14 +161,14 @@ logAdminActivity('Deposits Access', 'Viewed bottle deposits list');
                                 <td><?php echo $deposit['deposit_id']; ?></td>
                                 <td><?php echo date('M j, Y H:i', strtotime($deposit['timestamp'])); ?></td>
                                 <td><?php echo substr($deposit['anonymous_token'], 0, 8) . '...'; ?></td>
-                                <td><?php echo htmlspecialchars($deposit['type']); ?></td>
+                                
                                 <td><?php echo $deposit['bottle_count']; ?></td>
-                                <td><?php echo $deposit['total_weight']; ?> kg</td>
+                              
                                 <td>Bin #<?php echo $deposit['bin_id']; ?></td>
                                 <td>
-                                    <span class="status <?php 
+                                <span class="status <?php 
                                         echo $deposit['status'] == 'processed' ? 'green' : 
-                                             ($deposit['status'] == 'rejected' ? 'red' : 'orange'); 
+                                            ($deposit['status'] == 'rejected' ? 'red' : 'orange'); 
                                     ?>">
                                         <?php echo ucfirst($deposit['status']); ?>
                                     </span>
