@@ -66,8 +66,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $stmtUpdateVoucher->close();
 
                             $conn->commit();
+
+                            // Get the internet session duration from SystemSettings
+                            $stmtSettings = $conn->prepare("SELECT minutes_per_bottle FROM SystemSettings");
+                            $stmtSettings->execute();
+                            $settingsResult = $stmtSettings->get_result()->fetch_assoc();
+                            $sessionDurationMinutes = $settingsResult['minutes_per_bottle'] * 1;
+                            $stmtSettings->close();
                             $redeemMessage = 'Voucher redeemed successfully. Internet session started.';
-                            $messageType = 'success';
                             
                             // Calculate the end time for the internet session
                             $sessionDurationMinutes = 60; // Assuming session lasts 60 minutes
@@ -75,7 +81,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             
                             // Store end time in a session variable for JavaScript to use
                             $_SESSION['session_end_time'] = $endTime;
-                            
+                            $messageType = 'success';
                             
 
                         } catch (Exception $e) {
