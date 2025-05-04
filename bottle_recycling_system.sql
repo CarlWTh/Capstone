@@ -45,21 +45,11 @@ CREATE TABLE BottleDeposit (
     FOREIGN KEY (bin_id) REFERENCES TrashBin(bin_id)
 );
 
-
--- Vouchers table
-CREATE TABLE Voucher (    
-    voucher_id INT AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(20) NOT NULL UNIQUE,
-    deposit_id INT NOT NULL,
-    expiry_time DATETIME ,
-    is_used BOOLEAN DEFAULT FALSE,    
-    FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id)
-); -- Removed the comma here
-
 -- Internet sessions table
 CREATE TABLE InternetSession (
     internet_session_id INT AUTO_INCREMENT PRIMARY KEY,
     anonymous_token VARCHAR(64) NOT NULL,
+    minutes INT,
     voucher_id INT,
     start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     end_time TIMESTAMP NULL DEFAULT NULL,
@@ -78,15 +68,23 @@ CREATE TABLE AdminActivityLog (
 );
 
 -- System settings table
-CREATE TABLE SystemSettings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE,
-    value VARCHAR(255) NOT NULL
+CREATE TABLE SystemSettings(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   minutes_per_bottle INT DEFAULT 2
 );
 
--- Insert default system settings
-INSERT INTO SystemSettings (name, value) VALUES ('minutes_per_bottle', '2');
+-- Vouchers table
+CREATE TABLE Voucher (    
+    voucher_id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    deposit_id INT NOT NULL,
+    expiry_time DATETIME ,
+    is_used BOOLEAN DEFAULT FALSE,    
+    FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id)
+);
 
+
+INSERT INTO SystemSettings (minutes_per_bottle) VALUES (2);
 -- Create an initial admin user (password: admin123)
 INSERT INTO users (username, email, phone, password_hash, is_admin)
 VALUES ('admin', 'admin@example.com', '1234567890', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE);
