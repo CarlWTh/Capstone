@@ -121,19 +121,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $stmt->close();
 
                         $voucherCodes = [];
-                        for ($i = 0; $i < $numBottles; $i++) {
-                            $voucherCode = generateVoucherCode();
+$voucherCode = generateVoucherCode();
 
-                            $stmt = $conn->prepare("INSERT INTO Voucher (code, deposit_id, is_used) VALUES (?, ?, FALSE)");
-                            $stmt->bind_param("si", $voucherCode, $depositId);
+$stmt = $conn->prepare("INSERT INTO Voucher (code, deposit_id, is_used) VALUES (?, ?, FALSE)");
+$stmt->bind_param("si", $voucherCode, $depositId);
 
-                            if (!$stmt->execute()) {
-                                throw new Exception("Error inserting into Voucher: " . $stmt->error);
-                            }
+if (!$stmt->execute()) {
+    throw new Exception("Error inserting into Voucher: " . $stmt->error);
+}
 
-                            $stmt->close();
-                            $voucherCodes[] = $voucherCode;
-                        }
+$stmt->close();
+$voucherCodes[] = $voucherCode;
 
                         $conn->commit();
                         $redeemMessage = "Successfully processed {$numBottles} bottle(s)";
