@@ -12,10 +12,12 @@ $total_pages = ceil($total_sessions / $per_page);
 
 $sessions = $conn->query("
     SELECT s.*, 
-           COUNT(i.internet_session_id) as session_count,
-           MAX(i.end_time) as last_activity
+           COUNT(i.internet_session_id) as internet_session_count,
+           MIN(i.start_time) as first_session_access,
+           MAX(i.end_time) as last_session_access
     FROM StudentSession s
     LEFT JOIN InternetSession i ON s.anonymous_token = i.anonymous_token
+
     GROUP BY s.session_id
     ORDER BY s.last_access_time DESC
     LIMIT $per_page OFFSET $offset
@@ -118,14 +120,16 @@ logAdminActivity('Sessions Access', 'Viewed student sessions');
             <div class="card-body">
                 <table class="table">
                     <thead>
-                        <tr>
-                            <th>Session ID</th>
-                            <th>Anonymous Token</th>
-                            <th>Device MAC</th>
-                            <th>First Access</th>
-                            <th>Last Access</th>
-                            <th>Internet Sessions</th>
-                        </tr>
+                        <tr><th>Session ID</th>
+<th>Anonymous Token</th>
+<th>Device MAC</th>
+<th>First Access</th>
+<th>Last Access</th>
+<th>Internet Sessions</th>
+<th>First Session Access</th>
+<th>Last Session Access</th>
+</tr>
+
                     </thead>
                     <tbody>
                         <?php foreach ($sessions as $s): ?>
@@ -135,7 +139,10 @@ logAdminActivity('Sessions Access', 'Viewed student sessions');
                             <td><?= $s['device_mac_address'] ?: 'N/A' ?></td>
                             <td><?= date('M j, H:i', strtotime($s['first_access_time'])) ?></td>
                             <td><?= date('M j, H:i', strtotime($s['last_access_time'])) ?></td>
-                            <td><?= $s['session_count'] ?></td>
+                            <td><?= $s['internet_session_count'] ?></td>
+                            <td><?= $s['first_session_access'] ? date('M j, H:i', strtotime($s['first_session_access'])) : 'N/A' ?></td>
+                             <td><?= $s['last_session_access'] ? date('M j, H:i', strtotime($s['last_session_access'])) : 'N/A' ?></td>
+
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

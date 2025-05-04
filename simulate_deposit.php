@@ -68,6 +68,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $conn->commit();
                             $redeemMessage = 'Voucher redeemed successfully. Internet session started.';
                             $messageType = 'success';
+                            
+                            // Calculate the end time for the internet session
+                            $sessionDurationMinutes = 60; // Assuming session lasts 60 minutes
+                            $endTime = date('Y-m-d H:i:s', strtotime("+" . $sessionDurationMinutes . " minutes"));
+                            
+                            // Store end time in a session variable for JavaScript to use
+                            $_SESSION['session_end_time'] = $endTime;
+                            
+                            
+
                         } catch (Exception $e) {
                             $conn->rollback();
                             $redeemMessage = 'Error redeeming voucher: ' . $e->getMessage();
@@ -433,6 +443,9 @@ function generateVoucherCode($length = 10) {
         <?php if (!empty($redeemMessage)): ?>
             <div class="message <?php echo $messageType; ?>">
                 <?php echo htmlspecialchars($redeemMessage); ?>
+                <?php if ($messageType == 'success' && !empty($_SESSION['session_end_time'])): ?>
+                        <div id="countdown"></div>
+                    <?php endif; ?>
             </div>
         <?php endif; ?>
 
@@ -478,6 +491,33 @@ function generateVoucherCode($length = 10) {
                 modal.classList.remove('show');
             }
         });
+
+        // Countdown timer logic
+        <?php if ($messageType == 'success' && !empty($_SESSION['session_end_time'])): ?>
+        let endTime = new Date("<?php echo $_SESSION['session_end_time']; ?>").getTime();
+        let countdownElement = document.getElementById('countdown');
+
+        let countdown = setInterval(function() {
+            let now = new Date().getTime();
+            let timeLeft = endTime - now;
+
+            let minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            let seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+            countdownElement.innerHTML = "Time Left: " + minutes + "m " + seconds + "s ";
+
+            if (timeLeft < 0) {
+                clearInterval(countdown);
+                countdownElement.innerHTML = "Session Expired";
+            }
+        }, 1000);
+        <?php endif; ?>
     </script>
 </body>
 </html>
+<?php
+    // Clear the session variable after using it
+    if(isset($_SESSION['session_end_time'])){
+        unset($_SESSION['session_end_time']);
+    }
+?>
