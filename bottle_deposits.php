@@ -10,24 +10,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit']))
 
     if ($bottleCount > 0)
     {
-        $stmt = $conn->prepare("INSERT INTO BottleDeposit (bottle_count) VALUES (?)"); // Insert the deposit
-        $stmt->bind_param("i", $bottleCount); // Bind parameters
-        if ($stmt->execute()) // Execute the statement
+        $stmt = $conn->prepare("INSERT INTO BottleDeposit (bottle_count) VALUES (?)");
+        $stmt->bind_param("i", $bottleCount); 
+        if ($stmt->execute()) 
         {   
-            logAdminActivity('Deposit Added', "Added a new bottle deposit of $bottleCount bottles"); // Log activity
-            $depositId = $conn->insert_id; // Get the last inserted ID (deposit_id)
+            logAdminActivity('Deposit Added', "Added a new bottle deposit of $bottleCount bottles");
+            $depositId = $conn->insert_id;
             for ($i = 0; $i < $bottleCount; $i++)
             {
-                $voucherCode = generateUniqueVoucherCode($conn); // Generate a unique voucher code
-                $voucherStmt = $conn->prepare("INSERT INTO Voucher (code, deposit_id) VALUES (?, ?)"); // Insert the voucher
+                $voucherCode = generateUniqueVoucherCode($conn);
+                $voucherStmt = $conn->prepare("INSERT INTO Voucher (code, deposit_id) VALUES (?, ?)"); 
                 $voucherStmt->bind_param("si", $voucherCode, $depositId); // Bind parameters
-                $voucherStmt->execute(); // Execute the statement
+                $voucherStmt->execute();
             }
-            redirectWithMessage('bottle_deposits.php', 'success', 'Deposit added and vouchers created successfully!'); // Redirect with success message
+            redirectWithMessage('bottle_deposits.php', 'success', 'Deposit added and vouchers created successfully!'); 
         }
         else
         {
-            redirectWithMessage('bottle_deposits.php', 'error', 'Failed to add deposit.'); // Redirect with error message
+            redirectWithMessage('bottle_deposits.php', 'error', 'Failed to add deposit.');
         }
     }
 }
@@ -48,7 +48,7 @@ function generateUniqueVoucherCode($conn)
         $stmt->execute();
         $stmt->store_result();
     } while ($stmt->num_rows > 0);
-    return $voucherCode; // Return the voucher code
+    return $voucherCode; 
 }
 ?>
 <!DOCTYPE html>

@@ -31,8 +31,8 @@ define('SMTP_PASSWORD', 'ztsl hxns bbkw tdqd');
 define('SMTP_PORT', 587);
 define('EMAIL_FROM', 'carljusper.basc@gmail.com');
 
-// Site settings
-define('SITE_NAME', 'Bottle Recycling System');
+// Site settingsBottle Recycling System
+define('SITE_NAME', 'Recycle for Connectivity');
 define('SITE_URL', 'http://localhost/bottle-recycling');
 
 // Check admin authentication

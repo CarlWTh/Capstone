@@ -47,31 +47,31 @@ logAdminActivity('Activity Logs', 'Viewed activity logs');
                 <ul>
                     <li class="">
                         <a href="dashboard.php">
-                            <i class="bi bi-speedometer2"></i>\n
+                            <i class="bi bi-speedometer2"></i>
                             <span>Dashboard</span>
                         </a>
                     </li>
                     <li>
                         <a href="bottle_deposits.php">
-                            <i class="bi bi-recycle"></i>\n
-                            <span>Bottle Deposits</span>\n
+                            <i class="bi bi-recycle"></i>
+                            <span>Bottle Deposits</span>
                         </a>
                     </li>
                     <li>
                         <a href="vouchers.php">
-                            <i class="bi bi-ticket-perforated"></i>\n
+                            <i class="bi bi-ticket-perforated"></i>
                             <span>Vouchers</span>
                         </a>
                     </li>
                     <li>
                         <a href="bins.php">
-                            <i class="bi bi-trash"></i>\n
+                            <i class="bi bi-trash"></i>
                             <span>Trash Bins</span>
                         </a>
                     </li>
                     <li>
                         <a href="student_sessions.php">
-                            <i class="bi bi-phone"></i>\n
+                            <i class="bi bi-phone"></i>
                             <span class="menu-text">Student Sessions</span>
                         </a>
                     </li>
@@ -83,7 +83,7 @@ logAdminActivity('Activity Logs', 'Viewed activity logs');
                     </li>
                     <li>
                         <a href="users.php">
-                            <i class="bi bi-people"></i>\n
+                            <i class="bi bi-people"></i>
                             <span>Users</span>
                         </a>
                     </li>
@@ -95,7 +95,7 @@ logAdminActivity('Activity Logs', 'Viewed activity logs');
                     </li>
                     <li>
                         <a href="logout.php">
-                            <i class="bi bi-box-arrow-right"></i>\n
+                            <i class="bi bi-box-arrow-right"></i>
                             <span>Logout</span>
                         </a>
                     </li>
