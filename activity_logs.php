@@ -94,6 +94,18 @@ logAdminActivity('Activity Logs', 'Viewed activity logs');
                         </a>
                     </li>
                     <li>
+                        <a href="bandwidth_control.php">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>BANDWIDTH CONTROL</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="time_and_rates.php">
+                            <i class="bi bi-clock"></i>
+                            <span>TIME AND RATES</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="logout.php">
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Logout</span>

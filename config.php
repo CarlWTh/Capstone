@@ -47,7 +47,7 @@ function checkAdminAuth() {
 // Add to existing config.php, don't remove anything else
 function getMinutesPerBottle() {
     global $conn;
-    $result = $conn->query("SELECT value FROM SystemSettings WHERE name = 'minutes_per_bottle'");
+    $result = $conn->query("SELECT minutes_per_bottle FROM SystemSettings LIMIT 1");
     return $result->num_rows > 0 ? (int)$result->fetch_row()[0] : 2; // Default 2 minutes
 }
 

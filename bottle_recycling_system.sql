@@ -45,6 +45,16 @@ CREATE TABLE BottleDeposit (
     FOREIGN KEY (bin_id) REFERENCES TrashBin(bin_id)
 );
 
+-- Vouchers table
+CREATE TABLE Voucher (    
+    voucher_id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    deposit_id INT NOT NULL,
+    expiry_time DATETIME ,
+    is_used BOOLEAN DEFAULT FALSE,    
+    FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id)
+);
+
 -- Internet sessions table
 CREATE TABLE InternetSession (
     internet_session_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -53,8 +63,8 @@ CREATE TABLE InternetSession (
     voucher_id INT,
     start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     end_time TIMESTAMP NULL DEFAULT NULL,
-    FOREIGN KEY (anonymous_token) REFERENCES StudentSession(anonymous_token),
-    FOREIGN KEY (voucher_id) REFERENCES Voucher(voucher_id)
+    FOREIGN KEY (anonymous_token) REFERENCES StudentSession(anonymous_token) ON DELETE CASCADE,
+    FOREIGN KEY (voucher_id) REFERENCES Voucher(voucher_id) ON DELETE CASCADE
 );
 
 -- Admin activity logs
@@ -71,16 +81,6 @@ CREATE TABLE AdminActivityLog (
 CREATE TABLE SystemSettings(
    id INT AUTO_INCREMENT PRIMARY KEY,
    minutes_per_bottle INT DEFAULT 2
-);
-
--- Vouchers table
-CREATE TABLE Voucher (    
-    voucher_id INT AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(20) NOT NULL UNIQUE,
-    deposit_id INT NOT NULL,
-    expiry_time DATETIME ,
-    is_used BOOLEAN DEFAULT FALSE,    
-    FOREIGN KEY (deposit_id) REFERENCES BottleDeposit(deposit_id)
 );
 
 
