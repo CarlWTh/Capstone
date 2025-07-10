@@ -28,6 +28,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
         redirectWithMessage('bins.php', 'error', 'Failed to update bin.');
     }
 }
+
+// Sample data for demonstration (replace with actual data later)
+$emptying_logs = [
+    ['bin_id' => 1, 'previous_level' => 45.5, 'emptied_by_name' => 'John Doe', 'emptied_at' => '2024-01-15 14:30:00'],
+    ['bin_id' => 2, 'previous_level' => 38.2, 'emptied_by_name' => 'Jane Smith', 'emptied_at' => '2024-01-15 13:15:00'],
+    ['bin_id' => 3, 'previous_level' => 52.8, 'emptied_by_name' => 'Mike Johnson', 'emptied_at' => '2024-01-15 11:45:00'],
+    ['bin_id' => 1, 'previous_level' => 41.3, 'emptied_by_name' => 'Sarah Wilson', 'emptied_at' => '2024-01-14 16:20:00'],
+    ['bin_id' => 2, 'previous_level' => 35.9, 'emptied_by_name' => 'Tom Brown', 'emptied_at' => '2024-01-14 15:10:00'],
+];
+
+// Function to get fill level color
+function getFillLevelColor($percentage) {
+    if ($percentage >= 90) return 'danger';
+    if ($percentage >= 70) return 'warning';
+    if ($percentage >= 50) return 'info';
+    return 'success';
+}
+
+// Function to format time ago
+function timeAgo($datetime) {
+    if (!$datetime) return 'Never';
+    $time = time() - strtotime($datetime);
+    if ($time < 60) return 'Just now';
+    if ($time < 3600) return floor($time/60) . ' minutes ago';
+    if ($time < 86400) return floor($time/3600) . ' hours ago';
+    if ($time < 2592000) return floor($time/86400) . ' days ago';
+    return date('M d, Y', strtotime($datetime));
+}
+
+// Sample last emptied data for each bin (replace with actual data later)
+$last_emptied_data = [
+    1 => '2024-01-15 14:30:00',
+    2 => '2024-01-15 13:15:00',
+    3 => '2024-01-15 11:45:00',
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -38,90 +73,152 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .fill-level-indicator {
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .fill-level-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        .fill-level-bar.success { background: #28a745; }
+        .fill-level-bar.info { background: #17a2b8; }
+        .fill-level-bar.warning { background: #ffc107; }
+        .fill-level-bar.danger { background: #dc3545; }
+        
+        .emptying-log {
+            margin-top: 30px;
+        }
+        .log-table {
+            background: gray;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .log-table table {
+            width: 100%;
+            margin: 0;
+        }
+        .log-table th {
+            background:rgb(120, 157, 148);
+            font-weight: 600;
+            padding: 12px;
+            border-bottom: 1px solidrgb(222, 230, 225);
+        }
+        .log-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        .log-table tr:last-child td {
+            border-bottom: none;
+        }
+        .bin-actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .btn-empty {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .btn-empty:hover {
+            background: #218838;
+        }
+        .last-emptied {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .level-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .level-percentage {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .level-weight {
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
 </head>
 <body class="dashboard-container">
     <!-- Sidebar -->
-    <div class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <h1><?php echo SITE_NAME; ?></h1>
-                    <span class="logo-short"></span>
-                </div>
-                <button class="sidebar-toggle" id="sidebarToggle">
-                    <i class="bi bi-list"></i>
-                </button>
-            </div> 
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <h1><?= SITE_NAME ?></h1>
+                <span class="logo-short"></span>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
         <nav>
-                <ul>
-                    <li>
-                        <a href="dashboard.php">
-                            <i class="bi bi-speedometer2"></i>
-                            <span class="menu-text">Dashboard</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="bottle_deposits.php">
-                            <i class="bi bi-recycle"></i>
-                            <span>Bottle Deposits</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="vouchers.php">
-                            <i class="bi bi-ticket-perforated"></i>
-                            <span>Vouchers</span>
-                        </a>
-                    </li>
-                    <li class="active">
-                        <a href="bins.php">
-                            <i class="bi bi-trash"></i>
-                            <span>Trash Bins</span>
-                        </a>
-                    </li>
-                    <li>
-                     <a href="student_sessions.php">
-                        <i class="bi bi-phone"></i>
-                        <span>Student Sessions</span>
-                        </a>
-                    </li>
-                    <li>
-                     <a href="sessions.php">
+            <ul>
+                <li>
+                    <a href="dashboard.php">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="bottle_deposits.php">
+                        <i class="bi bi-recycle"></i>
+                        <span>Bottle Deposits</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="vouchers.php">
+                        <i class="bi bi-ticket-perforated"></i>
+                        <span>Vouchers</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="bins.php">
+                        <i class="bi bi-trash"></i>
+                        <span>Trash Bins</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="network_monitoring.php">
                         <i class="bi bi-wifi"></i>
-                        <span>Internet Sessions</span>
-                      </a>
-                    </li>
-                    <li>
-                        <a href="users.php">
-                            <i class="bi bi-people"></i>
-                            <span>Users</span>
-                        </a>
-                     </li>
-                    <li>
-                        <a href="activity_logs.php">
-                            <i class="bi bi-clock-history"></i>
-                            <span>Activity Logs</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="bandwidth_control.php">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>BANDWIDTH CONTROL</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="time_and_rates.php">
-                            <i class="bi bi-clock"></i>
-                            <span>TIME AND RATES</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="logout.php">
-                            <i class="bi bi-box-arrow-right"></i>
-                            <span>Logout</span>
-                        </a>
-                    </li>
-                </ul>
+                        <span>Network Monitoring</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="users.php">
+                        <i class="bi bi-people"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="activity_logs.php">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Activity Logs</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="logout.php">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
         </nav>
     </div>
+    
     <!-- Main Content -->
     <div class="main-content">
         <div class="main-header">
@@ -139,7 +236,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                 </div>
             </div>
         </div>
+        
         <?php displayFlashMessage(); ?>
+        
         <div class="card">
             <div class="card-header">
                 <h3>Bin Status Overview</h3>
@@ -150,26 +249,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
             <div class="card-body">
                 <div class="row">
                     <?php foreach ($bins as $bin): ?>
+                    <?php 
+                        $percentage = ($bin['capacity'] > 0) ? round(($bin['current_level'] / $bin['capacity']) * 100) : 0;
+                        $fillLevelColor = getFillLevelColor($percentage);
+                    ?>
                     <div class="col-md-4 mb-4">
                        <div class="health-card">
                             <div>
-                                <h4>Bin #<?php echo $bin['bin_id']; ?></h4>
-                                <div class="d-flex justify-content-between mb-1">
-                                   <span>Capacity</span>
-                                    <span><?php
-                                    $percentage = ($bin['capacity'] > 0) ? round(($bin['current_level'] / $bin['capacity']) * 100) : 0;
-                                    echo $percentage;
-                                    ?>%</span>
-                                </div> 
-                                 <div class="progress-bar">
-                                  <div class="progress" style="width: <?php
-                                        echo $percentage;
-                                    ?>%"></div>
-                                </div>
-                                <small class="text-muted">
-                                    <?php echo $bin['current_level']; ?> / <?php echo $bin['capacity']; ?> kg
-                                </small>
-                                <div class="mt-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h4>Bin #<?php echo $bin['bin_id']; ?></h4>
                                     <span class="status <?php 
                                         echo $bin['status'] == 'full' ? 'red' : 
                                              ($bin['status'] == 'partial' ? 'orange' : 'green'); 
@@ -177,8 +265,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                                         <?php echo ucfirst($bin['status']); ?>
                                     </span>
                                 </div>
+                                
+                                <!-- Fill Level Indicator -->
+                                <div class="fill-level-indicator">
+                                    <div class="fill-level-bar <?php echo $fillLevelColor; ?>" 
+                                         style="width: <?php echo $percentage; ?>%"></div>
+                                </div>
+                                
+                                <div class="level-details">
+                                    <div class="level-percentage">
+                                        Fill Level: <?php echo $percentage; ?>%
+                                    </div>
+                                    <div class="level-weight">
+                                        <?php echo $bin['current_level']; ?> / <?php echo $bin['capacity']; ?> kg
+                                    </div>
+                                </div>
+                                
+                                <div class="last-emptied">
+                                    <i class="bi bi-clock"></i> Last emptied: <?php echo timeAgo($last_emptied_data[$bin['bin_id']] ?? null); ?>
+                                </div>
                             </div>
-                            <div> 
+                            <div class="bin-actions"> 
                                 <button class="btn btn-sm btn-primary edit-bin" 
                                         data-bin-id="<?php echo $bin['bin_id']; ?>"
                                         data-capacity="<?php echo $bin['capacity']; ?>"
@@ -193,44 +300,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
                 </div>
             </div>
         </div>
+        
+        <!-- Last Emptied Log Section -->
+        <div class="emptying-log">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-clock-history"></i> Last Emptied Log</h3>
+                </div>
+                <div class="card-body">
+                    <div class="log-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Bin ID</th>
+                                    <th>Previous Level</th>
+                                    <th>Emptied By</th>
+                                    <th>Date & Time</th>
+                                    <th>Time Ago</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($emptying_logs)): ?>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No emptying records found</td>
+                                </tr>
+                                <?php else: ?>
+                                <?php foreach ($emptying_logs as $log): ?>
+                                <tr>
+                                    <td>
+                                        <strong>Bin #<?php echo $log['bin_id']; ?></strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info"><?php echo $log['previous_level']; ?> kg</span>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-person"></i> <?php echo htmlspecialchars($log['emptied_by_name']); ?>
+                                    </td>
+                                    <td>
+                                        <?php echo date('M d, Y h:i A', strtotime($log['emptied_at'])); ?>
+                                    </td>
+                                    <td class="text-muted">
+                                        <?php echo timeAgo($log['emptied_at']); ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
         
     <!-- Add Bin Modal -->
     <div class="modal fade" id="addBinModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Add New Bin</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form method="POST" action="add_bin.php">
-                        <div class="modal-body">
-                            <div class="form-group mb-3">
-                                <label for="capacity" class="form-label">Capacity (kg)</label>
-                                <input type="number" step="0.01" class="form-control" id="capacity" name="capacity" required> 
-                            </div>
-                            <div class="form-group mb-3">
-                                <label for="current_level" class="form-label">Current Level (kg)</label>
-                                <input type="number" step="0.01" class="form-control" id="current_level" name="current_level" required>
-                            </div>
-                            <div class="form-group mb-3">
-                                <label for="status" class="form-label">Status</label>
-                                <select class="form-select" id="status" name="status" required>
-                                    <option value="empty">Empty</option>
-                                    <option value="partial">Partial</option>
-                                    <option value="full">Full</option>
-                                    <option value="maintenance">Maintenance</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Add Bin</button>
-                        </div>
-                    </form>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Bin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                <form method="POST" action="add_bin.php">
+                    <div class="modal-body">
+                        <div class="form-group mb-3">
+                            <label for="capacity" class="form-label">Capacity (kg)</label>
+                            <input type="number" step="0.01" class="form-control" id="capacity" name="capacity" required> 
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="current_level" class="form-label">Current Level (kg)</label>
+                            <input type="number" step="0.01" class="form-control" id="current_level" name="current_level" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="empty">Empty</option>
+                                <option value="partial">Partial</option>
+                                <option value="full">Full</option>
+                                <option value="maintenance">Maintenance</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Bin</button>
+                    </div>
+                </form>
             </div>
         </div>
+    </div>
 
     <!-- Edit Bin Modal -->
     <div class="modal fade" id="editBinModal" tabindex="-1" aria-hidden="true">
@@ -271,6 +429,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
         </div>
     </div>
 
+    <!-- Empty Bin Modal -->
+    <div class="modal fade" id="emptyBinModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Empty Bin #<span id="emptyBinId"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="bins.php">
+                    <input type="hidden" name="bin_id" id="emptyBinIdInput">
+                    <input type="hidden" name="previous_level" id="emptyBinPreviousLevel">
+                    <input type="hidden" name="empty_bin" value="1">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Are you sure you want to empty this bin? This action will:
+                            <ul>
+                                <li>Set the current level to 0 kg</li>
+                                <li>Change status to "empty"</li>
+                                <li>Log this action with timestamp</li>
+                            </ul>
+                        </div>
+                        <p>Current level: <strong><span id="emptyBinCurrentLevel"></span> kg</strong></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-trash"></i> Empty Bin
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Toggle sidebar
@@ -278,10 +471,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
+        
         // Profile dropdown
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
+        
         // Edit bin modal
         document.querySelectorAll('.edit-bin').forEach(button => {
             button.addEventListener('click', function() {

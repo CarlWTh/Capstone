@@ -72,7 +72,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <h1><?php echo SITE_NAME; ?></h1>
+                <h1><?= SITE_NAME ?></h1>
                 <span class="logo-short"></span>
             </div>
             <button class="sidebar-toggle" id="sidebarToggle">
@@ -81,103 +81,164 @@ logAdminActivity('Settings Access', 'Accessed settings page');
         </div>
         <nav>
             <ul>
-                    <li class="">
-                        <a href="dashboard.php">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="active">
-                        <a href="deposits.php">
-                            <i class="bi bi-recycle"></i>
-                            <span>Bottle Deposits</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="vouchers.php">
-                            <i class="bi bi-ticket-perforated"></i>
-                            <span>Vouchers</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="bins.php">
-                            <i class="bi bi-trash"></i>
-                            <span>Trash Bins</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="student_sessions.php">
-                            <i class="bi bi-phone"></i>
-                            <span class="menu-text">Student Sessions</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="sessions.php">
-                            <i class="bi bi-wifi"></i>
-                            <span>Internet Sessions</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="users.php">
-                            <i class="bi bi-people"></i>
-                            <span>Users</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="activity_logs.php">
-                            <i class="bi bi-clock-history"></i>
-                            <span>Activity Logs</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="logout.php">
-                            <i class="bi bi-box-arrow-right"></i>
-                            <span>Logout</span>
-                        </a>
-                    </li>
+                <li>
+                    <a href="dashboard.php">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="bottle_deposits.php">
+                        <i class="bi bi-recycle"></i>
+                        <span>Bottle Deposits</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="vouchers.php">
+                        <i class="bi bi-ticket-perforated"></i>
+                        <span>Vouchers</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="bins.php">
+                        <i class="bi bi-trash"></i>
+                        <span>Trash Bins</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="network_monitoring.php">
+                        <i class="bi bi-wifi"></i>
+                        <span>Network Monitoring</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="users.php">
+                        <i class="bi bi-people"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="activity_logs.php">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Activity Logs</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="logout.php">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
             </ul>
         </nav>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="main-header">
-            <h1><i class="bi bi-gear"></i> System Settings</h1>
-            <div class="profile-dropdown">
-                <div class="dropdown-header">
-                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
-                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-                <div class="dropdown-content">
-                    <a href="#"><i class="bi bi-person"></i> Profile</a>
-                    <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
-                    <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
-                </div>
-            </div>
-        </div>
-
         <?php displayFlashMessage(); ?>
 
-        <div class="card mt-4">
-    <div class="card-header">
-        <h3>Internet Time Settings</h3>
-    </div>
-    <div class="card-body">
-        <form method="POST">
-            <div class="mb-3">
-                <label class="form-label">Minutes Per Bottle</label>
-                <input type="number" name="minutes_per_bottle" 
-                       class="form-control" value="<?= MINUTES_PER_BOTTLE ?>"
-                       min="1" max="60" required>
-            </div>
-            <button type="submit" name="update_minutes" class="btn btn-primary">
-                Update Minutes
-            </button>
-        </form>
-    </div>
-</div>
         <div class="settings-grid">
+            <!-- Internet Settings Card -->
+            <div class="settings-card">
+                <div class="settings-header">
+                    <div class="settings-icon">
+                        <i class="bi bi-wifi"></i>
+                    </div>
+                    <h2>Internet Settings</h2>
+                </div>
+                <div class="settings-body">
+                    <form method="POST">
+                        <div class="form-group">
+                            <label>Bottle-to-Internet Conversion Rate</label>
+                            <div class="input-with-button">
+                                <input type="number" name="minutes_per_bottle" 
+                                       class="form-control" value="<?= MINUTES_PER_BOTTLE ?>"
+                                       min="1" max="60" required>
+                                <span class="input-suffix">minutes/bottle</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Bandwidth Control</label>
+                            <div class="d-flex justify-content-between">
+                                <div style="width: 48%">
+                                    <label class="text-muted">Download (Mbps)</label>
+                                    <input type="number" name="download_speed" value="5" min="1" max="100" class="form-control">
+                                </div>
+                                <div style="width: 48%">
+                                    <label class="text-muted">Upload (Mbps)</label>
+                                    <input type="number" name="upload_speed" value="2" min="1" max="100" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Maintenance Mode</label>
+                            <div class="d-flex align-items-center">
+                                <div class="form-check form-switch me-3">
+                                    <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenance_mode">
+                                    <label class="form-check-label" for="maintenanceMode">Enable</label>
+                                </div>
+                                <small class="text-muted">When enabled, only admins can access the system</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" name="update_minutes" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Trash Bin Settings Card -->
+            <div class="settings-card">
+                <div class="settings-header">
+                    <div class="settings-icon">
+                        <i class="bi bi-trash"></i>
+                    </div>
+                    <h2>Trash Bin Settings</h2>
+                </div>
+                <div class="settings-body">
+                    <form method="POST">
+                        <div class="form-group">
+                            <label>SMS Alert Threshold</label>
+                            <div class="input-with-button">
+                                <input type="number" name="sms_threshold" value="80" min="1" max="100" class="form-control">
+                                <span class="input-suffix">% full</span>
+                            </div>
+                            <small class="text-muted">Send SMS when bin reaches this capacity</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Alert Recipients</label>
+                            <textarea name="sms_recipients" class="form-control" rows="3" placeholder="Enter phone numbers separated by commas">09123456789, 09987654321</textarea>
+                            <small class="text-muted">Include country code (e.g. +63 for Philippines)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Alert Message</label>
+                            <textarea name="sms_message" class="form-control" rows="3">Trash bin #{bin_id} is {percentage}% full. Please empty soon.</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Test SMS Function</label>
+                            <div class="d-flex">
+                                <input type="text" class="form-control me-2" placeholder="Enter test number">
+                                <button type="button" class="btn btn-secondary">
+                                    <i class="bi bi-send"></i> Send Test
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" name="update_sms_settings" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- General Settings Card -->
             <div class="settings-card">
                 <div class="settings-header">
@@ -208,7 +269,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                         
                         <div class="form-group">
                             <label for="timezone">Timezone</label>
-                            <select id="timezone" name="timezone">
+                            <select id="timezone" name="timezone" class="form-control">
                                 <option value="Asia/Manila" selected>Asia/Manila</option>
                                 <option value="UTC">UTC</option>
                                 <!-- More timezones would be added here -->
@@ -224,7 +285,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                 </div>
             </div>
 
-            <!-- Password Change Card -->
+            <!-- Security Settings Card -->
             <div class="settings-card">
                 <div class="settings-header">
                     <div class="settings-icon">
@@ -282,8 +343,8 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                     </div>
                     
                     <div class="backup-progress">
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 75%"></div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: 75%"></div>
                         </div>
                         <small>Storage used: 75% of 100MB</small>
                     </div>
@@ -386,6 +447,15 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                 segments[3].style.borderColor = '#27ae60';
             }
         });
+
+        // Toggle maintenance mode switch
+        const maintenanceSwitch = document.getElementById('maintenanceMode');
+        if (maintenanceSwitch) {
+            maintenanceSwitch.addEventListener('change', function() {
+                const status = this.checked ? 'ON' : 'OFF';
+                alert(`Maintenance mode will be turned ${status}. Only admins will be able to access the system.`);
+            });
+        }
     </script>
 </body>
 </html>

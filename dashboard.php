@@ -42,86 +42,68 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
     <div class="dashboard-container">
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <h1><?php echo SITE_NAME; ?></h1>
-                    <span class="logo-short"></span>
-                </div>
-                <button class="sidebar-toggle" id="sidebarToggle">
-                    <i class="bi bi-list"></i>
-                </button>
+        <div class="sidebar-header">
+            <div class="logo">
+                <h1><?= SITE_NAME ?></h1>
+                <span class="logo-short"></span>
             </div>
-            <nav>
-                <ul class="list-unstyled">
-                    <li class="active">
-                        <a href="dashboard.php" class="">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="">
-                        <a href="bottle_deposits.php">
-                            <i class="bi bi-recycle" ></i>
-                            <span>Bottle Deposits</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="vouchers.php">
-                            <i class="bi bi-ticket-perforated"></i>
-                            <span>Vouchers</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="bins.php">
-                            <i class="bi bi-trash"></i>
-                            <span>Trash Bins</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="student_sessions.php">
-                            <i class="bi bi-phone"></i>
-                            <span class="menu-text">Student Sessions</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="sessions.php">
-                            <i class="bi bi-wifi"></i>
-                            <span>Internet Sessions</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="users.php">
-                            <i class="bi bi-people"></i>
-                            <span>Users</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="activity_logs.php">
-                            <i class="bi bi-clock-history"></i>
-                            <span>Activity Logs</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="bandwidth_control.php">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>BANDWIDTH CONTROL</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="time_and_rates.php">
-                            <i class="bi bi-clock"></i>
-                            <span>TIME AND RATES</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="logout.php">
-                            <i class="bi bi-box-arrow-right"></i>
-                            <span>Logout</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
         </div>
+        <nav>
+            <ul>
+                <li>
+                    <a href="dashboard.php">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="bottle_deposits.php">
+                        <i class="bi bi-recycle"></i>
+                        <span>Bottle Deposits</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="vouchers.php">
+                        <i class="bi bi-ticket-perforated"></i>
+                        <span>Vouchers</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="bins.php">
+                        <i class="bi bi-trash"></i>
+                        <span>Trash Bins</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="network_monitoring.php">
+                        <i class="bi bi-wifi"></i>
+                        <span>Network Monitoring</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="users.php">
+                        <i class="bi bi-people"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="activity_logs.php">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Activity Logs</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="logout.php">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
 
         <!-- Main Content -->
         <div class="main-content" id="mainContent">
