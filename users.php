@@ -12,7 +12,7 @@ $total_users = $conn->query("SELECT COUNT(*) FROM users")->fetch_row()[0];
 $total_pages = ceil($total_users / $per_page);
 
 $users = $conn->query("
-    SELECT id, username, email, phone, is_admin, created_at 
+    SELECT id, username, email, is_admin, created_at 
     FROM users 
     ORDER BY created_at DESC 
     LIMIT $per_page OFFSET $offset

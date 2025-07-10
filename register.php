@@ -4,7 +4,6 @@ require_once 'config.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
-    $phone = trim($_POST['phone']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm-password'];
 
@@ -18,10 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Email is required";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = "Invalid email format";
-    }
-
-    if (empty($phone)) {
-        $errors[] = "Phone number is required";
     }
 
     if (empty($password)) {
@@ -48,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
         $is_admin = true;
 
-        $stmt = $conn->prepare("INSERT INTO users (username, email, phone, password_hash, is_admin) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssi", $username, $email, $phone, $password_hash, $is_admin);
+        $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, is_admin) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("sssi", $username, $email, $password_hash, $is_admin);
 
         if ($stmt->execute()) {
             header("Location: login.php?registration=success");
@@ -102,17 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     name="email"
                     placeholder="Enter your email"
                     value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>"
-                    required>
-            </div>
-
-            <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    placeholder="Enter your phone number"
-                    value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>"
                     required>
             </div>
 

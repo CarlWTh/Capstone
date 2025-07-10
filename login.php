@@ -17,7 +17,7 @@ if (isset($_GET['password_reset']) && $_GET['password_reset'] === 'success') {
 if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
     $token = $_COOKIE['remember_token'];
     
-    $stmt = $conn->prepare("SELECT id, username, is_admin FROM users WHERE remember_token = ? AND token_expiry > NOW()");
+    $stmt = $conn->prepare("SELECT id, username, is_admin FROM users WHERE remember_token = ?");
     $stmt->bind_param("s", $token);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -29,13 +29,11 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
         $_SESSION['is_admin'] = $user['is_admin'];
         
         $new_token = bin2hex(random_bytes(32));
-        $expiry = time() + 60 * 60 * 24 * 30;
         
         setcookie(
             'remember_token', 
             $new_token, 
             [
-                'expires' => $expiry,
                 'path' => '/',
                 'domain' => $_SERVER['HTTP_HOST'],
                 'secure' => isset($_SERVER['HTTPS']),
@@ -44,9 +42,8 @@ if (empty($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             ]
         );
         
-        $update_stmt = $conn->prepare("UPDATE users SET remember_token = ?, token_expiry = ? WHERE id = ?");
-        $expiry_date = date('Y-m-d H:i:s', $expiry);
-        $update_stmt->bind_param("ssi", $new_token, $expiry_date, $user['id']);
+        $update_stmt = $conn->prepare("UPDATE users SET remember_token = ? WHERE id = ?");
+        $update_stmt->bind_param("si", $new_token, $user['id']);
         $update_stmt->execute();
         $update_stmt->close();
         
@@ -78,13 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (isset($_POST['remember'])) {
                     $token = bin2hex(random_bytes(32));
-                    $expiry = time() + 60 * 60 * 24 * 30;
                     
                     setcookie(
                         'remember_token', 
                         $token, 
                         [
-                            'expires' => $expiry,
                             'path' => '/',
                             'domain' => $_SERVER['HTTP_HOST'],
                             'secure' => isset($_SERVER['HTTPS']),
@@ -93,9 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ]
                     );
                     
-                    $stmt = $conn->prepare("UPDATE users SET remember_token = ?, token_expiry = ? WHERE id = ?");
-                    $expiry_date = date('Y-m-d H:i:s', $expiry);
-                    $stmt->bind_param("ssi", $token, $expiry_date, $user['id']);
+                    $stmt = $conn->prepare("UPDATE users SET remember_token = ? WHERE id = ?");
+                    $stmt->bind_param("si", $token, $user['id']);
                     $stmt->execute();
                     $stmt->close();
                 }
@@ -154,7 +148,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>"
                     required
                 >
-                <i class="icon-user"></i>
             </div>
             
             <div class="form-group">
@@ -163,10 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     type="password" 
                     id="password" 
                     name="password" 
-                    placeholder="Enter your password" 
-                    required
+                    placeholder="Enter your password" required
                 >
-                <i class="icon-lock"></i>
             </div>
             
             <div class="form-extras">
