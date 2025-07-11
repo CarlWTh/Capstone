@@ -53,7 +53,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
         </div>
         <nav>
             <ul>
-                <li>
+                <li class="active">
                     <a href="dashboard.php">
                         <i class="bi bi-speedometer2"></i>
                         <span>Dashboard</span>
@@ -77,7 +77,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                         <span>Trash Bins</span>
                     </a>
                 </li>
-                <li class="active">
+                <li class="">
                     <a href="network_monitoring.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>

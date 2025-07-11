@@ -170,7 +170,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
                         <span>Trash Bins</span>
                     </a>
                 </li>
-                <li class="active">
+                <li class="">
                     <a href="network_monitoring.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
@@ -182,7 +182,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
                         <span>Users</span>
                     </a>
                 </li>
-                <li>
+                <li class="active">
                     <a href="activity_logs.php">
                         <i class="bi bi-clock-history"></i>
                         <span>Activity Logs</span>

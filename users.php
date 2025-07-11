@@ -97,13 +97,13 @@ logAdminActivity('Users Access', 'Viewed users list');
                         <span>Trash Bins</span>
                     </a>
                 </li>
-                <li class="active">
+                <li class="">
                     <a href="network_monitoring.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
                     </a>
                 </li>
-                <li>
+                <li class="active">
                     <a href="users.php">
                         <i class="bi bi-people"></i>
                         <span>Users</span>

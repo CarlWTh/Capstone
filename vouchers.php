@@ -236,7 +236,7 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                         <span>Bottle Deposits</span>
                     </a>
                 </li>
-                <li>
+                <li class="active">
                     <a href="vouchers.php">
                         <i class="bi bi-ticket-perforated"></i>
                         <span>Vouchers</span>
@@ -248,7 +248,7 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                         <span>Trash Bins</span>
                     </a>
                 </li>
-                <li class="active">
+                <li class="">
                     <a href="network_monitoring.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>

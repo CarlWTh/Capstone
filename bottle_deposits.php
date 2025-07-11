@@ -253,7 +253,7 @@ checkAdminAuth();
                         <span>Dashboard</span>
                     </a>
                 </li>
-                <li>
+                <li class="active">
                     <a href="bottle_deposits.php">
                         <i class="bi bi-recycle"></i>
                         <span>Bottle Deposits</span>
@@ -271,7 +271,7 @@ checkAdminAuth();
                         <span>Trash Bins</span>
                     </a>
                 </li>
-                <li class="active">
+                <li class="">
                     <a href="network_monitoring.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>

@@ -185,13 +185,13 @@ $last_emptied_data = [
                         <span>Vouchers</span>
                     </a>
                 </li>
-                <li>
+                <li class="active">
                     <a href="bins.php">
                         <i class="bi bi-trash"></i>
                         <span>Trash Bins</span>
                     </a>
                 </li>
-                <li class="active">
+                <li class="">
                     <a href="network_monitoring.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
