@@ -40,6 +40,7 @@ logAdminActivity('Deposits Access', 'Viewed deposits list');
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,9 +49,10 @@ logAdminActivity('Deposits Access', 'Viewed deposits list');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body class="dashboard-container">
-        <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
                 <h1><?= SITE_NAME ?></h1>
@@ -87,7 +89,7 @@ logAdminActivity('Deposits Access', 'Viewed deposits list');
                     </a>
                 </li>
                 <li class="active">
-                    <a href="network_monitoring.php">
+                    <a href="sessions.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
                     </a>
@@ -116,7 +118,7 @@ logAdminActivity('Deposits Access', 'Viewed deposits list');
     <!-- Main Content -->
     <div class="main-content">
         <div class="main-header">
-            <h2>Bottle Deposits</h2>            
+            <h2>Bottle Deposits</h2>
         </div>
         <div class="card">
             <div class="card-header">
@@ -140,33 +142,32 @@ logAdminActivity('Deposits Access', 'Viewed deposits list');
                             <tr>
                                 <th>ID</th>
                                 <th>Timestamp</th>
-                                <th>Session</th>                                
-                                <th>Count</th>                                                                
+                                <th>Session</th>
+                                <th>Count</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($deposits as $deposit): ?>
-                            <tr>
-                                <td><?php echo $deposit['deposit_id']; ?></td>
-                                <td><?php echo date('M j, Y H:i', strtotime($deposit['timestamp'])); ?></td>
-                                <td><?php echo substr($deposit['anonymous_token'], 0, 8) . '...'; ?></td>                                
-                                <td><?php echo $deposit['bottle_count']; ?></td>                               
-                                <td>
-                                <span class="status <?php 
-                                        echo $deposit['status'] == 'processed' ? 'green' : 
-                                            ($deposit['status'] == 'rejected' ? 'red' : 'orange'); 
-                                    ?>">
-                                        <?php echo ucfirst($deposit['status']); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye"></i> View
-                                    </button>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td><?php echo $deposit['deposit_id']; ?></td>
+                                    <td><?php echo date('M j, Y H:i', strtotime($deposit['timestamp'])); ?></td>
+                                    <td><?php echo substr($deposit['anonymous_token'], 0, 8) . '...'; ?></td>
+                                    <td><?php echo $deposit['bottle_count']; ?></td>
+                                    <td>
+                                        <span class="status <?php
+                                                            echo $deposit['status'] == 'processed' ? 'green' : ($deposit['status'] == 'rejected' ? 'red' : 'orange');
+                                                            ?>">
+                                            <?php echo ucfirst($deposit['status']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -180,7 +181,7 @@ logAdminActivity('Deposits Access', 'Viewed deposits list');
                     <a href="?page=<?php echo $page + 1; ?>&status=<?php echo $status_filter; ?>" class="btn btn-secondary <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
                         Next <i class="bi bi-chevron-right"></i>
                     </a>
-                        </a>
+                    </a>
                     </li>
                     <li>
                         <a href="activity_logs.php">
@@ -194,33 +195,34 @@ logAdminActivity('Deposits Access', 'Viewed deposits list');
                             <span>Logout</span>
                         </a>
                     </li>
-                </ul>
-            </nav>
-        </div>
-        
-    </div>
+                    </ul>
+                    </nav>
+                </div>
+
+            </div>
 </body>
 
-    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Toggle sidebar
-        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('collapsed');
-            document.querySelector('.main-content').classList.toggle('expanded');
-        });
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Toggle sidebar
+    document.querySelector('.sidebar-toggle').addEventListener('click', function() {
+        document.querySelector('.sidebar').classList.toggle('collapsed');
+        document.querySelector('.main-content').classList.toggle('expanded');
+    });
 
-        // Profile dropdown
-        document.querySelector('.dropdown-header').addEventListener('click', function() {
-            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
-        });
+    // Profile dropdown
+    document.querySelector('.dropdown-header').addEventListener('click', function() {
+        document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
+    });
 
-        // Status filter
-        document.getElementById('status-filter').addEventListener('change', function() {
-            const status = this.value;
-            window.location.href = `deposits.php?status=${status}`;
-        });
-    </script>
+    // Status filter
+    document.getElementById('status-filter').addEventListener('change', function() {
+        const status = this.value;
+        window.location.href = `deposits.php?status=${status}`;
+    });
+</script>
 </body>
+
 </html>

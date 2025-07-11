@@ -25,7 +25,7 @@ switch ($active_tab) {
             LIMIT $per_page OFFSET $offset
         ")->fetch_all(MYSQLI_ASSOC);
         break;
-        
+
     case 'session-logs':
         // All internet sessions
         $total_records = $conn->query("SELECT COUNT(*) FROM InternetSession")->fetch_row()[0];
@@ -38,7 +38,7 @@ switch ($active_tab) {
             LIMIT $per_page OFFSET $offset
         ")->fetch_all(MYSQLI_ASSOC);
         break;
-        
+
     case 'student-sessions':
         // Student sessions
         $total_records = $conn->query("SELECT COUNT(*) FROM StudentSession")->fetch_row()[0];
@@ -54,7 +54,7 @@ switch ($active_tab) {
             LIMIT $per_page OFFSET $offset
         ")->fetch_all(MYSQLI_ASSOC);
         break;
-        
+
     case 'bandwidth-usage':
         // Bandwidth usage (placeholder)
         $total_records = 0;
@@ -69,6 +69,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -81,7 +82,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
             border-bottom: 2px solid #e9ecef;
             margin-bottom: 1.5rem;
         }
-        
+
         .monitoring-tab {
             padding: 0.75rem 1.5rem;
             cursor: pointer;
@@ -95,15 +96,15 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .monitoring-tab:hover {
             color: var(--primary-color);
         }
-        
+
         .monitoring-tab.active {
             color: var(--primary-color);
         }
-        
+
         .monitoring-tab.active::after {
             content: '';
             position: absolute;
@@ -113,7 +114,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
             height: 2px;
             background: var(--primary-color);
         }
-        
+
         .tab-badge {
             background-color: var(--accent-color);
             color: white;
@@ -122,7 +123,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
             padding: 0.2rem 0.4rem;
             margin-left: 0.3rem;
         }
-        
+
         .session-status {
             display: inline-flex;
             align-items: center;
@@ -132,17 +133,17 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
             font-size: 0.75rem;
             font-weight: 500;
         }
-        
+
         .status-active {
             background-color: rgba(46, 204, 113, 0.1);
             color: var(--success-color);
         }
-        
+
         .status-completed {
             background-color: rgba(108, 117, 125, 0.1);
             color: #6c757d;
         }
-        
+
         .bandwidth-card {
             background: var(--card-bg);
             border-radius: 12px;
@@ -150,7 +151,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
             box-shadow: var(--shadow);
             margin-bottom: 1.5rem;
         }
-        
+
         .bandwidth-meter {
             height: 10px;
             background: #e9ecef;
@@ -158,42 +159,42 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
             margin: 1rem 0;
             overflow: hidden;
         }
-        
+
         .bandwidth-progress {
             height: 100%;
             background: linear-gradient(to right, var(--primary-color), var(--accent-color));
         }
-        
+
         .usage-stats {
             display: flex;
             justify-content: space-between;
             margin-top: 1rem;
         }
-        
+
         .usage-stat {
             text-align: center;
             padding: 0.5rem;
             flex: 1;
         }
-        
+
         .usage-stat-value {
             font-size: 1.25rem;
             font-weight: 600;
             color: var(--primary-color);
         }
-        
+
         .usage-stat-label {
             font-size: 0.75rem;
             color: var(--light-text);
         }
-        
+
         .mac-address {
             font-family: monospace;
             background: rgba(0, 0, 0, 0.05);
             padding: 0.2rem 0.4rem;
             border-radius: 4px;
         }
-        
+
         .token-preview {
             max-width: 120px;
             white-space: nowrap;
@@ -204,6 +205,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
         }
     </style>
 </head>
+
 <body class="dashboard-container">
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
@@ -243,7 +245,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                     </a>
                 </li>
                 <li class="active">
-                    <a href="network_monitoring.php">
+                    <a href="sessions.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
                     </a>
@@ -293,27 +295,27 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
         <div class="card">
             <div class="card-header">
                 <div class="monitoring-tabs">
-                    <button class="monitoring-tab <?= $active_tab === 'active-sessions' ? 'active' : '' ?>" 
-                            onclick="window.location='?tab=active-sessions'">
+                    <button class="monitoring-tab <?= $active_tab === 'active-sessions' ? 'active' : '' ?>"
+                        onclick="window.location='?tab=active-sessions'">
                         <i class="bi bi-activity"></i> Active Sessions
                         <span class="tab-badge"><?= $conn->query("SELECT COUNT(*) FROM InternetSession WHERE end_time IS NULL")->fetch_row()[0] ?></span>
                     </button>
-                    <button class="monitoring-tab <?= $active_tab === 'session-logs' ? 'active' : '' ?>" 
-                            onclick="window.location='?tab=session-logs'">
+                    <button class="monitoring-tab <?= $active_tab === 'session-logs' ? 'active' : '' ?>"
+                        onclick="window.location='?tab=session-logs'">
                         <i class="bi bi-list-check"></i> Session Logs
                         <span class="tab-badge"><?= $conn->query("SELECT COUNT(*) FROM InternetSession")->fetch_row()[0] ?></span>
                     </button>
-                    <button class="monitoring-tab <?= $active_tab === 'student-sessions' ? 'active' : '' ?>" 
-                            onclick="window.location='?tab=student-sessions'">
+                    <button class="monitoring-tab <?= $active_tab === 'student-sessions' ? 'active' : '' ?>"
+                        onclick="window.location='?tab=student-sessions'">
                         <i class="bi bi-phone"></i> Student Sessions
                         <span class="tab-badge"><?= $conn->query("SELECT COUNT(*) FROM StudentSession")->fetch_row()[0] ?></span>
                     </button>
-                    <button class="monitoring-tab <?= $active_tab === 'bandwidth-usage' ? 'active' : '' ?>" 
-                            onclick="window.location='?tab=bandwidth-usage'">
+                    <button class="monitoring-tab <?= $active_tab === 'bandwidth-usage' ? 'active' : '' ?>"
+                        onclick="window.location='?tab=bandwidth-usage'">
                         <i class="bi bi-speedometer2"></i> Bandwidth Usage
                     </button>
                 </div>
-                
+
                 <div class="filter-options">
                     <input type="text" id="searchInput" placeholder="Search..." class="form-control">
                     <button class="btn btn-secondary">
@@ -321,7 +323,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                     </button>
                 </div>
             </div>
-            
+
             <div class="card-body">
                 <?php if ($active_tab === 'bandwidth-usage'): ?>
                     <!-- Bandwidth Usage Tab -->
@@ -349,7 +351,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="table-responsive">
                         <table class="transaction-logs">
                             <thead>
@@ -383,7 +385,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                             </tbody>
                         </table>
                     </div>
-                
+
                 <?php else: ?>
                     <!-- Active Sessions / Session Logs / Student Sessions Tabs -->
                     <div class="table-responsive">
@@ -446,7 +448,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <?php 
+                                                    <?php
                                                     if ($record['end_time']) {
                                                         $duration = strtotime($record['end_time']) - strtotime($record['start_time']);
                                                         echo gmdate("H\h i\m", $duration);
@@ -474,9 +476,9 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                                 <i class="bi bi-chevron-left"></i> Prev
                             </button>
                         <?php endif; ?>
-                        
+
                         <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
-                        
+
                         <?php if ($page < $total_pages): ?>
                             <a href="?tab=<?= $active_tab ?>&page=<?= $page + 1 ?>" class="btn btn-secondary">
                                 Next <i class="bi bi-chevron-right"></i>
@@ -509,7 +511,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
         document.getElementById('searchInput').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
             const table = document.querySelector('.transaction-logs tbody');
-            
+
             if (table) {
                 table.querySelectorAll('tr').forEach(row => {
                     const text = row.textContent.toLowerCase();
@@ -519,4 +521,5 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
         });
     </script>
 </body>
+
 </html>

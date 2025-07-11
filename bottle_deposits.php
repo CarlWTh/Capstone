@@ -3,29 +3,23 @@ require_once 'config.php';
 checkAdminAuth();
 
 // Handle new deposit addition
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit']))
-{
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
     $bottleCount = (int) $_POST['bottle_count'];
 
-    if ($bottleCount > 0)
-    {
+    if ($bottleCount > 0) {
         $stmt = $conn->prepare("INSERT INTO BottleDeposit (bottle_count) VALUES (?)");
-        $stmt->bind_param("i", $bottleCount); 
-        if ($stmt->execute()) 
-        {   
+        $stmt->bind_param("i", $bottleCount);
+        if ($stmt->execute()) {
             logAdminActivity('Deposit Added', "Added a new bottle deposit of $bottleCount bottles");
             $depositId = $conn->insert_id;
-            for ($i = 0; $i < $bottleCount; $i++)
-            {
+            for ($i = 0; $i < $bottleCount; $i++) {
                 $voucherCode = generateUniqueVoucherCode($conn);
-                $voucherStmt = $conn->prepare("INSERT INTO Voucher (code, deposit_id) VALUES (?, ?)"); 
+                $voucherStmt = $conn->prepare("INSERT INTO Voucher (code, deposit_id) VALUES (?, ?)");
                 $voucherStmt->bind_param("si", $voucherCode, $depositId); // Bind parameters
                 $voucherStmt->execute();
             }
-            redirectWithMessage('bottle_deposits.php', 'success', 'Deposit added and vouchers created successfully!'); 
-        }
-        else
-        {
+            redirectWithMessage('bottle_deposits.php', 'success', 'Deposit added and vouchers created successfully!');
+        } else {
             redirectWithMessage('bottle_deposits.php', 'error', 'Failed to add deposit.');
         }
     }
@@ -54,12 +48,10 @@ if ($timeFilter === 'day') {
 }
 
 // Get deposit statistics based on filter
-$groupBy = $timeFilter === 'day' ? 'DATE(timestamp)' : 
-           ($timeFilter === 'week' ? 'YEARWEEK(timestamp)' : 'DATE_FORMAT(timestamp, "%Y-%m")');
+$groupBy = $timeFilter === 'day' ? 'DATE(timestamp)' : ($timeFilter === 'week' ? 'YEARWEEK(timestamp)' : 'DATE_FORMAT(timestamp, "%Y-%m")');
 
-$dateFormat = $timeFilter === 'day' ? 'DATE(timestamp) as period' : 
-              ($timeFilter === 'week' ? 'CONCAT(YEAR(timestamp), "-W", LPAD(WEEK(timestamp), 2, "0")) as period' : 
-               'DATE_FORMAT(timestamp, "%Y-%m") as period');
+$dateFormat = $timeFilter === 'day' ? 'DATE(timestamp) as period' : ($timeFilter === 'week' ? 'CONCAT(YEAR(timestamp), "-W", LPAD(WEEK(timestamp), 2, "0")) as period' :
+        'DATE_FORMAT(timestamp, "%Y-%m") as period');
 
 $statsQuery = "
     SELECT 
@@ -122,7 +114,7 @@ function generateUniqueVoucherCode($conn)
         $stmt->execute();
         $stmt->store_result();
     } while ($stmt->num_rows > 0);
-    return $voucherCode; 
+    return $voucherCode;
 }
 ?>
 <?php
@@ -134,6 +126,7 @@ checkAdminAuth();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Bottle Deposits - <?php echo SITE_NAME; ?></title>
@@ -151,7 +144,7 @@ checkAdminAuth();
             box-shadow: var(--shadow);
             height: 100%;
         }
-        
+
         .stats-card h4 {
             margin-bottom: 1rem;
             font-weight: 600;
@@ -159,24 +152,24 @@ checkAdminAuth();
             align-items: center;
             gap: 0.75rem;
         }
-        
+
         .stat-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
         }
-        
+
         .stat-item:last-child {
             border-bottom: none;
         }
-        
+
         .stat-value {
             font-size: 1.1rem;
             font-weight: bold;
         }
-        
+
         .filter-section {
             background: var(--card-bg);
             padding: 1.5rem;
@@ -185,24 +178,24 @@ checkAdminAuth();
             box-shadow: var(--shadow);
             height: 100%;
         }
-        
+
         .period-badge {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
             padding: 0.35rem 0.75rem;
             border-radius: 50px;
             font-size: 0.85rem;
             font-weight: 500;
         }
-        
+
         .trend-up {
             color: #4caf50;
         }
-        
+
         .trend-down {
             color: #ff5252;
         }
-        
+
         .chart-container {
             background: var(--card-bg);
             border-radius: 12px;
@@ -210,23 +203,23 @@ checkAdminAuth();
             box-shadow: var(--shadow);
             margin-bottom: 1.5rem;
         }
-        
+
         .deposit-table th {
             background-color: var(--primary-color);
             color: white;
         }
-        
+
         .bottle-icon {
             color: var(--primary-color);
             font-size: 1.25rem;
             margin-right: 0.5rem;
         }
-        
+
         .time-filter-btn {
             border-radius: 8px;
             font-weight: 500;
         }
-        
+
         .time-filter-btn.active {
             background-color: var(--primary-color);
             color: white;
@@ -234,6 +227,7 @@ checkAdminAuth();
         }
     </style>
 </head>
+
 <body class="dashboard-container">
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -272,7 +266,7 @@ checkAdminAuth();
                     </a>
                 </li>
                 <li class="">
-                    <a href="network_monitoring.php">
+                    <a href="sessions.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
                     </a>
@@ -316,7 +310,7 @@ checkAdminAuth();
             </div>
         </div>
 
-        <?php displayFlashMessage();?>
+        <?php displayFlashMessage(); ?>
 
         <!-- Quick Stats Row -->
         <div class="row mb-4">
@@ -335,7 +329,7 @@ checkAdminAuth();
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-3">
                 <div class="stats-card">
                     <h4><i class="bi bi-recycle"></i> Total Bottles</h4>
@@ -351,7 +345,7 @@ checkAdminAuth();
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-3">
                 <div class="stats-card">
                     <h4><i class="bi bi-graph-up"></i> Average</h4>
@@ -362,16 +356,16 @@ checkAdminAuth();
                     <div class="stat-item">
                         <span>This Period:</span>
                         <span class="stat-value">
-                            <?php 
+                            <?php
                             $total = array_sum(array_column($depositStats, 'total_bottles'));
                             $count = array_sum(array_column($depositStats, 'deposit_count'));
-                            echo $count > 0 ? number_format($total/$count, 1) : '0.0';
+                            echo $count > 0 ? number_format($total / $count, 1) : '0.0';
                             ?>
                         </span>
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-3">
                 <div class="filter-section">
                     <h5><i class="bi bi-funnel"></i> Filter Period</h5>
@@ -379,14 +373,14 @@ checkAdminAuth();
                         <div class="btn-group w-100 mb-3" role="group">
                             <input type="radio" class="btn-check" name="time_filter" id="day_filter" value="day" <?php echo $timeFilter === 'day' ? 'checked' : ''; ?>>
                             <label class="btn btn-outline-primary time-filter-btn" for="day_filter">Daily</label>
-                            
+
                             <input type="radio" class="btn-check" name="time_filter" id="week_filter" value="week" <?php echo $timeFilter === 'week' ? 'checked' : ''; ?>>
                             <label class="btn btn-outline-primary time-filter-btn" for="week_filter">Weekly</label>
-                            
+
                             <input type="radio" class="btn-check" name="time_filter" id="month_filter" value="month" <?php echo $timeFilter === 'month' ? 'checked' : ''; ?>>
                             <label class="btn btn-outline-primary time-filter-btn" for="month_filter">Monthly</label>
                         </div>
-                        
+
                         <div id="custom_date_group" style="display: <?php echo $timeFilter === 'custom' ? 'block' : 'none'; ?>;">
                             <div class="mb-3">
                                 <label class="form-label">Start Date</label>
@@ -397,7 +391,7 @@ checkAdminAuth();
                                 <input type="date" name="custom_end_date" class="form-control" value="<?php echo $customEndDate; ?>">
                             </div>
                         </div>
-                        
+
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-filter"></i> Apply Filter
                         </button>
@@ -416,7 +410,7 @@ checkAdminAuth();
                     </span>
                 </div>
             </div>
-            
+
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
@@ -429,15 +423,15 @@ checkAdminAuth();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
+                        <?php
                         $prevCount = null;
-                        foreach ($depositStats as $index => $stat): 
+                        foreach ($depositStats as $index => $stat):
                             $trendIcon = '';
                             if ($prevCount !== null) {
                                 if ($stat['deposit_count'] > $prevCount) {
-                                    $trendIcon = '<i class="bi bi-arrow-up trend-up"></i> ' . round(($stat['deposit_count'] - $prevCount)/$prevCount * 100) . '%';
+                                    $trendIcon = '<i class="bi bi-arrow-up trend-up"></i> ' . round(($stat['deposit_count'] - $prevCount) / $prevCount * 100) . '%';
                                 } elseif ($stat['deposit_count'] < $prevCount) {
-                                    $trendIcon = '<i class="bi bi-arrow-down trend-down"></i> ' . round(($prevCount - $stat['deposit_count'])/$prevCount * 100) . '%';
+                                    $trendIcon = '<i class="bi bi-arrow-down trend-down"></i> ' . round(($prevCount - $stat['deposit_count']) / $prevCount * 100) . '%';
                                 } else {
                                     $trendIcon = '<span class="text-muted">No change</span>';
                                 }
@@ -488,7 +482,7 @@ checkAdminAuth();
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($deposits as $deposit):?>
+                            <?php foreach ($deposits as $deposit): ?>
                                 <tr>
                                     <td>#<?php echo $deposit['deposit_id']; ?></td>
                                     <td>
@@ -502,7 +496,7 @@ checkAdminAuth();
                                         </a>
                                     </td>
                                 </tr>
-                            <?php endforeach;?>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -526,9 +520,9 @@ checkAdminAuth();
                                 <label for="bottle_count" class="form-label">
                                     <i class="bi bi-recycle"></i> Number of Bottles
                                 </label>
-                                <input type="number" class="form-control" id="bottle_count" 
-                                       name="bottle_count" min="1" required
-                                       placeholder="Enter number of bottles deposited">
+                                <input type="number" class="form-control" id="bottle_count"
+                                    name="bottle_count" min="1" required
+                                    placeholder="Enter number of bottles deposited">
                                 <div class="form-text">
                                     Each bottle will generate a unique voucher code for internet access.
                                 </div>
@@ -537,7 +531,7 @@ checkAdminAuth();
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                 <i class="bi bi-x"></i> Cancel
-                            </button> 
+                            </button>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Add Deposit
                             </button>
@@ -551,13 +545,13 @@ checkAdminAuth();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Toggle sidebar
-        document.querySelector('.sidebar-toggle').addEventListener('click', function () {
+        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
 
         // Profile dropdown
-        document.querySelector('.dropdown-header').addEventListener('click', function () {
+        document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
 
@@ -574,4 +568,5 @@ checkAdminAuth();
         });
     </script>
 </body>
+
 </html>

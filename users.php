@@ -23,10 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['toggle_admin'])) {
         $user_id = (int)$_POST['user_id'];
         $is_admin = (int)$_POST['is_admin'];
-        
+
         $stmt = $conn->prepare("UPDATE users SET is_admin = ? WHERE id = ?");
         $stmt->bind_param("ii", $is_admin, $user_id);
-        
+
         if ($stmt->execute()) {
             $action = $is_admin ? 'granted admin rights' : 'revoked admin rights';
             logAdminActivity('User Update', "$action for user #$user_id");
@@ -34,14 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif (isset($_POST['delete_user'])) {
         $user_id = (int)$_POST['user_id'];
-        
+
         if ($user_id == $_SESSION['user_id']) {
             redirectWithMessage('users.php', 'error', 'You cannot delete your own account!');
         }
-        
+
         $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
         $stmt->bind_param("i", $user_id);
-        
+
         if ($stmt->execute()) {
             logAdminActivity('User Delete', "Deleted user #$user_id");
             redirectWithMessage('users.php', 'success', 'User deleted successfully!');
@@ -53,6 +53,7 @@ logAdminActivity('Users Access', 'Viewed users list');
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,8 +61,9 @@ logAdminActivity('Users Access', 'Viewed users list');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body class="dashboard-container">
-<div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
                 <h1><?= SITE_NAME ?></h1>
@@ -98,7 +100,7 @@ logAdminActivity('Users Access', 'Viewed users list');
                     </a>
                 </li>
                 <li class="">
-                    <a href="network_monitoring.php">
+                    <a href="sessions.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
                     </a>
@@ -146,7 +148,7 @@ logAdminActivity('Users Access', 'Viewed users list');
         <?php displayFlashMessage(); ?>
 
         <div class="card">
-                        
+
             <div class="card-header">
 
                 <h3>System Users</h3>
@@ -154,7 +156,7 @@ logAdminActivity('Users Access', 'Viewed users list');
                     <i class="bi bi-plus"></i> Add User
                 </button>
             </div>
-            
+
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="transaction-logs">
@@ -170,34 +172,34 @@ logAdminActivity('Users Access', 'Viewed users list');
                         </thead>
                         <tbody>
                             <?php foreach ($users as $user): ?>
-                            <tr>
-                                <td><?= $user['id'] ?></td>
-                                <td><?= htmlspecialchars($user['username']) ?></td>
-                                <td><?= htmlspecialchars($user['email']) ?></td>
-                                <td>
-                                    <?php if ($user['id'] == $_SESSION['user_id']): ?>
-                                        <span class="status green">You</span>
-                                    <?php else: ?>
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                            <input type="hidden" name="is_admin" value="<?= $user['is_admin'] ? 0 : 1 ?>">
-                                            <button type="submit" name="toggle_admin" class="btn btn-sm <?= $user['is_admin'] ? 'btn-success' : 'btn-secondary' ?>">
-                                                <?= $user['is_admin'] ? 'Admin' : 'User' ?>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= date('M j, Y', strtotime($user['created_at'])) ?></td>
-                                <td>
-                                    <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                        <button class="btn btn-sm btn-danger delete-user" 
-                                                data-user-id="<?= $user['id'] ?>" 
+                                <tr>
+                                    <td><?= $user['id'] ?></td>
+                                    <td><?= htmlspecialchars($user['username']) ?></td>
+                                    <td><?= htmlspecialchars($user['email']) ?></td>
+                                    <td>
+                                        <?php if ($user['id'] == $_SESSION['user_id']): ?>
+                                            <span class="status green">You</span>
+                                        <?php else: ?>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                                <input type="hidden" name="is_admin" value="<?= $user['is_admin'] ? 0 : 1 ?>">
+                                                <button type="submit" name="toggle_admin" class="btn btn-sm <?= $user['is_admin'] ? 'btn-success' : 'btn-secondary' ?>">
+                                                    <?= $user['is_admin'] ? 'Admin' : 'User' ?>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= date('M j, Y', strtotime($user['created_at'])) ?></td>
+                                    <td>
+                                        <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                            <button class="btn btn-sm btn-danger delete-user"
+                                                data-user-id="<?= $user['id'] ?>"
                                                 data-username="<?= htmlspecialchars($user['username']) ?>">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -304,4 +306,5 @@ logAdminActivity('Users Access', 'Viewed users list');
         });
     </script>
 </body>
+
 </html>

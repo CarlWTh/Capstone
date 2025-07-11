@@ -106,7 +106,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                     </a>
                 </li>
                 <li class="">
-                    <a href="network_monitoring.php">
+                    <a href="sessions.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
                     </a>
@@ -117,7 +117,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                         <span>Users</span>
                     </a>
                 </li>
-                <li>
+                <li class="">
                     <a href="activity_logs.php">
                         <i class="bi bi-clock-history"></i>
                         <span>Activity Logs</span>
@@ -132,6 +132,24 @@ logAdminActivity('Settings Access', 'Accessed settings page');
             </ul>
         </nav>
     </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="main-header">
+            <h1><i class="bi bi-gear"></i> System Settings</h1>
+            <div class="profile-dropdown">
+                <div class="dropdown-header">
+                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
+                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a href="#"><i class="bi bi-person"></i> Profile</a>
+                    <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
+                    <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                </div>
+            </div>
+        </div>
 
         <?php displayFlashMessage(); ?>
 

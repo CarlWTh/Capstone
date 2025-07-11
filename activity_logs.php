@@ -29,6 +29,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,7 +43,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
             border-bottom: 2px solid #e9ecef;
             margin-bottom: 1.5rem;
         }
-        
+
         .log-tab {
             padding: 0.75rem 1.5rem;
             cursor: pointer;
@@ -56,15 +57,15 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .log-tab:hover {
             color: var(--primary-color);
         }
-        
+
         .log-tab.active {
             color: var(--primary-color);
         }
-        
+
         .log-tab.active::after {
             content: '';
             position: absolute;
@@ -74,15 +75,15 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
             height: 2px;
             background: var(--primary-color);
         }
-        
+
         .log-content {
             display: none;
         }
-        
+
         .log-content.active {
             display: block;
         }
-        
+
         .sms-status {
             display: inline-flex;
             align-items: center;
@@ -92,36 +93,36 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
             font-size: 0.75rem;
             font-weight: 500;
         }
-        
+
         .status-success {
             background-color: rgba(46, 204, 113, 0.1);
             color: var(--success-color);
         }
-        
+
         .status-failed {
             background-color: rgba(231, 76, 60, 0.1);
             color: var(--danger-color);
         }
-        
+
         .status-pending {
             background-color: rgba(241, 196, 15, 0.1);
             color: #f39c12;
         }
-        
+
         .recipient-cell {
             max-width: 200px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .message-preview {
             max-width: 300px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .badge-count {
             background-color: var(--accent-color);
             color: white;
@@ -132,9 +133,10 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
         }
     </style>
 </head>
+
 <body class="dashboard-container">
     <!-- Sidebar remains exactly the same... -->
-        <div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
                 <h1><?= SITE_NAME ?></h1>
@@ -171,7 +173,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
                     </a>
                 </li>
                 <li class="">
-                    <a href="network_monitoring.php">
+                    <a href="sessions.php">
                         <i class="bi bi-wifi"></i>
                         <span>Network Monitoring</span>
                     </a>
@@ -229,7 +231,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
                         <span class="badge-count">24</span>
                     </button>
                 </div>
-                
+
                 <div class="filter-options">
                     <input type="text" id="searchLogs" placeholder="Search logs..." class="form-control">
                     <button class="btn btn-secondary">
@@ -237,7 +239,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
                     </button>
                 </div>
             </div>
-            
+
             <div class="card-body">
                 <!-- Admin Logs Content -->
                 <div id="adminLogs" class="log-content active">
@@ -254,13 +256,13 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
                             </thead>
                             <tbody>
                                 <?php foreach ($logs as $log): ?>
-                                <tr>
-                                    <td><?= $log['log_id'] ?></td>
-                                    <td><?= htmlspecialchars($log['username']) ?></td>
-                                    <td><?= htmlspecialchars($log['action']) ?></td>
-                                    <td><?= htmlspecialchars($log['details']) ?></td>
-                                    <td><?= date('M j, Y H:i', strtotime($log['timestamp'])) ?></td>
-                                </tr>
+                                    <tr>
+                                        <td><?= $log['log_id'] ?></td>
+                                        <td><?= htmlspecialchars($log['username']) ?></td>
+                                        <td><?= htmlspecialchars($log['action']) ?></td>
+                                        <td><?= htmlspecialchars($log['details']) ?></td>
+                                        <td><?= date('M j, Y H:i', strtotime($log['timestamp'])) ?></td>
+                                    </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
@@ -276,9 +278,9 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
                                 <i class="bi bi-chevron-left"></i> Prev
                             </button>
                         <?php endif; ?>
-                        
+
                         <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
-                        
+
                         <?php if ($page < $total_pages): ?>
                             <a href="?page=<?= $page + 1 ?>" class="btn btn-secondary">
                                 Next <i class="bi bi-chevron-right"></i>
@@ -290,7 +292,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
                         <?php endif; ?>
                     </div>
                 </div>
-                
+
                 <!-- SMS Logs Content (UI Only) -->
                 <div id="smsLogs" class="log-content">
                     <div class="table-responsive">
@@ -375,7 +377,7 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
         document.getElementById('searchLogs').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
             const activeTable = document.querySelector('.log-content.active table tbody');
-            
+
             activeTable.querySelectorAll('tr').forEach(row => {
                 const text = row.textContent.toLowerCase();
                 row.style.display = text.includes(searchTerm) ? '' : 'none';
@@ -387,11 +389,11 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
             // Update active tab
             document.querySelectorAll('.log-tab').forEach(t => t.classList.remove('active'));
             document.querySelector(`.log-tab[onclick="switchLogTab('${tab}')"]`).classList.add('active');
-            
+
             // Update active content
             document.querySelectorAll('.log-content').forEach(c => c.classList.remove('active'));
             document.getElementById(`${tab}Logs`).classList.add('active');
-            
+
             // Reset search
             document.getElementById('searchLogs').value = '';
             document.querySelectorAll('.transaction-logs tbody tr').forEach(row => {
@@ -400,4 +402,5 @@ logAdminActivity('Activity Logs', 'Viewed ' . ($log_type === 'sms' ? 'SMS' : 'ac
         }
     </script>
 </body>
+
 </html>
