@@ -1,27 +1,58 @@
 <?php
 require_once 'config.php';
-checkAdminAuth();
+checkAdminAuth(); // This function is defined in config.php
 
 // Handle new deposit addition
+// Assuming you have your database connection ($conn), getMinutesPerBottle(),
+// generateUniqueVoucherCode(), logAdminActivity(), and redirectWithMessage() functions defined.
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
     $bottleCount = (int) $_POST['bottle_count'];
+    $voucherDuration = getMinutesPerBottle(); // Get from config.php which reads from Settings
 
     if ($bottleCount > 0) {
-        $stmt = $conn->prepare("INSERT INTO BottleDeposit (bottle_count) VALUES (?)");
-        $stmt->bind_param("i", $bottleCount);
-        if ($stmt->execute()) {
-            logAdminActivity('Deposit Added', "Added a new bottle deposit of $bottleCount bottles");
-            $depositId = $conn->insert_id;
-            for ($i = 0; $i < $bottleCount; $i++) {
+        // Start a transaction
+        $conn->begin_transaction();
+        try {
+            $placeholder_user_id = 1; // In a real application, this user_id would come from a user scanning a QR code or similar.
+            $time_credits_earned = $bottleCount * $voucherDuration;
+
+            // Insert into 'Transactions' table
+            $stmt = $conn->prepare("INSERT INTO Transactions (user_id, bottle_count, time_credits_earned) VALUES (?, ?, ?)");
+            $stmt->bind_param("iid", $placeholder_user_id, $bottleCount, $time_credits_earned);
+
+            if ($stmt->execute()) {
+                $transactionId = $conn->insert_id;
+                logAdminActivity('Deposit Added', "Added a new bottle deposit of $bottleCount bottles (Transaction ID: $transactionId)");
+
+                // Calculate the expiration timestamp for the single voucher
+                $currentTimestamp = new DateTime();
+                // The voucher's duration should be the total time credits earned for all bottles
+                $expirationDateTime = $currentTimestamp->modify("+$time_credits_earned minutes")->format('Y-m-d H:i:s');
+
+                // Generate and insert only ONE voucher
                 $voucherCode = generateUniqueVoucherCode($conn);
-                $voucherStmt = $conn->prepare("INSERT INTO Voucher (code, deposit_id) VALUES (?, ?)");
-                $voucherStmt->bind_param("si", $voucherCode, $depositId); // Bind parameters
+                $voucherStmt = $conn->prepare("INSERT INTO Voucher (transaction_id, voucher_code, Expiration, status, time_credits_value) VALUES (?, ?, ?, 'unused', ?)");
+                // The 'time_credits_value' column should store the total time credits for this single voucher
+                $voucherStmt->bind_param("issd", $transactionId, $voucherCode, $expirationDateTime, $time_credits_earned);
                 $voucherStmt->execute();
+
+                if ($voucherStmt->error) {
+                    throw new Exception("Voucher creation failed: " . $voucherStmt->error);
+                }
+
+                $conn->commit(); // Commit the transaction
+                redirectWithMessage('bottle_deposits.php', 'success', 'Deposit added and voucher created successfully!');
+            } else {
+                throw new Exception("Failed to add deposit: " . $stmt->error);
             }
-            redirectWithMessage('bottle_deposits.php', 'success', 'Deposit added and vouchers created successfully!');
-        } else {
-            redirectWithMessage('bottle_deposits.php', 'error', 'Failed to add deposit.');
+        } catch (Exception $e) {
+            $conn->rollback(); // Rollback on error
+            error_log("Deposit/Voucher creation error: " . $e->getMessage());
+            redirectWithMessage('bottle_deposits.php', 'error', 'Failed to add deposit. ' . $e->getMessage());
         }
+    } else {
+        redirectWithMessage('bottle_deposits.php', 'error', 'Bottle count must be greater than 0.');
     }
 }
 
@@ -30,36 +61,63 @@ $timeFilter = $_GET['time_filter'] ?? 'week';
 $customStartDate = $_GET['custom_start_date'] ?? '';
 $customEndDate = $_GET['custom_end_date'] ?? '';
 
-// Build the date filter condition
+// Build the date filter condition for 'Transactions' table
 $dateCondition = '';
 $params = array();
 $paramTypes = '';
 
 if ($timeFilter === 'day') {
-    $dateCondition = "AND DATE(timestamp) >= CURDATE() - INTERVAL 7 DAY";
+    // Last 7 days, grouped by day. Change to `CURDATE()` for current day only.
+    $dateCondition = "AND DATE(created_at) >= CURDATE() - INTERVAL 7 DAY";
 } elseif ($timeFilter === 'week') {
-    $dateCondition = "AND timestamp >= DATE_SUB(NOW(), INTERVAL 4 WEEK)";
+    // Last 4 weeks, grouped by week.
+    $dateCondition = "AND created_at >= DATE_SUB(NOW(), INTERVAL 4 WEEK)";
 } elseif ($timeFilter === 'month') {
-    $dateCondition = "AND timestamp >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
+    // Last 6 months, grouped by month.
+    $dateCondition = "AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
 } elseif ($timeFilter === 'custom' && $customStartDate && $customEndDate) {
-    $dateCondition = "AND DATE(timestamp) BETWEEN ? AND ?";
+    $dateCondition = "AND DATE(created_at) BETWEEN ? AND ?";
     $params = array($customStartDate, $customEndDate);
     $paramTypes = 'ss';
 }
 
-// Get deposit statistics based on filter
-$groupBy = $timeFilter === 'day' ? 'DATE(timestamp)' : ($timeFilter === 'week' ? 'YEARWEEK(timestamp)' : 'DATE_FORMAT(timestamp, "%Y-%m")');
+// Get deposit statistics based on filter from 'Transactions' table
+$groupBy = '';
+$dateFormat = '';
 
-$dateFormat = $timeFilter === 'day' ? 'DATE(timestamp) as period' : ($timeFilter === 'week' ? 'CONCAT(YEAR(timestamp), "-W", LPAD(WEEK(timestamp), 2, "0")) as period' :
-        'DATE_FORMAT(timestamp, "%Y-%m") as period');
+switch ($timeFilter) {
+    case 'day':
+        $groupBy = 'DATE(created_at)';
+        $dateFormat = 'DATE(created_at) as period';
+        break;
+    case 'week':
+        $groupBy = 'YEARWEEK(created_at)';
+        $dateFormat = 'CONCAT(YEAR(created_at), "-Week ", LPAD(WEEK(created_at, 1), 2, "0")) as period'; // WEEK(date, 1) starts week on Monday
+        break;
+    case 'month':
+        $groupBy = 'DATE_FORMAT(created_at, "%Y-%m")';
+        $dateFormat = 'DATE_FORMAT(created_at, "%Y-%m") as period';
+        break;
+    case 'custom':
+        // If custom is selected, group by day for finer granularity, or you could make this configurable.
+        $groupBy = 'DATE(created_at)';
+        $dateFormat = 'DATE(created_at) as period';
+        break;
+    default:
+        // Default to 'week' if no valid filter is set
+        $groupBy = 'YEARWEEK(created_at)';
+        $dateFormat = 'CONCAT(YEAR(created_at), "-W", LPAD(WEEK(created_at, 1), 2, "0")) as period';
+        break;
+}
 
 $statsQuery = "
-    SELECT 
+    SELECT
         $dateFormat,
         COUNT(*) as deposit_count,
         SUM(bottle_count) as total_bottles,
         AVG(bottle_count) as avg_bottles_per_deposit
-    FROM BottleDeposit 
+        
+    FROM Transactions
     WHERE 1=1 $dateCondition
     GROUP BY $groupBy
     ORDER BY period DESC
@@ -75,15 +133,15 @@ if (!empty($params)) {
     $depositStats = $conn->query($statsQuery)->fetch_all(MYSQLI_ASSOC);
 }
 
-// Get overall statistics
+// Get overall statistics from 'Transactions' table
 $overallStatsQuery = "
-    SELECT 
+    SELECT
         COUNT(*) as total_deposits,
         SUM(bottle_count) as total_bottles,
         AVG(bottle_count) as avg_bottles_per_deposit,
-        MIN(timestamp) as first_deposit_date,
-        MAX(timestamp) as last_deposit_date
-    FROM BottleDeposit
+        MIN(created_at) as first_deposit_date,
+        MAX(created_at) as last_deposit_date
+    FROM Transactions
     WHERE 1=1 $dateCondition
 ";
 
@@ -97,10 +155,13 @@ if (!empty($params)) {
     $overallStats = $conn->query($overallStatsQuery)->fetch_assoc();
 }
 
+// Get recent deposits for the table from 'Transactions' table
+// Limiting to, e.g., 20 recent deposits for display, consider pagination for more
 $deposits = $conn->query("
-    SELECT deposit_id, bottle_count, timestamp  
-    FROM BottleDeposit
-    ORDER BY timestamp DESC  
+    SELECT transaction_id AS deposit_id, bottle_count, created_at AS timestamp
+    FROM Transactions
+    ORDER BY created_at DESC
+    LIMIT 20
 ")->fetch_all(MYSQLI_ASSOC);
 
 logAdminActivity('Bottle Deposits Access', 'Viewed bottle deposits list');
@@ -108,20 +169,15 @@ logAdminActivity('Bottle Deposits Access', 'Viewed bottle deposits list');
 function generateUniqueVoucherCode($conn)
 {
     do {
+        // Generate a 10-character alphanumeric code
         $voucherCode = substr(md5(uniqid(rand(), true)), 0, 10);
-        $stmt = $conn->prepare("SELECT 1 FROM Voucher WHERE code = ?");
+        $stmt = $conn->prepare("SELECT 1 FROM Voucher WHERE voucher_code = ?");
         $stmt->bind_param("s", $voucherCode);
         $stmt->execute();
         $stmt->store_result();
     } while ($stmt->num_rows > 0);
     return $voucherCode;
 }
-?>
-<?php
-require_once 'config.php';
-checkAdminAuth();
-
-// [Previous PHP code remains exactly the same...]
 ?>
 
 <!DOCTYPE html>
@@ -177,15 +233,6 @@ checkAdminAuth();
             margin-bottom: 1.5rem;
             box-shadow: var(--shadow);
             height: 100%;
-        }
-
-        .period-badge {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            padding: 0.35rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 500;
         }
 
         .trend-up {
@@ -298,12 +345,12 @@ checkAdminAuth();
             <h2><i class="bi bi-recycle"></i> Bottle Deposits</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
-                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
+                    <img src="./img/avatar.jpg" alt="Profile" class="avatar-img">
                     <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
-                    <a href="#"><i class="bi bi-person"></i> Profile</a>
+                    <a href="profile.php"><i class="bi bi-person"></i> Profile</a>
                     <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
                     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
@@ -312,14 +359,13 @@ checkAdminAuth();
 
         <?php displayFlashMessage(); ?>
 
-        <!-- Quick Stats Row -->
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="stats-card">
                     <h4><i class="bi bi-collection"></i> Total Deposits</h4>
                     <div class="stat-item">
                         <span>All Time:</span>
-                        <span class="stat-value"><?php echo number_format($overallStats['total_deposits']); ?></span>
+                        <span class="stat-value"><?php echo number_format($overallStats['total_deposits'] ?? 0); ?></span>
                     </div>
                     <div class="stat-item">
                         <span>This Period:</span>
@@ -335,7 +381,7 @@ checkAdminAuth();
                     <h4><i class="bi bi-recycle"></i> Total Bottles</h4>
                     <div class="stat-item">
                         <span>All Time:</span>
-                        <span class="stat-value"><?php echo number_format($overallStats['total_bottles']); ?></span>
+                        <span class="stat-value"><?php echo number_format($overallStats['total_bottles'] ?? 0); ?></span>
                     </div>
                     <div class="stat-item">
                         <span>This Period:</span>
@@ -351,15 +397,25 @@ checkAdminAuth();
                     <h4><i class="bi bi-graph-up"></i> Average</h4>
                     <div class="stat-item">
                         <span>Bottles/Deposit:</span>
-                        <span class="stat-value"><?php echo number_format($overallStats['avg_bottles_per_deposit'], 1); ?></span>
+                        <span class="stat-value"><?php echo number_format($overallStats['avg_bottles_per_deposit'] ?? 0, 1); ?></span>
                     </div>
-                    <div class="stat-item">
-                        <span>This Period:</span>
+                     <div class="stat-item">
+                        <span>Time Credits (Overall):</span>
                         <span class="stat-value">
                             <?php
-                            $total = array_sum(array_column($depositStats, 'total_bottles'));
-                            $count = array_sum(array_column($depositStats, 'deposit_count'));
-                            echo $count > 0 ? number_format($total / $count, 1) : '0.0';
+                            // Overall average time credits per deposit
+                            $overallAvgTimeCredits = ($overallStats['avg_bottles_per_deposit'] ?? 0) * getMinutesPerBottle();
+                            echo number_format($overallAvgTimeCredits, 1) . ' min';
+                            ?>
+                        </span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Bottles/Deposit (Period):</span>
+                        <span class="stat-value">
+                            <?php
+                            $total_bottles_period = array_sum(array_column($depositStats, 'total_bottles'));
+                            $total_deposits_period = array_sum(array_column($depositStats, 'deposit_count'));
+                            echo $total_deposits_period > 0 ? number_format($total_bottles_period / $total_deposits_period, 1) : '0.0';
                             ?>
                         </span>
                     </div>
@@ -372,23 +428,28 @@ checkAdminAuth();
                     <form method="GET" action="bottle_deposits.php">
                         <div class="btn-group w-100 mb-3" role="group">
                             <input type="radio" class="btn-check" name="time_filter" id="day_filter" value="day" <?php echo $timeFilter === 'day' ? 'checked' : ''; ?>>
-                            <label class="btn btn-outline-primary time-filter-btn" for="day_filter">Daily</label>
+                            <label class="btn btn-outline-primary time-filter-btn" for="day_filter">Last 7 Days</label>
 
                             <input type="radio" class="btn-check" name="time_filter" id="week_filter" value="week" <?php echo $timeFilter === 'week' ? 'checked' : ''; ?>>
-                            <label class="btn btn-outline-primary time-filter-btn" for="week_filter">Weekly</label>
+                            <label class="btn btn-outline-primary time-filter-btn" for="week_filter">Last 4 Weeks</label>
 
                             <input type="radio" class="btn-check" name="time_filter" id="month_filter" value="month" <?php echo $timeFilter === 'month' ? 'checked' : ''; ?>>
-                            <label class="btn btn-outline-primary time-filter-btn" for="month_filter">Monthly</label>
+                            <label class="btn btn-outline-primary time-filter-btn" for="month_filter">Last 6 Months</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <input type="radio" class="btn-check" name="time_filter" id="custom_filter" value="custom" <?php echo $timeFilter === 'custom' ? 'checked' : ''; ?>>
+                            <label class="btn btn-outline-primary time-filter-btn w-100" for="custom_filter">Custom Range</label>
                         </div>
 
                         <div id="custom_date_group" style="display: <?php echo $timeFilter === 'custom' ? 'block' : 'none'; ?>;">
                             <div class="mb-3">
                                 <label class="form-label">Start Date</label>
-                                <input type="date" name="custom_start_date" class="form-control" value="<?php echo $customStartDate; ?>">
+                                <input type="date" name="custom_start_date" class="form-control" value="<?php echo htmlspecialchars($customStartDate); ?>">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">End Date</label>
-                                <input type="date" name="custom_end_date" class="form-control" value="<?php echo $customEndDate; ?>">
+                                <input type="date" name="custom_end_date" class="form-control" value="<?php echo htmlspecialchars($customEndDate); ?>">
                             </div>
                         </div>
 
@@ -400,13 +461,19 @@ checkAdminAuth();
             </div>
         </div>
 
-        <!-- Deposit Trends -->
         <div class="chart-container">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4><i class="bi bi-graph-up"></i> Deposit Trends</h4>
                 <div>
                     <span class="badge bg-primary">
-                        <?php echo ucfirst($timeFilter); ?> View
+                        <?php
+                        $filterText = '';
+                        if ($timeFilter === 'day') $filterText = 'Last 7 Days (Daily)';
+                        else if ($timeFilter === 'week') $filterText = 'Last 4 Weeks (Weekly)';
+                        else if ($timeFilter === 'month') $filterText = 'Last 6 Months (Monthly)';
+                        else if ($timeFilter === 'custom') $filterText = 'Custom Range';
+                        echo htmlspecialchars($filterText);
+                        ?>
                     </span>
                 </div>
             </div>
@@ -419,7 +486,8 @@ checkAdminAuth();
                             <th>Deposits</th>
                             <th>Bottles</th>
                             <th>Avg. Bottles</th>
-                            <th>Trend</th>
+                            <th>Avg. Time Credits</th>
+                            <th>Trend (vs. prev. period)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -429,9 +497,11 @@ checkAdminAuth();
                             $trendIcon = '';
                             if ($prevCount !== null) {
                                 if ($stat['deposit_count'] > $prevCount) {
-                                    $trendIcon = '<i class="bi bi-arrow-up trend-up"></i> ' . round(($stat['deposit_count'] - $prevCount) / $prevCount * 100) . '%';
+                                    $percentageChange = $prevCount > 0 ? round(($stat['deposit_count'] - $prevCount) / $prevCount * 100) : 100;
+                                    $trendIcon = '<i class="bi bi-arrow-up trend-up"></i> ' . $percentageChange . '%';
                                 } elseif ($stat['deposit_count'] < $prevCount) {
-                                    $trendIcon = '<i class="bi bi-arrow-down trend-down"></i> ' . round(($prevCount - $stat['deposit_count']) / $prevCount * 100) . '%';
+                                    $percentageChange = $prevCount > 0 ? round(($prevCount - $stat['deposit_count']) / $prevCount * 100) : 100;
+                                    $trendIcon = '<i class="bi bi-arrow-down trend-down"></i> ' . $percentageChange . '%';
                                 } else {
                                     $trendIcon = '<span class="text-muted">No change</span>';
                                 }
@@ -440,20 +510,26 @@ checkAdminAuth();
                         ?>
                             <tr>
                                 <td>
-                                    <span class="period-badge">
+                                    <span>
                                         <?php echo htmlspecialchars($stat['period']); ?>
                                     </span>
                                 </td>
-                                <td><strong><?php echo number_format($stat['deposit_count']); ?></strong></td>
+                                <td><?php echo number_format($stat['deposit_count']); ?></td>
                                 <td><?php echo number_format($stat['total_bottles']); ?></td>
                                 <td><?php echo number_format($stat['avg_bottles_per_deposit'], 1); ?></td>
+                                <td>
+                                    <?php
+                                    $avgTimeCreditsPerPeriodDeposit = $stat['avg_bottles_per_deposit'] * getMinutesPerBottle();
+                                    echo number_format($avgTimeCreditsPerPeriodDeposit, 1) . ' min';
+                                    ?>
+                                </td>
                                 <td><?php echo $trendIcon; ?></td>
                             </tr>
                         <?php endforeach; ?>
                         <?php if (empty($depositStats)): ?>
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">
-                                    <i class="bi bi-info-circle"></i> No deposit data available for the selected period
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-info-circle"></i> No deposit data available for the selected period.
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -462,7 +538,6 @@ checkAdminAuth();
             </div>
         </div>
 
-        <!-- Recent Deposits -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="mb-0"><i class="bi bi-clock-history"></i> Recent Deposits</h3>
@@ -477,33 +552,47 @@ checkAdminAuth();
                             <tr>
                                 <th>ID</th>
                                 <th>Bottles</th>
-                                <th>Date</th>
+                                <th>Time Credits</th>
+                                <th>Timestamp</th>
                                 <th>Vouchers</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($deposits as $deposit): ?>
+                            <?php if (!empty($deposits)): ?>
+                                <?php foreach ($deposits as $deposit): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($deposit['deposit_id']); ?></td>
+                                        <td>
+                                            <i class="bi bi-recycle bottle-icon"></i>
+                                            <?php echo htmlspecialchars($deposit['bottle_count']); ?>
+                                        </td>
+                                        <td>
+                                            <?php
+                                            $timeCredits = $deposit['bottle_count'] * getMinutesPerBottle();
+                                            echo number_format($timeCredits) . ' min';
+                                            ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars(date('M j, Y h:i A', strtotime($deposit['timestamp']))); ?></td>
+                                        <td>
+                                            <a href="vouchers.php?transaction_id=<?php echo htmlspecialchars($deposit['deposit_id']); ?>" class="btn btn-sm btn-outline-primary">
+                                                View Vouchers
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
                                 <tr>
-                                    <td>#<?php echo $deposit['deposit_id']; ?></td>
-                                    <td>
-                                        <i class="bi bi-recycle bottle-icon"></i>
-                                        <?php echo $deposit['bottle_count']; ?>
-                                    </td>
-                                    <td><?php echo date('M j, Y H:i', strtotime($deposit['timestamp'])); ?></td>
-                                    <td>
-                                        <a href="vouchers.php?deposit_id=<?php echo $deposit['deposit_id']; ?>" class="btn btn-sm btn-outline-primary">
-                                            View Vouchers
-                                        </a>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="bi bi-info-circle"></i> No recent deposits found.
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Add Deposit Modal -->
         <div class="modal fade" id="addDepositModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -565,6 +654,14 @@ checkAdminAuth();
                     customDateGroup.style.display = 'none';
                 }
             });
+        });
+
+        // Close dropdown if clicked outside
+        window.addEventListener('click', function(e) {
+            const profileDropdown = document.querySelector('.profile-dropdown');
+            if (!profileDropdown.contains(e.target)) {
+                document.querySelector('.dropdown-content').classList.remove('show-dropdown');
+            }
         });
     </script>
 </body>

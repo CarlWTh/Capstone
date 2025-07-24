@@ -1,28 +1,43 @@
 <?php
 require_once 'config.php';
-checkAdminAuth();
+checkAdminAuth(); // This function is defined in config.php
 
 // Get dashboard statistics
 $stats = [];
-$stats['total_deposits'] = $conn->query("SELECT COUNT(*) FROM BottleDeposit")->fetch_row()[0];
-$stats['total_bottles'] = $conn->query("SELECT SUM(bottle_count) FROM BottleDeposit")->fetch_row()[0];
+// Use 'Transactions' table for total deposits and bottles
+$stats['total_deposits'] = $conn->query("SELECT COUNT(*) FROM Transactions")->fetch_row()[0];
+$stats['total_bottles'] = $conn->query("SELECT SUM(bottle_count) FROM Transactions")->fetch_row()[0];
+// Use 'Voucher' table for total vouchers
 $stats['total_vouchers'] = $conn->query("SELECT COUNT(*) FROM Voucher")->fetch_row()[0];
-$stats['active_sessions'] = $conn->query("SELECT COUNT(*) FROM InternetSession WHERE end_time IS NULL")->fetch_row()[0];
+// Use 'UserSessions' table for active sessions
+$stats['active_sessions'] = $conn->query("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL")->fetch_row()[0];
 
-// Get recent deposits
+// Get recent deposits (now from 'Transactions' table)
 $recent_deposits = $conn->query("
-    SELECT d.deposit_id, d.timestamp, d.bottle_count, d.status, t.bin_id
-    FROM BottleDeposit d
-    JOIN TrashBin t ON d.bin_id = t.bin_id
-    ORDER BY d.timestamp DESC
+    SELECT 
+        t.transaction_id, 
+        t.bottle_count, 
+        v.voucher_code, 
+        t.created_at AS timestamp
+    FROM Transactions t
+    JOIN User u ON t.user_id = u.user_id
+    LEFT JOIN Voucher v ON v.transaction_id = t.transaction_id
+    ORDER BY t.created_at DESC
     LIMIT 5
 ")->fetch_all(MYSQLI_ASSOC);
 
-// Get bin status
+// Get bin status from 'Trashbin' table
 $bin_status = $conn->query("
-    SELECT bin_id, capacity, current_level, status 
-    FROM TrashBin 
-    ORDER BY status DESC, current_level DESC
+    SELECT trashbin_id AS bin_id,
+           -- Assuming 'capacity' and 'current_level' are columns in Trashbin
+           -- If not, you'll need to adjust or add them to the Trashbin table.
+           -- For this example, I'll use placeholder values if not present in your schema.
+           -- If they are, replace 100 with 'capacity' and 50 with 'current_level'.
+           100 AS capacity, -- Placeholder: Replace with actual capacity column from Trashbin
+           fill_level_percent AS current_level, -- Using fill_level_percent for current_level
+           status
+    FROM Trashbin
+    ORDER BY status DESC, fill_level_percent DESC
 ")->fetch_all(MYSQLI_ASSOC);
 
 // Log dashboard access
@@ -184,30 +199,20 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Time</th>
-                                            <th>Type</th>
-                                            <th>Count</th>
-
-                                            <th>Status</th>
-                                            <th>Bin</th>
+                                            <th>Bottle Count</th>
+                                            <th>Time Credits</th>
+                                            <th>Voucher</th>
+                                            <th>Timestamp</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($recent_deposits as $deposit): ?>
                                             <tr>
-                                                <td><?php echo $deposit['deposit_id']; ?></td>
-                                                <td><?php echo date('M j, H:i', strtotime($deposit['timestamp'])); ?></td>
-                                                <td><?php echo htmlspecialchars($deposit['bottle_type_id']); ?></td>
+                                                <td><?php echo $deposit['transaction_id']; ?></td>
                                                 <td><?php echo $deposit['bottle_count']; ?></td>
-
-                                                <td>
-                                                    <span class="status <?php
-                                                                        echo $deposit['status'] == 'processed' ? 'green' : ($deposit['status'] == 'rejected' ? 'red' : 'orange');
-                                                                        ?>">
-                                                        <?php echo ucfirst($deposit['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>Bin #<?php echo $deposit['bin_id']; ?></td>
+                                                <td><?php echo ($deposit['bottle_count'] * 5) . ' min'; ?></td> <!-- Example time credit logic -->
+                                                <td><?php echo htmlspecialchars($deposit['voucher_code'] ?? 'N/A'); ?></td>
+                                                <td><?php echo date('M j, Y h:i A', strtotime($deposit['timestamp'])); ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

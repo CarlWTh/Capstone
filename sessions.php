@@ -1,6 +1,6 @@
 <?php
 require_once 'config.php';
-checkAdminAuth();
+checkAdminAuth(); // This function is defined in config.php
 
 // Determine active tab
 $active_tab = $_GET['tab'] ?? 'active-sessions';
@@ -10,59 +10,125 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $per_page = 15;
 $offset = ($page - 1) * $per_page;
 
-// Get data based on active tab
+// Initialize variables
+$total_records = 0;
+$records = [];
+
+// Use prepared statements for queries with variables
 switch ($active_tab) {
     case 'active-sessions':
-        // Active internet sessions
-        $total_records = $conn->query("SELECT COUNT(*) FROM InternetSession WHERE end_time IS NULL")->fetch_row()[0];
-        $records = $conn->query("
-            SELECT i.*, v.code as voucher_code, s.device_mac_address
-            FROM InternetSession i
-            LEFT JOIN Voucher v ON i.voucher_id = v.voucher_id
-            JOIN StudentSession s ON i.anonymous_token = s.anonymous_token
-            WHERE i.end_time IS NULL
-            ORDER BY i.start_time DESC
-            LIMIT $per_page OFFSET $offset
-        ")->fetch_all(MYSQLI_ASSOC);
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL");
+        $stmt->execute();
+        $stmt->bind_result($total_records);
+        $stmt->fetch();
+        $stmt->close();
+
+        $stmt = $conn->prepare("
+            SELECT us.session_id, us.ip_address, us.start_time, us.end_time, us.duration_minutes,
+                   u.mac_address, v.voucher_code
+            FROM UserSessions us
+            JOIN User u ON us.user_id = u.user_id
+            LEFT JOIN Voucher v ON us.voucher_id = v.voucher_id
+            WHERE us.end_time IS NULL
+            ORDER BY us.start_time DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $per_page, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $records = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
         break;
 
     case 'session-logs':
-        // All internet sessions
-        $total_records = $conn->query("SELECT COUNT(*) FROM InternetSession")->fetch_row()[0];
-        $records = $conn->query("
-            SELECT i.*, v.code as voucher_code, s.device_mac_address
-            FROM InternetSession i
-            LEFT JOIN Voucher v ON i.voucher_id = v.voucher_id
-            JOIN StudentSession s ON i.anonymous_token = s.anonymous_token
-            ORDER BY i.start_time DESC
-            LIMIT $per_page OFFSET $offset
-        ")->fetch_all(MYSQLI_ASSOC);
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions");
+        $stmt->execute();
+        $stmt->bind_result($total_records);
+        $stmt->fetch();
+        $stmt->close();
+
+        $stmt = $conn->prepare("
+            SELECT us.session_id, us.ip_address, us.start_time, us.end_time, us.duration_minutes,
+                   u.mac_address, v.voucher_code
+            FROM UserSessions us
+            JOIN User u ON us.user_id = u.user_id
+            LEFT JOIN Voucher v ON us.voucher_id = v.voucher_id
+            ORDER BY us.start_time DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $per_page, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $records = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
         break;
 
-    case 'student-sessions':
-        // Student sessions
-        $total_records = $conn->query("SELECT COUNT(*) FROM StudentSession")->fetch_row()[0];
-        $records = $conn->query("
-            SELECT s.*, 
-                   COUNT(i.internet_session_id) as internet_session_count,
-                   MIN(i.start_time) as first_session_access,
-                   MAX(i.end_time) as last_session_access
-            FROM StudentSession s
-            LEFT JOIN InternetSession i ON s.anonymous_token = i.anonymous_token
-            GROUP BY s.session_id
-            ORDER BY s.session_id DESC
-            LIMIT $per_page OFFSET $offset
-        ")->fetch_all(MYSQLI_ASSOC);
+    case 'user-sessions':
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM User");
+        $stmt->execute();
+        $stmt->bind_result($total_records);
+        $stmt->fetch();
+        $stmt->close();
+
+        $stmt = $conn->prepare("
+            SELECT u.user_id, us.ip_address, u.time_credits, u.last_active, u.created_at,
+                   COUNT(us.session_id) as internet_session_count,
+                   MIN(us.start_time) as first_session_access,
+                   MAX(us.end_time) as last_session_access
+            FROM User u
+            LEFT JOIN UserSessions us ON u.user_id = us.user_id
+            GROUP BY u.user_id
+            ORDER BY u.user_id DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $per_page, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $records = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
         break;
 
     case 'bandwidth-usage':
-        // Bandwidth usage (placeholder)
-        $total_records = 0;
-        $records = [];
+        // Get total records for pagination
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM bandwidth_usage");
+        $stmt->execute();
+        $stmt->bind_result($total_records);
+        $stmt->fetch();
+        $stmt->close();
+
+        // Get paginated device usage records
+        $stmt = $conn->prepare("
+            SELECT bu.user_id, bu.Device_MAC_Address, bu.Download, bu.Upload, bu.Total, bu.Duration, u.mac_address
+            FROM bandwidth_usage bu
+            LEFT JOIN User u ON bu.user_id = u.user_id
+            ORDER BY bu.Total DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $per_page, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $records = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        // Calculate total usage stats
+        $stats = [
+            'total_usage' => 0,
+            'download' => 0,
+            'upload' => 0,
+            'active_devices' => $total_records
+        ];
+        $stmt = $conn->prepare("SELECT SUM(Download), SUM(Upload), SUM(Total) FROM bandwidth_usage");
+        $stmt->execute();
+        $stmt->bind_result($sum_download, $sum_upload, $sum_total);
+        $stmt->fetch();
+        $stmt->close();
+        $stats['download'] = $sum_download ?: 0;
+        $stats['upload'] = $sum_upload ?: 0;
+        $stats['total_usage'] = $sum_total ?: 0;
         break;
 }
 
-$total_pages = ceil($total_records / $per_page);
+$total_pages = $per_page > 0 ? ceil($total_records / $per_page) : 1;
 
 logAdminActivity('Network Monitoring', "Viewed $active_tab");
 ?>
@@ -207,7 +273,6 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
 </head>
 
 <body class="dashboard-container">
-    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
@@ -272,19 +337,15 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
         </nav>
     </div>
 
-    <!-- Main Content -->
     <div class="main-content">
         <div class="main-header">
             <h2><i class="bi bi-wifi"></i> Network Monitoring</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
-                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
-                    <span><?= htmlspecialchars($_SESSION['username']) ?></span>
-                    <i class="bi bi-chevron-down"></i>
+                    <img src="./img/avatar.jpg" alt="Profile" class="avatar-img"> <span><?= htmlspecialchars($_SESSION['username']) ?></span> <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
-                    <a href="#"><i class="bi bi-person"></i> Profile</a>
-                    <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
+                    <a href="profile.php"><i class="bi bi-person"></i> Profile</a> <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
                     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
             </div>
@@ -298,17 +359,44 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                     <button class="monitoring-tab <?= $active_tab === 'active-sessions' ? 'active' : '' ?>"
                         onclick="window.location='?tab=active-sessions'">
                         <i class="bi bi-activity"></i> Active Sessions
-                        <span class="tab-badge"><?= $conn->query("SELECT COUNT(*) FROM InternetSession WHERE end_time IS NULL")->fetch_row()[0] ?></span>
+                        <span class="tab-badge">
+                            <?php
+                            $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL");
+                            $stmt->execute();
+                            $stmt->bind_result($count);
+                            $stmt->fetch();
+                            $stmt->close();
+                            echo htmlspecialchars($count);
+                            ?>
+                        </span>
                     </button>
                     <button class="monitoring-tab <?= $active_tab === 'session-logs' ? 'active' : '' ?>"
                         onclick="window.location='?tab=session-logs'">
                         <i class="bi bi-list-check"></i> Session Logs
-                        <span class="tab-badge"><?= $conn->query("SELECT COUNT(*) FROM InternetSession")->fetch_row()[0] ?></span>
+                        <span class="tab-badge">
+                            <?php
+                            $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions");
+                            $stmt->execute();
+                            $stmt->bind_result($count);
+                            $stmt->fetch();
+                            $stmt->close();
+                            echo htmlspecialchars($count);
+                            ?>
+                        </span>
                     </button>
-                    <button class="monitoring-tab <?= $active_tab === 'student-sessions' ? 'active' : '' ?>"
-                        onclick="window.location='?tab=student-sessions'">
-                        <i class="bi bi-phone"></i> Student Sessions
-                        <span class="tab-badge"><?= $conn->query("SELECT COUNT(*) FROM StudentSession")->fetch_row()[0] ?></span>
+                    <button class="monitoring-tab <?= $active_tab === 'user-sessions' ? 'active' : '' ?>"
+                        onclick="window.location='?tab=user-sessions'">
+                        <i class="bi bi-phone"></i> User Sessions
+                        <span class="tab-badge">
+                            <?php
+                            $stmt = $conn->prepare("SELECT COUNT(*) FROM User");
+                            $stmt->execute();
+                            $stmt->bind_result($count);
+                            $stmt->fetch();
+                            $stmt->close();
+                            echo htmlspecialchars($count);
+                            ?>
+                        </span>
                     </button>
                     <button class="monitoring-tab <?= $active_tab === 'bandwidth-usage' ? 'active' : '' ?>"
                         onclick="window.location='?tab=bandwidth-usage'">
@@ -318,91 +406,124 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
 
                 <div class="filter-options">
                     <input type="text" id="searchInput" placeholder="Search..." class="form-control">
-                    <button class="btn btn-secondary">
-                        <i class="bi bi-download"></i> Export
-                    </button>
                 </div>
             </div>
 
             <div class="card-body">
                 <?php if ($active_tab === 'bandwidth-usage'): ?>
-                    <!-- Bandwidth Usage Tab -->
-                    <div class="bandwidth-card">
-                        <h4><i class="bi bi-pie-chart"></i> Current Bandwidth Usage</h4>
-                        <div class="bandwidth-meter">
-                            <div class="bandwidth-progress" style="width: 65%"></div>
-                        </div>
-                        <div class="usage-stats">
-                            <div class="usage-stat">
-                                <div class="usage-stat-value">65%</div>
-                                <div class="usage-stat-label">Total Usage</div>
+                        <h3>Bandwidth Usage Overview</h3>
+                        <p>Monitor the current bandwidth usage and active devices on the network.</p>
+                        <div class="bandwidth-card">
+                            <h4><i class="bi bi-pie-chart"></i> Current Bandwidth Usage</h4>
+                            <?php
+                                // Convert bytes to Mbps (1 Mbps = 125000 bytes/sec)
+                                $total_mbps = $stats['total_usage'] > 0 ? round($stats['total_usage'] / 125000, 2) : 0;
+                                $download_mbps = $stats['download'] > 0 ? round($stats['download'] / 125000, 2) : 0;
+                                $upload_mbps = $stats['upload'] > 0 ? round($stats['upload'] / 125000, 2) : 0;
+                                $usage_percent = $total_mbps > 0 ? min(100, round($total_mbps / 100 * 100)) : 0; // Example scaling
+                            ?>
+                            <div class="bandwidth-meter">
+                                <div class="bandwidth-progress" style="width: <?= $usage_percent ?>%"></div>
                             </div>
-                            <div class="usage-stat">
-                                <div class="usage-stat-value">42 Mbps</div>
-                                <div class="usage-stat-label">Download</div>
-                            </div>
-                            <div class="usage-stat">
-                                <div class="usage-stat-value">18 Mbps</div>
-                                <div class="usage-stat-label">Upload</div>
-                            </div>
-                            <div class="usage-stat">
-                                <div class="usage-stat-value">24</div>
+                            <div class="usage-stats">
+                                <div class="usage-stat">
+                                    <div class="usage-stat-value"><?= $usage_percent ?>%</div>
+                                    <div class="usage-stat-label">Total Usage</div>
+                                </div>
+                                <div class="usage-stat">
+                                    <div class="usage-stat-value"><?= $download_mbps ?> Mbps</div>
+                                    <div class="usage-stat-label">Download</div>
+                                </div>
+                                <div class="usage-stat">
+                                    <div class="usage-stat-value"><?= $upload_mbps ?> Mbps</div>
+                                    <div class="usage-stat-label">Upload</div>
+                                </div>
+                                <div class="usage-stat">
+                                <div class="usage-stat-value"><?= $stats['active_devices'] ?></div>
                                 <div class="usage-stat-label">Active Devices</div>
                             </div>
                         </div>
                     </div>
-
                     <div class="table-responsive">
                         <table class="transaction-logs">
                             <thead>
                                 <tr>
-                                    <th>Device</th>
-                                    <th>MAC Address</th>
+                                    <th>User ID</th>
+                                    <th>Device MAC Address</th>
                                     <th>Download</th>
                                     <th>Upload</th>
                                     <th>Total</th>
                                     <th>Duration</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- Sample data - would be dynamic in real implementation -->
-                                <tr>
-                                    <td>Student Device 1</td>
-                                    <td><span class="mac-address">a4:5e:60:c7:32:11</span></td>
-                                    <td>5.2 Mbps</td>
-                                    <td>1.8 Mbps</td>
-                                    <td>7.0 Mbps</td>
-                                    <td>1h 24m</td>
-                                </tr>
-                                <tr>
-                                    <td>Student Device 2</td>
-                                    <td><span class="mac-address">b8:27:eb:12:34:56</span></td>
-                                    <td>3.7 Mbps</td>
-                                    <td>0.9 Mbps</td>
-                                    <td>4.6 Mbps</td>
-                                    <td>42m</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
+<tbody>
+                <?php if (empty($records)): ?>
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="bi bi-info-circle"></i> No records found
+                        </td>
+                    </tr>
                 <?php else: ?>
-                    <!-- Active Sessions / Session Logs / Student Sessions Tabs -->
+                    <?php foreach ($records as $record): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($record['user_id']) ?></td>
+                            <td><span class="mac-address"><?= htmlspecialchars($record['Device_MAC_Address']) ?></span></td>
+                            <td><?= round($record['Download'] / 125000, 2) ?> Mbps</td>
+                            <td><?= round($record['Upload'] / 125000, 2) ?> Mbps</td>
+                            <td><?= round($record['Total'] / 125000, 2) ?> Mbps</td>
+                            <td>
+                                <?php
+                                    $duration = (int)$record['Duration'];
+                                    $hours = floor($duration / 3600);
+                                    $minutes = floor(($duration % 3600) / 60);
+                                    echo $hours . 'h ' . $minutes . 'm';
+                                ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+                    </div>
+    <div class="pagination mt-4">
+        <?php if ($page > 1): ?>
+            <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page - 1 ?>" class="btn btn-secondary">
+                <i class="bi bi-chevron-left"></i> Prev
+            </a>
+        <?php else: ?>
+            <button class="btn btn-secondary" disabled>
+                <i class="bi bi-chevron-left"></i> Prev
+            </button>
+        <?php endif; ?>
+
+        <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
+
+        <?php if ($page < $total_pages): ?>
+            <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page + 1 ?>" class="btn btn-secondary">
+                Next <i class="bi bi-chevron-right"></i>
+            </a>
+        <?php else: ?>
+            <button class="btn btn-secondary" disabled>
+                Next <i class="bi bi-chevron-right"></i>
+            </button>
+        <?php endif; ?>
+    </div>
+<?php else: ?>
                     <div class="table-responsive">
                         <table class="transaction-logs">
                             <thead>
                                 <tr>
-                                    <?php if ($active_tab === 'student-sessions'): ?>
-                                        <th>Session ID</th>
-                                        <th>Anonymous Token</th>
-                                        <th>Device MAC</th>
-                                        <th>Internet Sessions</th>
+                                    <?php if ($active_tab === 'user-sessions'): ?>
+                                        <th>User ID</th>
+                                        <th>IP Address</th>
+                                        <th>Time Credits</th>
+                                        <th>Total Sessions</th>
                                         <th>First Access</th>
                                         <th>Last Access</th>
                                     <?php else: ?>
                                         <th>Session ID</th>
-                                        <th>Device MAC</th>
-                                        <th>Voucher</th>
+                                        <th>MAC Address</th>
+                                        <th>Voucher Code</th>
                                         <th>Start Time</th>
                                         <?php if ($active_tab === 'session-logs'): ?>
                                             <th>End Time</th>
@@ -415,31 +536,27 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                             <tbody>
                                 <?php if (empty($records)): ?>
                                     <tr>
-                                        <td colspan="<?= $active_tab === 'student-sessions' ? 6 : ($active_tab === 'session-logs' ? 7 : 6) ?>" class="text-center py-4 text-muted">
+                                        <td colspan="<?= $active_tab === 'user-sessions' ? 6 : ($active_tab === 'session-logs' ? 7 : 6) ?>" class="text-center py-4 text-muted">
                                             <i class="bi bi-info-circle"></i> No records found
                                         </td>
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($records as $record): ?>
                                         <tr>
-                                            <?php if ($active_tab === 'student-sessions'): ?>
-                                                <td><?= $record['session_id'] ?></td>
-                                                <td>
-                                                    <span class="token-preview" title="<?= htmlspecialchars($record['anonymous_token']) ?>">
-                                                        <?= substr($record['anonymous_token'], 0, 8) ?>...
-                                                    </span>
-                                                </td>
-                                                <td><span class="mac-address"><?= $record['device_mac_address'] ?: 'N/A' ?></span></td>
-                                                <td><?= $record['internet_session_count'] ?></td>
-                                                <td><?= $record['first_session_access'] ? date('M j, H:i', strtotime($record['first_session_access'])) : 'N/A' ?></td>
-                                                <td><?= $record['last_session_access'] ? date('M j, H:i', strtotime($record['last_session_access'])) : 'N/A' ?></td>
+                                            <?php if ($active_tab === 'user-sessions'): ?>
+                                                <td><?= htmlspecialchars($record['user_id']) ?></td>
+                                                <td><span class="mac-address"><?= htmlspecialchars($record['ip_address'] ?: 'N/A') ?></span></td>
+                                                <td><?= number_format($record['time_credits']) . ' min' ?></td>
+                                                <td><?= htmlspecialchars($record['internet_session_count']) ?></td>
+                                                <td><?= $record['first_session_access'] ? date('M j, Y h:i A', strtotime($record['first_session_access'])) : 'N/A' ?></td>
+                                                <td><?= $record['last_session_access'] ? date('M j, Y h:i A', strtotime($record['last_session_access'])) : 'N/A' ?></td>
                                             <?php else: ?>
-                                                <td><?= $record['internet_session_id'] ?></td>
-                                                <td><span class="mac-address"><?= $record['device_mac_address'] ?></span></td>
-                                                <td><?= $record['voucher_code'] ?? 'N/A' ?></td>
-                                                <td><?= date('M j, H:i', strtotime($record['start_time'])) ?></td>
+                                                <td><?= htmlspecialchars($record['session_id']) ?></td>
+                                                <td><span class="mac-address"><?= htmlspecialchars($record['ip_address']) ?></span></td>
+                                                <td><?= htmlspecialchars($record['voucher_code'] ?? 'N/A') ?></td>
+                                                <td><?= date('M j, Y h:i A', strtotime($record['start_time'])) ?></td>
                                                 <?php if ($active_tab === 'session-logs'): ?>
-                                                    <td><?= $record['end_time'] ? date('M j, H:i', strtotime($record['end_time'])) : '-' ?></td>
+                                                    <td><?= $record['end_time'] ? date('M j, Y h:i A', strtotime($record['end_time'])) : '-' ?></td>
                                                 <?php endif; ?>
                                                 <td>
                                                     <span class="session-status <?= $record['end_time'] ? 'status-completed' : 'status-active' ?>">
@@ -468,7 +585,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
 
                     <div class="pagination mt-4">
                         <?php if ($page > 1): ?>
-                            <a href="?tab=<?= $active_tab ?>&page=<?= $page - 1 ?>" class="btn btn-secondary">
+                            <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page - 1 ?>" class="btn btn-secondary">
                                 <i class="bi bi-chevron-left"></i> Prev
                             </a>
                         <?php else: ?>
@@ -480,7 +597,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                         <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
 
                         <?php if ($page < $total_pages): ?>
-                            <a href="?tab=<?= $active_tab ?>&page=<?= $page + 1 ?>" class="btn btn-secondary">
+                            <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page + 1 ?>" class="btn btn-secondary">
                                 Next <i class="bi bi-chevron-right"></i>
                             </a>
                         <?php else: ?>
@@ -490,6 +607,7 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
+
             </div>
         </div>
     </div>

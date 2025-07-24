@@ -1,6 +1,6 @@
 <?php
 require_once 'config.php';
-checkAdminAuth();
+checkAdminAuth(); // Check if admin is logged in
 
 // Handle expiry settings update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_expiry_settings'])) {
@@ -9,71 +9,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_expiry_setting
     $expiryMinutes = (int)$_POST['expiry_minutes'];
 
     if ($expiryDays >= 0 && $expiryHours >= 0 && $expiryMinutes >= 0) {
-        // Convert to total hours for storage
-        $totalHours = ($expiryDays * 24) + $expiryHours + ($expiryMinutes / 60);
+        $totalMinutes = ($expiryDays * 24 * 60) + ($expiryHours * 60) + $expiryMinutes;
 
-        // Update or insert the setting
-        $stmt = $conn->prepare("
-            INSERT INTO Settings (setting_key, setting_value) 
-            VALUES ('voucher_expiry_hours', ?) 
-            ON DUPLICATE KEY UPDATE setting_value = ?
-        ");
-        $stmt->bind_param("dd", $totalHours, $totalHours);
+        if (isset($_SESSION['admin_id'])) {
+            $admin_id = (int)$_SESSION['admin_id'];
 
-        if ($stmt->execute()) {
-            logAdminActivity('Voucher Settings Updated', "Updated voucher expiry to $expiryDays days, $expiryHours hours, $expiryMinutes minutes");
-            redirectWithMessage('vouchers.php', 'success', 'Voucher expiry settings updated successfully!');
+            // Note: Ensure 'setting_key' has UNIQUE constraint in DB
+            $stmt = $conn->prepare("
+                INSERT INTO Settings (setting_key, setting_value, admin_id)
+                VALUES ('voucher_default_duration_minutes', ?, ?)
+                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), admin_id = VALUES(admin_id)
+            ");
+            $stmt->bind_param("di", $totalMinutes, $admin_id);
+
+            if ($stmt->execute()) {
+                logAdminActivity('Voucher Settings Updated', "Updated default voucher duration to $expiryDays days, $expiryHours hours, $expiryMinutes minutes");
+                redirectWithMessage('vouchers.php', 'success', 'Voucher expiry settings updated successfully!');
+            } else {
+                redirectWithMessage('vouchers.php', 'error', 'Failed to update voucher expiry settings: ' . $stmt->error);
+            }
+            $stmt->close();
         } else {
-            redirectWithMessage('vouchers.php', 'error', 'Failed to update voucher expiry settings.');
+            redirectWithMessage('vouchers.php', 'error', 'Admin ID not set in session for voucher settings update.');
         }
     } else {
         redirectWithMessage('vouchers.php', 'error', 'Invalid expiry time values.');
     }
 }
 
-// Get current expiry settings
-$currentExpiryQuery = $conn->query("SELECT setting_value FROM Settings WHERE setting_key = 'voucher_expiry_hours'");
-$currentExpiryHours = $currentExpiryQuery->num_rows > 0 ? (float)$currentExpiryQuery->fetch_row()[0] : 24; // Default 24 hours
+// Get current default duration
+$currentDefaultDurationQuery = $conn->query("SELECT setting_value FROM Settings WHERE setting_key = 'voucher_default_duration_minutes'");
+$currentDefaultDurationMinutes = 60; // default 60 mins (1 hour)
+if ($currentDefaultDurationQuery && $currentDefaultDurationQuery->num_rows > 0) {
+    $row = $currentDefaultDurationQuery->fetch_row();
+    $currentDefaultDurationMinutes = (float)$row[0];
+}
 
-// Convert hours back to days, hours, minutes
-$expiryDays = floor($currentExpiryHours / 24);
-$remainingHours = $currentExpiryHours - ($expiryDays * 24);
-$expiryHours = floor($remainingHours);
-$expiryMinutes = round(($remainingHours - $expiryHours) * 60);
+// Convert minutes to days/hours/minutes
+$expiryDays = 0;
+$expiryHours = 1;
+$expiryMinutes = 0;
 
-// Get all vouchers with pagination
+// Pagination
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $per_page = 20;
 $offset = ($page - 1) * $per_page;
 
-// Handle status filter
+// Filter by status
 $statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
 $statusCondition = '';
 
 if ($statusFilter === 'used') {
-    $statusCondition = ' AND v.is_used = 1';
+    $statusCondition = " AND v.status = 'used'";
 } elseif ($statusFilter === 'unused') {
-    $statusCondition = ' AND v.is_used = 0 AND v.expiry_time > NOW()';
+    $statusCondition = " AND v.status = 'unused'";
 } elseif ($statusFilter === 'expired') {
-    $statusCondition = ' AND v.is_used = 0 AND v.expiry_time < NOW()';
+    $statusCondition = " AND v.status = 'expired'";
 }
 
-$total_vouchers = $conn->query("SELECT COUNT(*) FROM Voucher v WHERE 1=1 $statusCondition")->fetch_row()[0];
+// Filter by transaction ID (optional)
+$transactionIdFilter = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;
+$transactionCondition = $transactionIdFilter > 0 ? " AND v.transaction_id = $transactionIdFilter" : '';
+
+// Count vouchers
+$total_vouchers_query = "SELECT COUNT(*) FROM Voucher v WHERE 1=1 $statusCondition $transactionCondition";
+$total_vouchers_result = $conn->query($total_vouchers_query);
+$total_vouchers = $total_vouchers_result ? (int)$total_vouchers_result->fetch_row()[0] : 0;
 $total_pages = ceil($total_vouchers / $per_page);
 
-$vouchers = $conn->query("
-    SELECT v.voucher_id, v.code, v.expiry_time, v.is_used,
-           d.timestamp as deposit_time 
+// Get vouchers with pagination
+$vouchers_query = "
+    SELECT v.voucher_id, v.voucher_code AS code, v.expiration, v.status, v.redeemed_at, v.redeemed_by,
+           t.created_at AS deposit_time
     FROM Voucher v
-    JOIN BottleDeposit d ON v.deposit_id = d.deposit_id
-    WHERE 1=1 $statusCondition
-    ORDER BY v.expiry_time DESC
+    JOIN Transactions t ON v.transaction_id = t.transaction_id
+    WHERE 1=1 $statusCondition $transactionCondition
+    ORDER BY v.voucher_id DESC
     LIMIT $per_page OFFSET $offset
-")->fetch_all(MYSQLI_ASSOC);
+";
+$vouchers = $conn->query($vouchers_query)->fetch_all(MYSQLI_ASSOC);
 
 // Log activity
 logAdminActivity('Vouchers Access', 'Viewed vouchers list');
+
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -86,8 +107,8 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
     <link rel="stylesheet" href="/css/styles.css">
     <style>
         .settings-card {
-            background: linear-gradient(135deg, rgb(2, 16, 2) 0%, rgb(30, 37, 35) 100%);
-            color: white;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 1) 100%);
+            color: black;
             border-radius: 15px;
             padding: 25px;
             margin-top: 20px;
@@ -125,8 +146,8 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
             padding: 8px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+            background: rgba(49, 48, 48, 0.1);
+            color: black;
             text-align: center;
             font-size: 1.1em;
             font-weight: bold;
@@ -134,12 +155,12 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
 
         .time-input-item input:focus {
             outline: none;
-            border-color: rgba(255, 255, 255, 0.8);
+            border-color: rgba(42, 41, 41, 0.8);
             background: rgba(255, 255, 255, 0.2);
         }
 
         .time-input-item input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(36, 35, 35, 0.7);
         }
 
         .settings-info {
@@ -147,7 +168,7 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
-            border-left: 4px solid #4CAF50;
+            border-left: 4px solid #03a3a0ff;
         }
 
         .settings-info i {
@@ -155,7 +176,7 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
         }
 
         .btn-save-settings {
-            background: #4CAF50;
+            background: #03a3a0ff;
             border: none;
             padding: 10px 25px;
             border-radius: 8px;
@@ -165,7 +186,7 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
         }
 
         .btn-save-settings:hover {
-            background: #45a049;
+            background: #03a3a0ff;
             transform: translateY(-1px);
         }
 
@@ -216,17 +237,17 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
             font-weight: 600;
         }
 
-        .status.green {
+        .status.green { /* Used */
             background: #d4edda;
             color: #155724;
         }
 
-        .status.red {
+        .status.red { /* Expired */
             background: #f8d7da;
             color: #721c24;
         }
 
-        .status.orange {
+        .status.orange { /* Unused */
             background: #fff3cd;
             color: #856404;
         }
@@ -305,12 +326,12 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
             <h2>Vouchers</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
-                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
-                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                    <img src="./img/avatar.jpg" alt="Profile" class="avatar-img"> <!-- Changed placeholder to local asset -->
+                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span> <!-- Changed to admin_username -->
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
-                    <a href="#"><i class="bi bi-person"></i> Profile</a>
+                    <a href="profile.php"><i class="bi bi-person"></i> Profile</a> <!-- Added .php extension -->
                     <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
                     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
@@ -321,17 +342,19 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
 
         <div class="card">
             <div class="card-header">
-                <h3>All Vouchers</h3>
+                <h3>All Vouchers
+                    <?php if ($transactionIdFilter > 0): ?>
+                        <small class="text-muted">(for Transaction ID: #<?= $transactionIdFilter ?>)</small>
+                    <?php endif; ?>
+                </h3>
                 <div class="filter-options">
+                    <h5>Filter</h5>
                     <select id="status-filter">
                         <option value="">All Statuses</option>
                         <option value="used" <?php echo $statusFilter === 'used' ? 'selected' : ''; ?>>Used</option>
                         <option value="unused" <?php echo $statusFilter === 'unused' ? 'selected' : ''; ?>>Unused</option>
                         <option value="expired" <?php echo $statusFilter === 'expired' ? 'selected' : ''; ?>>Expired</option>
                     </select>
-                    <button class="export-btn">
-                        <i class="bi bi-download"></i> Export
-                    </button>
                 </div>
             </div>
             <div class="card-body">
@@ -340,45 +363,76 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                         <thead>
                             <tr>
                                 <th>Code</th>
-                                <th>Expiry</th>
+                                <th>Expiration</th>
                                 <th>Status</th>
-                                <th>Deposit Time</th>
-                                <th>Actions</th>
+                                <th>Created at</th>
+                                <th>Redeemed At</th>
+                                <th>Redeemed By</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($vouchers as $voucher): ?>
+                            <?php if (empty($vouchers)): ?>
                                 <tr>
-                                    <td><?php echo $voucher['code']; ?></td>
-                                    <td><?php echo date('M j, Y H:i', strtotime($voucher['expiry_time'])); ?></td>
-                                    <td>
-                                        <?php if ($voucher['is_used']): ?>
-                                            <span class="status green">Used</span>
-                                        <?php elseif (strtotime($voucher['expiry_time']) < time()): ?>
-                                            <span class="status red">Expired</span>
-                                        <?php else: ?>
-                                            <span class="status orange">Unused</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?php echo date('M j, Y H:i', strtotime($voucher['deposit_time'])); ?></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-primary">
-                                            <i class="bi bi-eye"></i> View
-                                        </button>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        <i class="bi bi-info-circle"></i> No vouchers found for the selected criteria.
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach ($vouchers as $voucher): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($voucher['code']); ?></td>
+                                        <td><?php echo date('M j, Y h:i A', strtotime($voucher['expiration'])); ?></td>
+                                        <td>
+                                            <?php
+                                            $status_class = '';
+                                            $status_text = '';
+                                            if ($voucher['status'] === 'used') {
+                                                $status_class = 'green';
+                                                $status_text = 'Used';
+                                            } elseif ($voucher['status'] === 'expired') {
+                                                $status_class = 'red';
+                                                $status_text = 'Expired';
+                                            } else { // 'unused'
+                                                $status_class = 'orange';
+                                                $status_text = 'Unused';
+                                            }
+                                            ?>
+                                            <span class="status <?= $status_class ?>"><?= $status_text ?></span>
+                                        </td>
+                                        <td><?php echo date('M j, Y h:i A', strtotime($voucher['deposit_time'])); ?></td>
+                                        <td><?= $voucher['redeemed_at'] ? date('M j, Y h:i A', strtotime($voucher['redeemed_at'])) : 'N/A' ?></td>
+                                        <td>
+                                            <?php if ($voucher['redeemed_by']): ?>
+                                                <?php
+                                                $redeemedByQuery = $conn->prepare("SELECT mac_address FROM user WHERE user_id = ?");
+                                                $redeemedByQuery->bind_param("i", $voucher['redeemed_by']);
+                                                $redeemedByQuery->execute();
+                                                $redeemedByResult = $redeemedByQuery->get_result();
+                                                if ($redeemedByResult && $redeemedByResult->num_rows > 0) {
+                                                    $redeemedByRow = $redeemedByResult->fetch_assoc();
+                                                    echo htmlspecialchars($redeemedByRow['mac_address']);
+                                                } else {
+                                                    echo 'Unknown User';
+                                                }
+                                                $redeemedByQuery->close();
+                                                ?>
+                                            <?php else: ?>
+                                                N/A
+                                            <?php endif; ?>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
                 <div class="pagination">
-                    <a href="?page=<?php echo max(1, $page - 1); ?>&status=<?php echo $statusFilter; ?>"
+                    <a href="?page=<?php echo max(1, $page - 1); ?>&status=<?php echo $statusFilter; ?><?= $transactionIdFilter > 0 ? '&transaction_id=' . $transactionIdFilter : '' ?>"
                         class="btn btn-secondary <?php echo $page <= 1 ? 'disabled' : ''; ?>">
                         <i class="bi bi-chevron-left"></i> Previous
                     </a>
                     <span class="pagination-info">Page <?php echo $page; ?> of <?php echo $total_pages; ?></span>
-                    <a href="?page=<?php echo min($total_pages, $page + 1); ?>&status=<?php echo $statusFilter; ?>"
+                    <a href="?page=<?php echo min($total_pages, $page + 1); ?>&status=<?php echo $statusFilter; ?><?= $transactionIdFilter > 0 ? '&transaction_id=' . $transactionIdFilter : '' ?>"
                         class="btn btn-secondary <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
                         Next <i class="bi bi-chevron-right"></i>
                     </a>
@@ -390,13 +444,13 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
         <div class="settings-card">
             <h4>
                 <i class="bi bi-gear-fill"></i>
-                Voucher Expiry Settings
+                Default Voucher Duration Settings
             </h4>
 
             <div class="settings-info">
                 <i class="bi bi-info-circle"></i>
-                <strong>Current Setting:</strong> New vouchers expire after
-                <?php echo $expiryDays; ?> day(s), <?php echo $expiryHours; ?> hour(s), and <?php echo $expiryMinutes; ?> minute(s)
+                <strong>Current Setting:</strong> New vouchers provide
+                <?php echo number_format($currentDefaultDurationMinutes, 0); ?> minutes of internet access.
             </div>
 
             <form method="POST" action="vouchers.php">
@@ -442,20 +496,30 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
         // Status filter
         document.getElementById('status-filter').addEventListener('change', function() {
             const status = this.value;
-            window.location.href = `vouchers.php?status=${status}`;
+            const url = new URL(window.location.href);
+            url.searchParams.set('status', status);
+            url.searchParams.set('page', 1); // Reset page to 1 when changing filter
+            window.location.href = url.toString();
         });
 
         // Form validation
+        // Prevent double submit
         document.querySelector('form').addEventListener('submit', function(e) {
             const days = parseInt(document.getElementById('expiry_days').value) || 0;
             const hours = parseInt(document.getElementById('expiry_hours').value) || 0;
             const minutes = parseInt(document.getElementById('expiry_minutes').value) || 0;
-
+        
             if (days === 0 && hours === 0 && minutes === 0) {
                 e.preventDefault();
-                alert('Please set at least one time value (days, hours, or minutes).');
+                const messageBox = document.createElement('div');
+                messageBox.className = 'alert alert-danger';
+                messageBox.innerHTML = `<p>Please set at least one time value (days, hours, or minutes).</p>`;
+                document.querySelector('.main-content').prepend(messageBox);
+                setTimeout(() => messageBox.remove(), 5000);
                 return false;
             }
+        
+            this.querySelector('button[type=submit]').disabled = true;
         });
     </script>
 </body>
