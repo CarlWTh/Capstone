@@ -1,20 +1,14 @@
 <?php
 require_once 'config.php';
-checkAdminAuth(); // This function is defined in config.php
+checkAdminAuth();
 
-// Determine active tab
 $active_tab = $_GET['tab'] ?? 'active-sessions';
-
-// Pagination for each tab
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $per_page = 15;
 $offset = ($page - 1) * $per_page;
-
-// Initialize variables
 $total_records = 0;
 $records = [];
 
-// Use prepared statements for queries with variables
 switch ($active_tab) {
     case 'active-sessions':
         $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL");
@@ -89,14 +83,12 @@ switch ($active_tab) {
         break;
 
     case 'bandwidth-usage':
-        // Get total records for pagination
         $stmt = $conn->prepare("SELECT COUNT(*) FROM bandwidth_usage");
         $stmt->execute();
         $stmt->bind_result($total_records);
         $stmt->fetch();
         $stmt->close();
 
-        // Get paginated device usage records
         $stmt = $conn->prepare("
             SELECT bu.user_id, bu.Device_MAC_Address, bu.Download, bu.Upload, bu.Total, bu.Duration, u.mac_address
             FROM bandwidth_usage bu
@@ -110,7 +102,6 @@ switch ($active_tab) {
         $records = $result->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
 
-        // Calculate total usage stats
         $stats = [
             'total_usage' => 0,
             'download' => 0,
@@ -417,11 +408,10 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                         <div class="bandwidth-card">
                             <h4><i class="bi bi-pie-chart"></i> Current Bandwidth Usage</h4>
                             <?php
-                                // Convert bytes to Mbps (1 Mbps = 125000 bytes/sec)
                                 $total_mbps = $stats['total_usage'] > 0 ? round($stats['total_usage'] / 125000, 2) : 0;
                                 $download_mbps = $stats['download'] > 0 ? round($stats['download'] / 125000, 2) : 0;
                                 $upload_mbps = $stats['upload'] > 0 ? round($stats['upload'] / 125000, 2) : 0;
-                                $usage_percent = $total_mbps > 0 ? min(100, round($total_mbps / 100 * 100)) : 0; // Example scaling
+                                $usage_percent = $total_mbps > 0 ? min(100, round($total_mbps / 100 * 100)) : 0;
                             ?>
                             <div class="bandwidth-meter">
                                 <div class="bandwidth-progress" style="width: <?= $usage_percent ?>%"></div>
@@ -615,18 +605,15 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle sidebar
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
 
-        // Profile dropdown
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
 
-        // Search functionality
         document.getElementById('searchInput').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
             const table = document.querySelector('.transaction-logs tbody');
@@ -640,5 +627,4 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
         });
     </script>
 </body>
-
 </html>

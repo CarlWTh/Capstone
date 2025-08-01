@@ -1,40 +1,32 @@
 <?php
-// --- DATABASE CONFIGURATION ---
 define('DB_HOST', 'localhost');
 define('DB_USERNAME', 'root');
 define('DB_PASSWORD', '');
-define('DB_NAME', 'bottle_recycling_system'); // ✅ Replace with your actual DB name
+define('DB_NAME', 'bottle_recycling_system'); 
 
-// Create DB connection
 $conn = new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME);
 
-// Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Set charset and timezone
 $conn->set_charset("utf8");
 date_default_timezone_set('Asia/Manila');
 $conn->query("SET time_zone = '+08:00'");
 
-// --- SESSION SETUP ---
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// --- EMAIL CONFIGURATION (PHPMailer) ---
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_USERNAME', 'carljusper.basc@gmail.com');
-define('SMTP_PASSWORD', 'ztsl hxns bbkw tdqd'); // ❗Use app password
+define('SMTP_PASSWORD', 'ztsl hxns bbkw tdqd'); 
 define('SMTP_PORT', 587);
 define('EMAIL_FROM', 'carljusper.basc@gmail.com');
 
-// --- SITE INFO ---
 define('SITE_NAME', 'Recycle for Connectivity');
 define('SITE_URL', 'http://localhost/bottle-recycling');
 
-// --- AUTH CHECK FOR ADMIN ---
 function checkAdminAuth() {
     if (!isset($_SESSION['admin_id']) || !isset($_SESSION['is_admin_session']) || !$_SESSION['is_admin_session']) {
         $_SESSION['redirect_url'] = $_SERVER['REQUEST_URI'];
@@ -43,13 +35,11 @@ function checkAdminAuth() {
     }
 }
 
-// --- GET MINUTES PER BOTTLE ---
 function getMinutesPerBottle() {
     global $conn;
 
     $result = $conn->query("SHOW TABLES LIKE 'Settings'");
     if ($result->num_rows === 0) {
-        // Table doesn't exist, return default value
         error_log("Settings table not found. Returning default minutes_per_bottle.");
         return 2;
     }
@@ -60,7 +50,6 @@ function getMinutesPerBottle() {
 
 define('MINUTES_PER_BOTTLE', getMinutesPerBottle());
 
-// --- LOG ADMIN ACTIVITY ---
 function logAdminActivity($action, $details = '') {
     global $conn;
 
@@ -88,7 +77,6 @@ function logAdminActivity($action, $details = '') {
     }
 }
 
-// --- FLASH MESSAGE HANDLER ---
 function redirectWithMessage($url, $type, $message) {
     $_SESSION['flash_message'] = [
         'type' => $type,

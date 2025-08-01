@@ -1,17 +1,15 @@
 <?php
 require_once 'config.php';
-checkAdminAuth(); // This function is defined in config.php
+checkAdminAuth();
 
-// Get all trash bins from 'Trashbin' table
 $bins = $conn->query("
     SELECT trashbin_id AS bin_id, capacity, fill_level_percent AS current_level, status, janitor_id, last_emptied_at
     FROM Trashbin
     ORDER BY status DESC, fill_level_percent DESC
 ")->fetch_all(MYSQLI_ASSOC);
 
-// Fetch janitor names for display (assuming you want to show who is assigned)
 $janitors = [];
-$janitor_query = $conn->query("SELECT janitor_id, contact_number FROM Janitor"); // Using contact_number as a name for display
+$janitor_query = $conn->query("SELECT janitor_id, contact_number FROM Janitor"); 
 if ($janitor_query) {
     while ($row = $janitor_query->fetch_assoc()) {
         $janitors[$row['janitor_id']] = $row['contact_number'];
@@ -32,8 +30,8 @@ if ($log_query) {
     }
 }
 
-// Function to validate if janitor_id exists
 function janitorExists($conn, $janitor_id) {
+    $count = 0;
     $stmt = $conn->prepare("SELECT COUNT(*) FROM Janitor WHERE janitor_id = ?");
     $stmt->bind_param("i", $janitor_id);
     $stmt->execute();
@@ -43,18 +41,16 @@ function janitorExists($conn, $janitor_id) {
     return $count > 0;
 }
 
-// Handle bin update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
     $bin_id = (int)$_POST['bin_id'];
     $capacity = (float)$_POST['capacity'];
-    $current_level = (float)$_POST['current_level']; // This is now percentage
+    $current_level = (float)$_POST['current_level']; 
     $status = $_POST['status'];
     $janitor_id = (int)$_POST['janitor_id'];
 
-    // Validate inputs
     if ($capacity <= 0) {
         redirectWithMessage('bins.php', 'error', 'Capacity must be a positive value.');
-    } elseif ($current_level < 0 || $current_level > 100) { // Current level is now a percentage
+    } elseif ($current_level < 0 || $current_level > 100) { 
         redirectWithMessage('bins.php', 'error', 'Fill level percentage must be between 0 and 100.');
     } elseif (!in_array($status, ['empty', 'partial', 'full'])) {
         redirectWithMessage('bins.php', 'error', 'Invalid bin status.');
@@ -63,9 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
     }
     else {
         $stmt = $conn->prepare("UPDATE Trashbin SET capacity = ?, fill_level_percent = ?, status = ?, janitor_id = ? WHERE trashbin_id = ?");
-        // Corrected bind_param: added 'i' for $bin_id
         $stmt->bind_param("ddsii", $capacity, $current_level, $status, $janitor_id, $bin_id);
-
         if ($stmt->execute()) {
             logAdminActivity('Bin Update', "Updated bin #$bin_id (Capacity: $capacity, Level: $current_level%, Status: $status, Janitor: $janitor_id)");
             redirectWithMessage('bins.php', 'success', 'Bin updated successfully!');
@@ -75,19 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bin'])) {
         $stmt->close();
     }
 }
-
-// Handle adding a new bin
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_bin'])) {
     $janitor_id = (int)$_POST['janitor_id'];
 
-    // Validate janitor_id
     if ($janitor_id <= 0) {
         redirectWithMessage('bins.php', 'error', 'Invalid janitor ID.');
     } elseif (!janitorExists($conn, $janitor_id)) {
         redirectWithMessage('bins.php', 'error', 'Assigned Janitor does not exist.');
     }
     else {
-        // Default values for new bin
         $default_capacity = 100.00;
         $default_fill_level = 0.00;
         $default_status = 'empty';
@@ -106,13 +96,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_bin'])) {
     }
 }
 
-// Handle adding a new janitor
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_janitor'])) {
     $contact = trim($_POST['janitor_contact']);
     if ($contact === '') {
         redirectWithMessage('bins.php', 'error', 'Contact number is required.');
     } else {
-        // Check if janitor with this contact number already exists
         $stmt_check = $conn->prepare("SELECT COUNT(*) FROM Janitor WHERE contact_number = ?");
         $stmt_check->bind_param("s", $contact);
         $stmt_check->execute();
@@ -136,14 +124,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_janitor'])) {
     }
 }
 
-// Handle emptying a bin
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['empty_bin'])) {
     $bin_id = (int)$_POST['bin_id'];
-    $previous_level = (float)$_POST['previous_level']; // Capture previous level (as percentage)
+    $previous_level = (float)$_POST['previous_level']; 
 
     if (isset($_SESSION['admin_id'])) {
         $admin_id = $_SESSION['admin_id'];
-        // Update bin status and fill level
         $stmt = $conn->prepare("UPDATE Trashbin SET fill_level_percent = 0, status = 'empty', last_emptied_at = NOW() WHERE trashbin_id = ?");
         $stmt->bind_param("i", $bin_id);
 
@@ -159,7 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['empty_bin'])) {
     }
 }
 
-// Handle bin deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_bin'])) {
     $bin_id = (int)$_POST['bin_id'];
     if ($bin_id > 0) {
@@ -177,10 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_bin'])) {
     }
 }   
 
-// Log activity (consider if this is needed on every page load)
 logAdminActivity('Bins Access', 'Viewed trash bins list');
 
-// Function to get fill level color
 function getFillLevelColor($percentage)
 {
     if ($percentage >= 90) return 'danger';
@@ -189,7 +172,6 @@ function getFillLevelColor($percentage)
     return 'success';
 }
 
-// Function to format time ago
 function timeAgo($datetime)
 {
     if (!$datetime) return 'Never';
@@ -247,11 +229,10 @@ function timeAgo($datetime)
 
         .log-table {
             background: var(--card-bg);
-            /* Changed to use CSS variable */
             border-radius: 8px;
             overflow: hidden;
             box-shadow: var(--shadow);
-            /* Changed to use CSS variable */
+
         }
 
         .log-table table {
@@ -261,18 +242,15 @@ function timeAgo($datetime)
 
         .log-table th {
             background: var(--primary-color);
-            /* Changed to use CSS variable */
             color: white;
             font-weight: 600;
             padding: 12px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            /* Adjusted border color */
         }
 
         .log-table td {
             padding: 12px;
             border-bottom: 1px solid var(--border-color);
-            /* Changed to use CSS variable */
         }
 
         .log-table tr:last-child td {
@@ -301,7 +279,6 @@ function timeAgo($datetime)
         .last-emptied {
             font-size: 12px;
             color: var(--light-text);
-            /* Changed to use CSS variable */
             margin-top: 5px;
         }
 
@@ -320,10 +297,7 @@ function timeAgo($datetime)
         .level-weight {
             font-size: 12px;
             color: var(--light-text);
-            /* Changed to use CSS variable */
         }
-
-        /* Ensure modals are perfectly centered */
         .modal-dialog-centered {
             display: flex;
             align-items: center;
@@ -436,7 +410,7 @@ function timeAgo($datetime)
                     <?php else: ?>
                     <?php foreach ($bins as $bin): ?>
                     <?php
-                                $percentage = $bin['current_level']; // Use as percentage directly
+                                $percentage = $bin['current_level']; 
                                 $fillLevelColor = getFillLevelColor($percentage);
                                 ?>
                     <div class="col-md-4 mb-4">
@@ -724,18 +698,15 @@ function timeAgo($datetime)
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle sidebar
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
 
-        // Profile dropdown
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
 
-        // Edit bin modal
         document.querySelectorAll('.edit-bin').forEach(button => {
             button.addEventListener('click', function() {
                 const binId = this.getAttribute('data-bin-id');
@@ -756,23 +727,21 @@ function timeAgo($datetime)
             });
         });
 
-        // Empty bin modal
         document.querySelectorAll('.btn-empty').forEach(button => {
             button.addEventListener('click', function() {
                 const binId = this.getAttribute('data-bin-id');
-                const currentLevel = this.getAttribute('data-current-level'); // This is percentage
+                const currentLevel = this.getAttribute('data-current-level'); 
 
                 document.getElementById('emptyBinId').textContent = binId;
                 document.getElementById('emptyBinIdInput').value = binId;
                 document.getElementById('emptyBinCurrentLevel').textContent = currentLevel;
-                document.getElementById('emptyBinPreviousLevel').value = currentLevel; // Pass current level as previous
+                document.getElementById('emptyBinPreviousLevel').value = currentLevel;
 
                 const modal = new bootstrap.Modal(document.getElementById('emptyBinModal'));
                 modal.show();
             });
         });
 
-        // Delete bin modal logic
     let selectedBinId = null;
     document.querySelectorAll('.delete-bin').forEach(button => {
         button.addEventListener('click', function() {
@@ -783,7 +752,6 @@ function timeAgo($datetime)
     });
 
     document.getElementById('confirmDeleteBinBtn').addEventListener('click', function() {
-        // Submit the hidden form to delete the bin
         document.getElementById('deleteBinForm').submit();
     });
 

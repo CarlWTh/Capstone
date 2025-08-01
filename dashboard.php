@@ -1,23 +1,18 @@
 <?php
 require_once 'config.php';
-checkAdminAuth(); // This function is defined in config.php
+checkAdminAuth();
 
-// Get dashboard statistics
 $stats = [];
-// Use 'Transactions' table for total deposits and bottles
 $stats['total_deposits'] = $conn->query("SELECT COUNT(*) FROM Transactions")->fetch_row()[0];
 $stats['total_bottles'] = $conn->query("SELECT SUM(bottle_count) FROM Transactions")->fetch_row()[0];
-// Use 'Voucher' table for total vouchers
 $stats['total_vouchers'] = $conn->query("SELECT COUNT(*) FROM Voucher")->fetch_row()[0];
-// Use 'UserSessions' table for active sessions
 $stats['active_sessions'] = $conn->query("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL")->fetch_row()[0];
 
-// Get recent deposits (now from 'Transactions' table)
 $recent_deposits = $conn->query("
-    SELECT 
-        t.transaction_id, 
-        t.bottle_count, 
-        v.voucher_code, 
+    SELECT
+        t.transaction_id,
+        t.bottle_count,
+        v.voucher_code,
         t.created_at AS timestamp
     FROM Transactions t
     JOIN User u ON t.user_id = u.user_id
@@ -26,7 +21,6 @@ $recent_deposits = $conn->query("
     LIMIT 5
 ")->fetch_all(MYSQLI_ASSOC);
 
-// Get bin status from 'Trashbin' table
 $bin_status = $conn->query("
     SELECT trashbin_id AS bin_id,
            -- Assuming 'capacity' and 'current_level' are columns in Trashbin
@@ -40,7 +34,6 @@ $bin_status = $conn->query("
     ORDER BY status DESC, fill_level_percent DESC
 ")->fetch_all(MYSQLI_ASSOC);
 
-// Log dashboard access
 logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
 ?>
 <!DOCTYPE html>
@@ -56,7 +49,6 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
 
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -121,19 +113,18 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
             </nav>
         </div>
 
-        <!-- Main Content -->
         <div class="main-content" id="mainContent">
             <div class="main-header">
                 <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
 
                 <div class="profile-dropdown">
                     <div class="dropdown-header" id="profileDropdown">
-                       
+
                         <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                         <i class="bi bi-chevron-down"></i>
                     </div>
                     <div class="dropdown-content" id="profileDropdownContent">
-                       
+
                         <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
                         <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                     </div>
@@ -142,7 +133,6 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
 
             <?php displayFlashMessage(); ?>
 
-            <!-- Stats Cards -->
             <div class="row">
                 <div class="col-md-3">
                     <div class="card text-white bg-primary">
@@ -182,16 +172,11 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                 </div>
             </div>
 
-            <!-- Recent Deposits and Bin Status -->
             <div class="row">
                 <div class="col-md-8">
                     <div class="card">
                         <div class="card-header">
                             <h3>Recent Bottle Deposits</h3>
-                            <div class="filter-options">
-                                <input type="text" id="searchDeposits" placeholder="Search deposits...">
-                                <button class="btn btn-sm btn-outline-primary">Filter</button>
-                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -210,7 +195,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                             <tr>
                                                 <td><?php echo $deposit['transaction_id']; ?></td>
                                                 <td><?php echo $deposit['bottle_count']; ?></td>
-                                                <td><?php echo ($deposit['bottle_count'] * 5) . ' min'; ?></td> <!-- Example time credit logic -->
+                                                <td><?php echo ($deposit['bottle_count'] * 5) . ' min'; ?></td>
                                                 <td><?php echo htmlspecialchars($deposit['voucher_code'] ?? 'N/A'); ?></td>
                                                 <td><?php echo date('M j, Y h:i A', strtotime($deposit['timestamp'])); ?></td>
                                             </tr>
@@ -218,7 +203,7 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                     </tbody>
                                 </table>
                             </div>
-                            <a href="deposits.php" class="btn btn-outline-primary">View All Deposits</a>
+                            <a href="bottle_deposits.php" class="btn btn-outline-primary">View All Deposits</a>
                         </div>
                     </div>
                 </div>
@@ -236,13 +221,13 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                     </div>
                                     <div class="progress">
                                         <div class="progress-bar bg-<?php
-                                                                    echo $bin['status'] == 'full' ? 'danger' : ($bin['status'] == 'partial' ? 'warning' : 'success');
-                                                                    ?>"
-                                            role="progressbar"
-                                            style="width: <?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%"
-                                            aria-valuenow="<?php echo $bin['current_level']; ?>"
-                                            aria-valuemin="0"
-                                            aria-valuemax="<?php echo $bin['capacity']; ?>">
+                                                                      echo $bin['status'] == 'full' ? 'danger' : ($bin['status'] == 'partial' ? 'warning' : 'success');
+                                                                      ?>"
+                                             role="progressbar"
+                                             style="width: <?php echo round(($bin['current_level'] / $bin['capacity']) * 100); ?>%"
+                                             aria-valuenow="<?php echo $bin['current_level']; ?>"
+                                             aria-valuemin="0"
+                                             aria-valuemax="<?php echo $bin['capacity']; ?>">
                                         </div>
                                     </div>
                                     <small class="text-muted">
@@ -260,7 +245,6 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
     </div>
 
     <script>
-        // Toggle sidebar
         document.getElementById('sidebarToggle').addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
@@ -268,12 +252,10 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
             mainContent.classList.toggle('expanded');
         });
 
-        // Toggle profile dropdown
         document.getElementById('profileDropdown').addEventListener('click', function() {
             document.getElementById('profileDropdownContent').classList.toggle('show-dropdown');
         });
 
-        // Close dropdown when clicking outside
         window.addEventListener('click', function(event) {
             if (!event.target.closest('.profile-dropdown')) {
                 const dropdown = document.getElementById('profileDropdownContent');

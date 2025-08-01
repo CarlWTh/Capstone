@@ -2,7 +2,6 @@
 session_start();
 require_once 'config.php';
 
-// Set timezone
 date_default_timezone_set('Asia/Manila');
 $conn->query("SET time_zone = '+08:00'");
 
@@ -25,7 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($verification_code)) {
         $error = "Please enter the verification code";
     } else {
-        // Debug query
         $debug_stmt = $conn->prepare("SELECT admin_id, reset_token, reset_token_expires, NOW() as db_time FROM admin WHERE email = ?");
         $debug_stmt->bind_param("s", $email);
         $debug_stmt->execute();
@@ -33,13 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($debug_result->num_rows > 0) {
             $admin = $debug_result->fetch_assoc();
-            
-            // Manual verification for debugging
             $code_match = ($admin['reset_token'] === $verification_code);
             $not_expired = (strtotime($admin['reset_token_expires']) > time());
             
             if ($code_match && $not_expired) {
-                // Generate new secure token
                 $reset_token = bin2hex(random_bytes(32));
                 $expires = date('Y-m-d H:i:s', time() + 3600);
                 

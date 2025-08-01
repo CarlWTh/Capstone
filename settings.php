@@ -1,24 +1,21 @@
 <?php
 require_once 'config.php';
-checkAdminAuth(); // This function is defined in config.php
+checkAdminAuth(); 
 
-// Fetch current settings from the database
 $current_settings = [];
 $settings_query = $conn->query("SELECT minutes_per_bottle, bandwidth_limit_kbps, bin_full_threshold, maintenance_mode, auto_reboot_schedule FROM Settings LIMIT 1");
 if ($settings_query && $settings_query->num_rows > 0) {
     $current_settings = $settings_query->fetch_assoc();
 } else {
-    // Default values if no settings found (should be handled by initial data insertion)
     $current_settings = [
-        'minutes_per_bottle' => 2, // Default to 2 minutes per bottle
-        'bandwidth_limit_kbps' => 5120, // 5 Mbps
+        'minutes_per_bottle' => 2, 
+        'bandwidth_limit_kbps' => 5120, 
         'bin_full_threshold' => 80,
         'maintenance_mode' => 0,
         'auto_reboot_schedule' => 'daily 03:00 AM'
     ];
 }
 
-// Fetch admin email from the Admin table
 $admin_email_from_db = '';
 if (isset($_SESSION['admin_id'])) {
     $admin_id = $_SESSION['admin_id'];
@@ -32,25 +29,15 @@ if (isset($_SESSION['admin_id'])) {
     $stmt->close();
 }
 
-
-// Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['update_general_settings'])) { // Changed name from update_settings
-        // Process general settings update
+    if (isset($_POST['update_general_settings'])) { 
         $site_name = trim($_POST['site_name']);
         $site_url = trim($_POST['site_url']);
         $admin_email = trim($_POST['admin_email']);
         $timezone = trim($_POST['timezone']);
 
-        // Validate and update settings
         if (!empty($site_name) && !empty($site_url) && filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
-            // In a real application, you would save these to a database or config file
-            // For SITE_NAME and SITE_URL, these are defined constants in config.php.
-            // To make them dynamic, you'd need a 'SystemSettings' table or similar
-            // where these values are stored and fetched.
-            // For now, we'll just log the activity and show success.
-
-            // Update email in Admin table if it belongs to the current admin
+    
             if (isset($_SESSION['admin_id'])) {
                 $admin_id = $_SESSION['admin_id'];
                 $update_email_stmt = $conn->prepare("UPDATE Admin SET email = ? WHERE admin_id = ?");
@@ -59,18 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $update_email_stmt->close();
             }
 
-            // For site_name and site_url, if they are meant to be dynamic and stored in DB:
-            // You would need a table like 'SystemConfig' with 'setting_name', 'setting_value'
-            // $update_site_name_stmt = $conn->prepare("INSERT INTO SystemConfig (setting_name, setting_value) VALUES ('SITE_NAME', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
-            // $update_site_name_stmt->bind_param("ss", $site_name, $site_name);
-            // $update_site_name_stmt->execute();
-            // $update_site_name_stmt->close();
-
-            // Similar for SITE_URL
-
-            // Update timezone (this would typically be a server-level setting or stored in DB)
             date_default_timezone_set($timezone);
-            $conn->query("SET time_zone = '" . date('P') . "'"); // Set MySQL timezone based on PHP timezone
+            $conn->query("SET time_zone = '" . date('P') . "'");
 
             redirectWithMessage('settings.php', 'success', 'General settings updated successfully!');
             logAdminActivity('General Settings Update', 'Updated site name, URL, admin email, and timezone.');
@@ -78,7 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirectWithMessage('settings.php', 'error', 'Please fill all fields with valid data for general settings.');
         }
     } elseif (isset($_POST['change_password'])) {
-        // Process password change
         $current_password = $_POST['current_password'];
         $new_password = $_POST['new_password'];
         $confirm_password = $_POST['confirm_password'];
@@ -92,7 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             if (isset($_SESSION['admin_id'])) {
                 $admin_id = $_SESSION['admin_id'];
-                // Verify current password against the 'Admin' table
                 $stmt = $conn->prepare("SELECT password_hash FROM Admin WHERE admin_id = ?");
                 $stmt->bind_param("i", $admin_id);
                 $stmt->execute();
@@ -100,7 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($result->num_rows === 1) {
                     $admin = $result->fetch_assoc();
                     if (password_verify($current_password, $admin['password_hash'])) {
-                        // Update password in the 'Admin' table
                         $new_password_hash = password_hash($new_password, PASSWORD_DEFAULT);
                         $update_stmt = $conn->prepare("UPDATE Admin SET password_hash = ? WHERE admin_id = ?");
                         $update_stmt->bind_param("si", $new_password_hash, $admin_id);
@@ -122,19 +96,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirectWithMessage('settings.php', 'error', 'Admin ID not set in session.');
             }
         }
-    } elseif (isset($_POST['update_internet_settings'])) { // Changed name from update_minutes
+    } elseif (isset($_POST['update_internet_settings'])) { 
         $minutes_per_bottle = (float)$_POST['minutes_per_bottle'];
         $bandwidth_limit_mbps_download = (float)$_POST['download_speed'];
         $bandwidth_limit_mbps_upload = (float)$_POST['upload_speed'];
         $maintenance_mode = isset($_POST['maintenance_mode']) ? 1 : 0;
-        $auto_reboot_schedule = $_POST['auto_reboot_schedule'] ?? null; // Added for auto reboot
+        $auto_reboot_schedule = $_POST['auto_reboot_schedule'] ?? null; 
 
-        // Convert Mbps to Kbps for bandwidth_limit_kbps
         $bandwidth_limit_kbps = ($bandwidth_limit_mbps_download + $bandwidth_limit_mbps_upload) * 1024;
 
         if (isset($_SESSION['admin_id'])) {
             $admin_id = $_SESSION['admin_id'];
-            // Update 'Settings' table
             $stmt = $conn->prepare("
                 INSERT INTO Settings (admin_id, minutes_per_bottle, bandwidth_limit_kbps, maintenance_mode, auto_reboot_schedule)
                 VALUES (?, ?, ?, ?, ?)
@@ -156,14 +128,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             redirectWithMessage('settings.php', 'error', 'Admin ID not set in session for internet settings update.');
         }
-    } elseif (isset($_POST['update_trash_bin_settings'])) { // New section for trash bin settings
+    } elseif (isset($_POST['update_trash_bin_settings'])) { 
         $sms_threshold = (int)$_POST['sms_threshold'];
         $sms_recipients = trim($_POST['sms_recipients']);
         $sms_message = trim($_POST['sms_message']);
 
         if (isset($_SESSION['admin_id'])) {
             $admin_id = $_SESSION['admin_id'];
-            // Update 'Settings' table for bin_full_threshold
             $stmt = $conn->prepare("
                 INSERT INTO Settings (admin_id, bin_full_threshold)
                 VALUES (?, ?)
@@ -173,12 +144,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("ii", $admin_id, $sms_threshold);
 
             if ($stmt->execute()) {
-                // For sms_recipients and sms_message, these would typically be stored in the Settings table
-                // or a separate table if they are per-bin settings.
-                // Assuming for now they are global settings and could be stored in 'Settings' as well,
-                // perhaps as JSON or separate columns. For simplicity, we'll just log.
-                // In a real app, you'd add columns like 'sms_recipients_list', 'sms_alert_message' to 'Settings'.
-
                 redirectWithMessage('settings.php', 'success', 'Trash Bin settings updated successfully!');
                 logAdminActivity('Trash Bin Settings Update', 'Updated trash bin alert settings.');
             } else {
@@ -203,7 +168,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="dashboard-container">
-    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
@@ -268,14 +232,13 @@ logAdminActivity('Settings Access', 'Accessed settings page');
         </nav>
     </div>
 
-    <!-- Main Content -->
     <div class="main-content">
         <div class="main-header">
             <h1><i class="bi bi-gear"></i> System Settings</h1>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
                     
-                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span> <!-- Changed to admin_username -->
+                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
@@ -289,7 +252,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
         <?php displayFlashMessage(); ?>
 
         <div class="settings-grid">
-            <!-- Internet Settings Card -->
             <div class="settings-card">
                 <div class="settings-header">
                     <div class="settings-icon">
@@ -304,7 +266,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                             <div class="input-with-button">
                                 <input type="number" name="minutes_per_bottle"
                                        class="form-control" value="<?= htmlspecialchars($current_settings['minutes_per_bottle']) ?>"
-                                       min="1" max="60" required step="0.1"> <!-- Added step for decimal -->
+                                       min="1" max="60" required step="0.1">
                                 <span class="input-suffix">minutes/bottle</span>
                             </div>
                         </div>
@@ -352,7 +314,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                 </div>
             </div>
 
-            <!-- Trash Bin Settings Card -->
             <div class="settings-card">
                 <div class="settings-header">
                     <div class="settings-icon">
@@ -401,7 +362,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                 </div>
             </div>
 
-            <!-- General Settings Card -->
             <div class="settings-card">
                 <div class="settings-header">
                     <div class="settings-icon">
@@ -434,7 +394,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                             <select id="timezone" name="timezone" class="form-control">
                                 <option value="Asia/Manila" <?= date_default_timezone_get() === 'Asia/Manila' ? 'selected' : '' ?>>Asia/Manila</option>
                                 <option value="UTC" <?= date_default_timezone_get() === 'UTC' ? 'selected' : '' ?>>UTC</option>
-                                <!-- More timezones would be added here dynamically or manually -->
                                 <option value="America/New_York" <?= date_default_timezone_get() === 'America/New_York' ? 'selected' : '' ?>>America/New_York</option>
                                 <option value="Europe/London" <?= date_default_timezone_get() === 'Europe/London' ? 'selected' : '' ?>>Europe/London</option>
                             </select>
@@ -449,7 +408,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                 </div>
             </div>
 
-            <!-- Security Settings Card -->
             <div class="settings-card">
                 <div class="settings-header">
                     <div class="settings-icon">
@@ -492,7 +450,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                 </div>
             </div>
 
-            <!-- Backup Card -->
             <div class="settings-card">
                 <div class="settings-header">
                     <div class="settings-icon">
@@ -527,7 +484,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                 </div>
             </div>
 
-            <!-- System Info Card -->
             <div class="settings-card">
                 <div class="settings-header">
                     <div class="settings-icon">
@@ -571,30 +527,25 @@ logAdminActivity('Settings Access', 'Accessed settings page');
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle sidebar
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
 
-        // Profile dropdown
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
 
-        // Password strength meter
         document.getElementById('new_password').addEventListener('input', function() {
             const password = this.value;
             const meter = document.querySelector('.strength-meter');
             const segments = meter.querySelectorAll('.strength-segment');
 
-            // Reset all segments
             segments.forEach(seg => {
                 seg.style.backgroundColor = '#ddd';
                 seg.style.borderColor = '#ddd';
             });
 
-            // Very basic strength evaluation
             if (password.length > 0) {
                 segments[0].style.backgroundColor = '#e74c3c';
                 segments[0].style.borderColor = '#e74c3c';
@@ -613,17 +564,15 @@ logAdminActivity('Settings Access', 'Accessed settings page');
             }
         });
 
-        // Toggle maintenance mode switch
         const maintenanceSwitch = document.getElementById('maintenanceMode');
         if (maintenanceSwitch) {
             maintenanceSwitch.addEventListener('change', function() {
                 const status = this.checked ? 'ON' : 'OFF';
-                // Using a custom modal/message box instead of alert()
                 const messageBox = document.createElement('div');
                 messageBox.className = 'alert alert-info';
                 messageBox.innerHTML = `<p>Maintenance mode will be turned ${status}. Only admins will be able to access the system.</p>`;
                 document.querySelector('.main-content').prepend(messageBox);
-                setTimeout(() => messageBox.remove(), 5000); // Remove message after 5 seconds
+                setTimeout(() => messageBox.remove(), 5000); 
             });
         }
     </script>

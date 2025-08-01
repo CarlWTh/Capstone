@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php'; // Ensure this path is correct
+require_once 'config.php'; 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
@@ -29,7 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Passwords do not match";
     }
 
-    // Check if username or email already exists in the 'Admin' table
     $stmt = $conn->prepare("SELECT admin_id FROM Admin WHERE username = ? OR email = ?");
     $stmt->bind_param("ss", $username, $email);
     $stmt->execute();
@@ -42,14 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        $is_admin = 1; // Set to 1 for true, as this is an admin registration page
-
-        // Insert into the 'Admin' table
+        $is_admin = 1; 
         $stmt = $conn->prepare("INSERT INTO Admin (username, email, password_hash, is_admin) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("sssi", $username, $email, $password_hash, $is_admin);
 
         if ($stmt->execute()) {
-            // Redirect to the login page with a success message
             header("Location: login.php?registration=success");
             exit();
         } else {

@@ -1,29 +1,21 @@
 <?php
 session_start();
-require_once 'config.php'; // Ensure this path is correct
+require_once 'config.php'; 
 
-// If an admin is already logged in, redirect to the dashboard
 if (isset($_SESSION['admin_id'])) {
-    // It's good practice to also check if the username is set here
-    // if (isset($_SESSION['username'])) { // Optional: add this for even more robustness
-        header("Location: dashboard.php"); // Assuming 'dashboard.php' is your admin dashboard
-        exit();
-    // }
+     header("Location: dashboard.php"); 
+     exit();
 }
 
 $error = '';
 $success = '';
 
-// Handle password reset success message
 if (isset($_GET['password_reset']) && $_GET['password_reset'] === 'success') {
     $success = "Password reset successful! Please log in with your new password.";
 }
 
-// Handle "Remember Me" functionality for admin
 if (empty($_SESSION['admin_id']) && isset($_COOKIE['remember_admin_token'])) {
     $token = $_COOKIE['remember_admin_token'];
-
-    // Select from the 'Admin' table
     $stmt = $conn->prepare("SELECT admin_id, username, is_admin FROM Admin WHERE remember_token = ?");
     $stmt->bind_param("s", $token);
     $stmt->execute();
@@ -32,10 +24,9 @@ if (empty($_SESSION['admin_id']) && isset($_COOKIE['remember_admin_token'])) {
     if ($result->num_rows === 1) {
         $admin = $result->fetch_assoc();
         $_SESSION['admin_id'] = $admin['admin_id'];
-        $_SESSION['username'] = $admin['username']; // Changed here: from admin_username to username
-        $_SESSION['is_admin_session'] = $admin['is_admin']; // Set the admin status in session
+        $_SESSION['username'] = $admin['username']; 
+        $_SESSION['is_admin_session'] = $admin['is_admin']; 
 
-        // Generate a new token for security
         $new_token = bin2hex(random_bytes(32));
 
         setcookie(
@@ -50,19 +41,16 @@ if (empty($_SESSION['admin_id']) && isset($_COOKIE['remember_admin_token'])) {
             ]
         );
 
-        // Update the new token in the 'Admin' table
         $update_stmt = $conn->prepare("UPDATE Admin SET remember_token = ? WHERE admin_id = ?");
         $update_stmt->bind_param("si", $new_token, $admin['admin_id']);
         $update_stmt->execute();
         $update_stmt->close();
-
         header("Location: dashboard.php");
         exit();
     }
     $stmt->close();
 }
 
-// Handle form submission for admin login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
@@ -70,7 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($username) || empty($password)) {
         $error = "Please enter both username and password.";
     } else {
-        // Select from the 'Admin' table
         $stmt = $conn->prepare("SELECT admin_id, username, password_hash, is_admin FROM Admin WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
@@ -79,16 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result->num_rows === 1) {
             $admin = $result->fetch_assoc();
 
-            // Verify the password
             if (password_verify($password, $admin['password_hash'])) {
                 $_SESSION['admin_id'] = $admin['admin_id'];
-                $_SESSION['username'] = $admin['username']; // Changed here: from admin_username to username
-                $_SESSION['is_admin_session'] = $admin['is_admin']; // Set the admin status in session
+                $_SESSION['username'] = $admin['username']; 
+                $_SESSION['is_admin_session'] = $admin['is_admin'];
 
-                // Handle "Remember Me"
                 if (isset($_POST['remember'])) {
                     $token = bin2hex(random_bytes(32));
-
                     setcookie(
                         'remember_admin_token',
                         $token,
@@ -101,14 +85,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ]
                     );
 
-                    // Update the remember token in the 'Admin' table
                     $stmt = $conn->prepare("UPDATE Admin SET remember_token = ? WHERE admin_id = ?");
                     $stmt->bind_param("si", $token, $admin['admin_id']);
                     $stmt->execute();
                     $stmt->close();
                 }
-
-                // Redirect to the dashboard after successful login
                 header("Location: dashboard.php");
                 exit();
             } else {

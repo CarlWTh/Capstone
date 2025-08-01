@@ -8,7 +8,6 @@
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (isset($_POST['redeem'])) {
-            // Handle voucher redemption
             $voucherCodeToRedeem = isset($_POST['voucher_code']) ? trim($_POST['voucher_code']) : '';
             if ($voucherCodeToRedeem === '') {
                 $redeemMessage = 'Please enter a voucher code to redeem.';
@@ -19,7 +18,6 @@
                     $redeemMessage = 'Database connection failed: ' . $conn->connect_error;
                     $messageType = 'error';
                 } else {
-                    // Check if voucher exists, is not used, and not expired
                     $stmt = $conn->prepare("SELECT voucher_id, is_used, expiry_time, deposit_id FROM Voucher WHERE code = ?");
                     $stmt->bind_param("s", $voucherCodeToRedeem);
                     $stmt->execute();
@@ -40,7 +38,6 @@
                         } else {
                             $conn->begin_transaction();
                             try {
-                                // Create new StudentSession
                                 $anonymousToken = bin2hex(random_bytes(16));
                                 $deviceMacAddress = null;
                                 $stmtInsertSession = $conn->prepare("INSERT INTO StudentSession (anonymous_token, device_mac_address, first_access_time, last_access_time) VALUES (?, ?, NOW(), NOW())");
@@ -49,24 +46,18 @@
                                     throw new Exception("Error creating student session: " . $stmtInsertSession->error);
                                 }
                                 $stmtInsertSession->close();
-
-                                // Create new InternetSession linked to voucher and student session
                                 $stmtInsertInternetSession = $conn->prepare("INSERT INTO InternetSession (anonymous_token, voucher_id, start_time) VALUES (?, ?, NOW())");
                                 $stmtInsertInternetSession->bind_param("si", $anonymousToken, $voucher['voucher_id']);
                                 if (!$stmtInsertInternetSession->execute()) {
                                     throw new Exception("Error creating internet session: " . $stmtInsertInternetSession->error);
                                 }
                                 $stmtInsertInternetSession->close();
-
-                                // Mark voucher as used
                                 $stmtUpdateVoucher = $conn->prepare("UPDATE Voucher SET is_used = TRUE WHERE voucher_id = ?");
                                 $stmtUpdateVoucher->bind_param("i", $voucher['voucher_id']);
                                 if (!$stmtUpdateVoucher->execute()) {
                                     throw new Exception("Error updating voucher status: " . $stmtUpdateVoucher->error);
                                 }
                                 $stmtUpdateVoucher->close();
-
-                                // Get bottle count from BottleDeposit using deposit_id linked to voucher
                                 $stmtBottleCount = $conn->prepare("SELECT bottle_count FROM BottleDeposit WHERE deposit_id = ?");
                                 $stmtBottleCount->bind_param("i", $voucher['deposit_id']);
                                 $stmtBottleCount->execute();
@@ -78,15 +69,11 @@
                                     $bottleCount = 0;
                                 }
                                 $stmtBottleCount->close();
-
-                                // Calculate session duration based on bottle count
                                 $minutesPerBottle = 2;
                                 $sessionDurationMinutes = $bottleCount * $minutesPerBottle;
                                 if ($sessionDurationMinutes <= 0) {
                                     $sessionDurationMinutes = 1;
                                 }
-
-                                // Set session end time based on bottle count
                                 $_SESSION['session_end_time'] = date('Y-m-d H:i:s', strtotime("+" . $sessionDurationMinutes . " minutes"));
                                 $_SESSION['show_countdown'] = true;
 
@@ -107,7 +94,6 @@
                 }
             }
         } else {
-            // Handle deposit simulation
             $numBottles = isset($_POST['numBottles']) ? intval($_POST['numBottles']) : 0;
 
             if ($numBottles <= 0) {
@@ -127,7 +113,6 @@
                         $conn->begin_transaction();
 
                         try {
-                            // Insert new StudentSession
                             $anonymousToken = bin2hex(random_bytes(16));
                             $deviceMacAddress = null;
                             $stmt = $conn->prepare("INSERT INTO StudentSession (anonymous_token, device_mac_address, first_access_time, last_access_time) VALUES (?, ?, NOW(), NOW())");
@@ -137,8 +122,6 @@
                             }
                             $sessionId = $conn->insert_id;
                             $stmt->close();
-
-                            // Insert BottleDeposit with session_id
                             $stmt = $conn->prepare("INSERT INTO BottleDeposit (session_id, timestamp, bottle_count) VALUES (?, NOW(), ?)");
                             $stmt->bind_param("ii", $sessionId, $numBottles);
                             if (!$stmt->execute()) {
@@ -163,12 +146,8 @@
                             $conn->commit();
                             $redeemMessage = "Successfully processed {$numBottles} bottle(s)";
                             $messageType = 'success';
-
-                            // Calculate session duration based on number of bottles
                             $minutesPerBottle = 2;
                             $sessionDurationMinutes = $numBottles * $minutesPerBottle;
-
-                            // Ensure session duration is at least 1 minute
                             if ($sessionDurationMinutes <= 0) {
                                 $sessionDurationMinutes = 1;
                             }
@@ -371,7 +350,6 @@
                 font-size: 0.8rem;
             }
             
-            /* Modal Styles */
             .voucher-modal {
                 position: fixed;
                 top: 0;
@@ -467,8 +445,6 @@
                 </form>
             </div>
 
-
-            <!-- Status message area -->
             <?php if (!empty($redeemMessage)): ?>
                 <div class="message <?php echo $messageType; ?>">
                     <?php echo htmlspecialchars($redeemMessage); ?>
@@ -483,7 +459,6 @@
             </div>
         </div>
 
-        <!-- Voucher Modal - will be shown when vouchers are generated -->
         <?php if (!empty($voucherCodes)): ?>
             <div class="voucher-modal show" id="voucherModal">
                 <div class="voucher-modal-content">
@@ -504,7 +479,6 @@
         <?php endif; ?>
 
         <script>
-            // Modal close functionality
             const modal = document.getElementById('voucherModal');
             const closeModalBtn = document.getElementById('closeModal');
 
@@ -513,15 +487,11 @@
                     modal.classList.remove('show');
                 });
             }
-
-            // Close modal when clicking outside the modal content
             window.addEventListener('click', (event) => {
                 if (event.target === modal) {
                     modal.classList.remove('show');
                 }
             });
-
-            // Countdown timer logic
             <?php if (session_status() == PHP_SESSION_ACTIVE && isset($_SESSION['session_end_time']) && isset($_SESSION['show_countdown']) && $_SESSION['show_countdown']): ?>
             let endTime = new Date("<?php echo $_SESSION['session_end_time']; ?>").getTime();
             let countdownElement = document.getElementById('countdown');
@@ -545,7 +515,6 @@
     </body>
     </html>
     <?php
-        // Clear the session variable after using it
         if(session_status() == PHP_SESSION_ACTIVE && isset($_SESSION['session_end_time'])){
             unset($_SESSION['session_end_time']);
             unset($_SESSION['show_countdown']);

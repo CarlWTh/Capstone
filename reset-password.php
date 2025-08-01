@@ -2,22 +2,17 @@
 session_start();
 require_once 'config.php';
 
-// Redirect if already logged in
 if (isset($_SESSION['admin_id'])) {
     header("Location: dashboard.php");
     exit();
 }
-
 $error = '';
 $success = '';
 $valid_token = false;
 $token = '';
 
-// Check if token is provided in the URL
 if (isset($_GET['token']) && !empty($_GET['token'])) {
     $token = $_GET['token'];
-    
-    // Verify token validity
     $stmt = $conn->prepare("SELECT admin_id FROM admin WHERE reset_token = ? AND reset_token_expires > NOW()");
     $stmt->bind_param("s", $token);
     $stmt->execute();
@@ -32,19 +27,14 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
 } else {
     $error = "No reset token provided. Please request a password reset from the forgot password page.";
 }
-
-// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-    
-    // Validate password
     if (strlen($password) < 8) {
         $error = "Password must be at least 8 characters long.";
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match.";
     } else {
-        // Update the password
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
         
         $stmt = $conn->prepare("UPDATE admin SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE reset_token = ?");
@@ -52,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
         $stmt->execute();
         
         if ($stmt->affected_rows === 1) {
-            // Password reset successful
+
             header("Location: login.php?password_reset=success");
             exit();
         } else {
@@ -93,7 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
                         required
                         minlength="8"
                     >
-                    <!-- <i class="icon-lock"></i> -->
                 </div>
                 
                 <div class="form-group">
@@ -106,7 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
                         required
                         minlength="8"
                     >
-                    <!-- <i class="icon-lock"></i> -->
                 </div>
                 
                 <button type="submit" class="login-button">
