@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recycle for Connectivity</title>
+    <link rel="icon" type="image/png" href="logo.png" />
+    <link rel="stylesheet" href="CSS/style.css" />
+  </head>
+  <body>
+    <nav class="top-nav">
+      <div class="nav-content">
+        <div class="nav-logo">
+          <img src="IMG/logo.png" alt="Recycle for Connectivity" />
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <h1><strong>RECYCLE FOR CONNECTIVITY</strong></h1>
+          <p>"Exchange plastic bottles for internet access!"</p>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="info-panel">
+          <div class="status-box">Status:</div>
+          <div class="action-buttons">
+            <button class="button btn-insert" onclick="openModal()">
+              INSERT BOTTLE
+            </button>
+            <button class="button btn-promo" onclick="openConnectModal()">
+              HOW TO CONNECT
+            </button>
+          </div>
+        </div>
+
+        <div class="voucher-box">
+          <h3>VOUCHER</h3>
+          <input
+            type="text"
+            id="voucherInput"
+            class="voucher-input"
+            placeholder="Voucher here..."
+            required
+          />
+          <div class="voucher-note">Please enter voucher code to connect</div>
+          <button class="btn-connect" onclick="validateAndConnect()">
+            CONNECT
+          </button>
+        </div>
+      </div>
+
+      <div class="footer">
+        Powered by: <span>Recycle for Connectivity System</span> © All rights
+        reserved 2025
+      </div>
+    </div>
+
+    <div id="loadingModal" class="modal">
+      <div class="modal-content">
+        <div class="bottle-count">Bottles inserted: <span id="bottleCounter">0</span></div>
+        <div class="loader"></div>
+        <p>Waiting for bottle...</p>
+        <button class="btn-done" onclick="closeModal()">DONE INSERTING</button>
+      </div>
+    </div>
+
+    <div id="errorModal" class="modal">
+      <div class="modal-content">
+        <p style="color: #ff5722">Error: Voucher code required!</p>
+        <button class="btn-done" onclick="closeErrorModal()">OK</button>
+      </div>
+    </div>
+
+    <div id="connectModal" class="modal">
+      <div class="modal-content connect-modal-content">
+        <h3>HOW TO CONNECT</h3>
+        <div class="steps">
+          <div class="step">
+            <h2>Step 1: Insert a Bottle</h2>
+            <p>Place a plastic bottle in the recycling slot of the machine.</p>
+          </div>
+
+          <div class="step">
+            <h2>Step 2: Receive a Voucher</h2>
+            <p>After inserting the bottle, a voucher code will be generated.</p>
+          </div>
+
+          <div class="step">
+            <h2>Step 3: Enter the Voucher Code</h2>
+            <p>
+              Type the code in the voucher input box on the main page.(2
+              Minutes per Bottle)
+            </p>
+          </div>
+
+          <div class="step">
+            <h2>Step 4: Connect to the Internet</h2>
+            <p>Click the "CONNECT" button to enjoy internet access.</p>
+          </div>
+        </div>
+        <button class="btn-done" onclick="closeConnectModal()">CLOSE</button>
+      </div>
+    </div>
+
+    <script>
+      let bottleCount = 0; // Initialize bottle counter
+
+      // Ensures modals are hidden when the page loads
+      document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("loadingModal").classList.remove("active"); // Ensure it starts hidden
+        document.getElementById("errorModal").style.display = "none";
+        document.getElementById("connectModal").style.display = "none";
+      });
+
+      // Function to open the loading modal
+      function openModal() {
+        document.getElementById("loadingModal").classList.add("active");
+        // Simulate bottle insertion after a short delay (you'd replace this with actual sensor input)
+        setTimeout(() => {
+          bottleCount++;
+          document.getElementById("bottleCounter").textContent = bottleCount;
+        }, 1500); // Adjust delay as needed
+      }
+      
+      // Function to close the loading modal
+      function closeModal() {
+        document.getElementById("loadingModal").classList.remove("active");
+      }
+
+      function closeErrorModal() {
+        document.getElementById("errorModal").style.display = "none";
+      }
+
+      function openConnectModal() {
+        document.getElementById("connectModal").style.display = "flex";
+      }
+
+      function closeConnectModal() {
+        document.getElementById("connectModal").style.display = "none";
+      }
+
+      function validateAndConnect() {
+        const voucherInput = document.getElementById("voucherInput");
+        if (!voucherInput.value.trim()) {
+          document.getElementById("errorModal").style.display = "flex";
+        } else {
+          sessionStorage.setItem("voucherCode", voucherInput.value.trim());
+          window.location.href = "INCLUDE/wifi.html";
+        }
+      }
+    </script>
+  </body>
+</html>
