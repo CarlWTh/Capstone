@@ -2,12 +2,27 @@
 require_once 'config.php';
 checkAdminAuth();
 
+<<<<<<< HEAD
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $per_page = 10;
 $offset = ($page - 1) * $per_page;
 $total_admins_query = $conn->query("SELECT COUNT(*) FROM Admin");
 $total_admins = $total_admins_query->fetch_row()[0];
 $total_pages = ceil($total_admins / $per_page);
+=======
+// Pagination
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$per_page = 10;
+$offset = ($page - 1) * $per_page;
+
+// Get total admins for pagination
+$total_admins_query = $conn->query("SELECT COUNT(*) FROM Admin");
+$total_admins = $total_admins_query->fetch_row()[0];
+$total_pages = ceil($total_admins / $per_page);
+
+// Get admins for current page
+// Added 'is_admin' to the SELECT query
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $stmt = $conn->prepare("
     SELECT admin_id, username, email, created_at, is_admin
     FROM Admin
@@ -18,12 +33,23 @@ $stmt->bind_param("ii", $per_page, $offset);
 $stmt->execute();
 $admins = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
+<<<<<<< HEAD
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['toggle_admin'])) {
         $admin_id = (int)$_POST['admin_id'];
         $current_is_admin_status = (int)$_POST['current_is_admin_status']; 
         $new_is_admin_status = $current_is_admin_status ? 0 : 1; 
 
+=======
+// Handle actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['toggle_admin'])) {
+        $admin_id = (int)$_POST['admin_id'];
+        $current_is_admin_status = (int)$_POST['current_is_admin_status']; // Get current status
+        $new_is_admin_status = $current_is_admin_status ? 0 : 1; // Toggle status
+
+        // Prevent admin from revoking their own admin rights through this toggle
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         if ($admin_id == $_SESSION['admin_id'] && $new_is_admin_status == 0) {
             redirectWithMessage('users.php', 'error', 'You cannot revoke your own admin rights!');
         } else {
@@ -55,6 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirectWithMessage('users.php', 'error', 'Failed to delete admin: ' . $conn->error);
         }
     }
+<<<<<<< HEAD
+=======
+    // Added logic for adding a new admin
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     elseif (isset($_POST['add_admin'])) {
         $username = trim($_POST['username']);
         $email = trim($_POST['email']);
@@ -65,8 +95,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             redirectWithMessage('users.php', 'error', 'Invalid email format.');
         } else {
+<<<<<<< HEAD
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
             $is_admin = 1;
+=======
+            // Hash the password securely
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+            // Set default is_admin status to 1 for new admins
+            $is_admin = 1;
+
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             $stmt = $conn->prepare("INSERT INTO Admin (username, email, password, is_admin) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("sssi", $username, $email, $hashed_password, $is_admin);
 
@@ -74,7 +113,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 logAdminActivity('Admin Create', "Added new admin: $username");
                 redirectWithMessage('users.php', 'success', 'New admin added successfully!');
             } else {
+<<<<<<< HEAD
                 if ($conn->errno == 1062) {
+=======
+                // Check for duplicate entry error
+                if ($conn->errno == 1062) { // MySQL error code for duplicate entry
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     redirectWithMessage('users.php', 'error', 'Username or email already exists.');
                 } else {
                     redirectWithMessage('users.php', 'error', 'Error adding admin: ' . $conn->error);
@@ -143,7 +187,11 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                 <li class="active">
                     <a href="users.php">
                         <i class="bi bi-people"></i>
+<<<<<<< HEAD
                         <span>Admins</span>
+=======
+                        <span>Users</span>
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     </a>
                 </li>
                 <li>
@@ -167,12 +215,21 @@ logAdminActivity('Admin Access', 'Viewed admins list');
             <h2><i class="bi bi-people"></i> Admin Management</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
+<<<<<<< HEAD
                     
                     <span><?= htmlspecialchars($_SESSION['username']) ?></span> 
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
                    
+=======
+                    <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-img">
+                    <span><?= htmlspecialchars($_SESSION['username']) ?></span> <!-- LINE 185: Changed here -->
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a href="#"><i class="bi bi-person"></i> Profile</a>
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
                     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
@@ -309,26 +366,55 @@ logAdminActivity('Admin Access', 'Viewed admins list');
     </div>
 
     <script>
+<<<<<<< HEAD
+=======
+        // Function to close any open modal
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         function closeAllModals() {
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.classList.remove('show');
             });
         }
+<<<<<<< HEAD
+=======
+
+        // Toggle sidebar
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.getElementById('sidebarToggle').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
+<<<<<<< HEAD
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
         document.getElementById('addAdminBtn').addEventListener('click', function() {
             document.getElementById('addAdminModal').classList.add('show');
         });
+=======
+
+        // Profile dropdown
+        document.querySelector('.dropdown-header').addEventListener('click', function() {
+            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
+        });
+
+        // Add Admin Modal - Open
+        document.getElementById('addAdminBtn').addEventListener('click', function() {
+            document.getElementById('addAdminModal').classList.add('show');
+        });
+
+        // Add Admin Modal - Close buttons
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelectorAll('.add-modal-close, .add-modal-cancel').forEach(btn => {
             btn.addEventListener('click', function() {
                 closeAllModals();
             });
         });
+<<<<<<< HEAD
+=======
+
+        // Delete Admin Modal - Open
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelectorAll('.delete-admin').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.getElementById('deleteAdminId').value = this.dataset.adminId;
@@ -336,11 +422,21 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                 document.getElementById('deleteModal').classList.add('show');
             });
         });
+<<<<<<< HEAD
+=======
+
+        // Delete Admin Modal - Close buttons
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelectorAll('.delete-modal-close, .delete-modal-cancel').forEach(btn => {
             btn.addEventListener('click', function() {
                 closeAllModals();
             });
         });
+<<<<<<< HEAD
+=======
+
+        // Close modal when clicking outside of it
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         window.addEventListener('click', function(event) {
             document.querySelectorAll('.modal').forEach(modal => {
                 if (event.target == modal) {
@@ -348,6 +444,18 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                 }
             });
         });
+<<<<<<< HEAD
+=======
+
+        // Handle Admin Status Checkbox Change (if you re-implemented this)
+        // If you are using buttons for toggle, this section is not needed.
+        // document.querySelectorAll('.admin-status-checkbox').forEach(checkbox => {
+        //     checkbox.addEventListener('change', function() {
+        //         const form = this.closest('.admin-status-form');
+        //         form.submit(); // Submit the form when checkbox state changes
+        //     });
+        // });
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     </script>
 </body>
 

@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+<<<<<<< HEAD
 checkAdminAuth(); 
 
 
@@ -12,16 +13,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
         try {
             $placeholder_user_id = 1; 
             $time_credits_earned = $bottleCount * $voucherDuration;
+=======
+checkAdminAuth(); // This function is defined in config.php
+
+// Handle new deposit addition
+// Assuming you have your database connection ($conn), getMinutesPerBottle(),
+// generateUniqueVoucherCode(), logAdminActivity(), and redirectWithMessage() functions defined.
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
+    $bottleCount = (int) $_POST['bottle_count'];
+    $voucherDuration = getMinutesPerBottle(); // Get from config.php which reads from Settings
+
+    if ($bottleCount > 0) {
+        // Start a transaction
+        $conn->begin_transaction();
+        try {
+            $placeholder_user_id = 1; // In a real application, this user_id would come from a user scanning a QR code or similar.
+            $time_credits_earned = $bottleCount * $voucherDuration;
+
+            // Insert into 'Transactions' table
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             $stmt = $conn->prepare("INSERT INTO Transactions (user_id, bottle_count, time_credits_earned) VALUES (?, ?, ?)");
             $stmt->bind_param("iid", $placeholder_user_id, $bottleCount, $time_credits_earned);
 
             if ($stmt->execute()) {
                 $transactionId = $conn->insert_id;
                 logAdminActivity('Deposit Added', "Added a new bottle deposit of $bottleCount bottles (Transaction ID: $transactionId)");
+<<<<<<< HEAD
                 $currentTimestamp = new DateTime();
                 $expirationDateTime = $currentTimestamp->modify("+$time_credits_earned minutes")->format('Y-m-d H:i:s');
                 $voucherCode = generateUniqueVoucherCode($conn);
                 $voucherStmt = $conn->prepare("INSERT INTO Voucher (transaction_id, voucher_code, Expiration, status, time_credits_value) VALUES (?, ?, ?, 'unused', ?)");
+=======
+
+                // Calculate the expiration timestamp for the single voucher
+                $currentTimestamp = new DateTime();
+                // The voucher's duration should be the total time credits earned for all bottles
+                $expirationDateTime = $currentTimestamp->modify("+$time_credits_earned minutes")->format('Y-m-d H:i:s');
+
+                // Generate and insert only ONE voucher
+                $voucherCode = generateUniqueVoucherCode($conn);
+                $voucherStmt = $conn->prepare("INSERT INTO Voucher (transaction_id, voucher_code, Expiration, status, time_credits_value) VALUES (?, ?, ?, 'unused', ?)");
+                // The 'time_credits_value' column should store the total time credits for this single voucher
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                 $voucherStmt->bind_param("issd", $transactionId, $voucherCode, $expirationDateTime, $time_credits_earned);
                 $voucherStmt->execute();
 
@@ -29,13 +63,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
                     throw new Exception("Voucher creation failed: " . $voucherStmt->error);
                 }
 
+<<<<<<< HEAD
                 $conn->commit(); 
+=======
+                $conn->commit(); // Commit the transaction
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                 redirectWithMessage('bottle_deposits.php', 'success', 'Deposit added and voucher created successfully!');
             } else {
                 throw new Exception("Failed to add deposit: " . $stmt->error);
             }
         } catch (Exception $e) {
+<<<<<<< HEAD
             $conn->rollback(); 
+=======
+            $conn->rollback(); // Rollback on error
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             error_log("Deposit/Voucher creation error: " . $e->getMessage());
             redirectWithMessage('bottle_deposits.php', 'error', 'Failed to add deposit. ' . $e->getMessage());
         }
@@ -43,24 +85,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
         redirectWithMessage('bottle_deposits.php', 'error', 'Bottle count must be greater than 0.');
     }
 }
+<<<<<<< HEAD
 $timeFilter = $_GET['time_filter'] ?? 'week';
 $customStartDate = $_GET['custom_start_date'] ?? '';
 $customEndDate = $_GET['custom_end_date'] ?? '';
+=======
+
+// Get filter parameters
+$timeFilter = $_GET['time_filter'] ?? 'week';
+$customStartDate = $_GET['custom_start_date'] ?? '';
+$customEndDate = $_GET['custom_end_date'] ?? '';
+
+// Build the date filter condition for 'Transactions' table
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $dateCondition = '';
 $params = array();
 $paramTypes = '';
 
 if ($timeFilter === 'day') {
+<<<<<<< HEAD
     $dateCondition = "AND DATE(created_at) >= CURDATE() - INTERVAL 7 DAY";
 } elseif ($timeFilter === 'week') {
     $dateCondition = "AND created_at >= DATE_SUB(NOW(), INTERVAL 4 WEEK)";
 } elseif ($timeFilter === 'month') {
+=======
+    // Last 7 days, grouped by day. Change to `CURDATE()` for current day only.
+    $dateCondition = "AND DATE(created_at) >= CURDATE() - INTERVAL 7 DAY";
+} elseif ($timeFilter === 'week') {
+    // Last 4 weeks, grouped by week.
+    $dateCondition = "AND created_at >= DATE_SUB(NOW(), INTERVAL 4 WEEK)";
+} elseif ($timeFilter === 'month') {
+    // Last 6 months, grouped by month.
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     $dateCondition = "AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
 } elseif ($timeFilter === 'custom' && $customStartDate && $customEndDate) {
     $dateCondition = "AND DATE(created_at) BETWEEN ? AND ?";
     $params = array($customStartDate, $customEndDate);
     $paramTypes = 'ss';
 }
+<<<<<<< HEAD
+=======
+
+// Get deposit statistics based on filter from 'Transactions' table
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $groupBy = '';
 $dateFormat = '';
 
@@ -71,17 +138,29 @@ switch ($timeFilter) {
         break;
     case 'week':
         $groupBy = 'YEARWEEK(created_at)';
+<<<<<<< HEAD
         $dateFormat = 'CONCAT(YEAR(created_at), "-Week ", LPAD(WEEK(created_at, 1), 2, "0")) as period'; 
+=======
+        $dateFormat = 'CONCAT(YEAR(created_at), "-Week ", LPAD(WEEK(created_at, 1), 2, "0")) as period'; // WEEK(date, 1) starts week on Monday
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         break;
     case 'month':
         $groupBy = 'DATE_FORMAT(created_at, "%Y-%m")';
         $dateFormat = 'DATE_FORMAT(created_at, "%Y-%m") as period';
         break;
     case 'custom':
+<<<<<<< HEAD
+=======
+        // If custom is selected, group by day for finer granularity, or you could make this configurable.
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $groupBy = 'DATE(created_at)';
         $dateFormat = 'DATE(created_at) as period';
         break;
     default:
+<<<<<<< HEAD
+=======
+        // Default to 'week' if no valid filter is set
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $groupBy = 'YEARWEEK(created_at)';
         $dateFormat = 'CONCAT(YEAR(created_at), "-W", LPAD(WEEK(created_at, 1), 2, "0")) as period';
         break;
@@ -109,6 +188,11 @@ if (!empty($params)) {
 } else {
     $depositStats = $conn->query($statsQuery)->fetch_all(MYSQLI_ASSOC);
 }
+<<<<<<< HEAD
+=======
+
+// Get overall statistics from 'Transactions' table
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $overallStatsQuery = "
     SELECT
         COUNT(*) as total_deposits,
@@ -130,6 +214,11 @@ if (!empty($params)) {
     $overallStats = $conn->query($overallStatsQuery)->fetch_assoc();
 }
 
+<<<<<<< HEAD
+=======
+// Get recent deposits for the table from 'Transactions' table
+// Limiting to, e.g., 20 recent deposits for display, consider pagination for more
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $deposits = $conn->query("
     SELECT transaction_id AS deposit_id, bottle_count, created_at AS timestamp
     FROM Transactions
@@ -142,6 +231,10 @@ logAdminActivity('Bottle Deposits Access', 'Viewed bottle deposits list');
 function generateUniqueVoucherCode($conn)
 {
     do {
+<<<<<<< HEAD
+=======
+        // Generate a 10-character alphanumeric code
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $voucherCode = substr(md5(uniqid(rand(), true)), 0, 10);
         $stmt = $conn->prepare("SELECT 1 FROM Voucher WHERE voucher_code = ?");
         $stmt->bind_param("s", $voucherCode);
@@ -293,7 +386,11 @@ function generateUniqueVoucherCode($conn)
                 <li>
                     <a href="users.php">
                         <i class="bi bi-people"></i>
+<<<<<<< HEAD
                         <span>Admins</span>
+=======
+                        <span>Users</span>
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     </a>
                 </li>
                 <li>
@@ -311,18 +408,30 @@ function generateUniqueVoucherCode($conn)
             </ul>
         </nav>
     </div>
+<<<<<<< HEAD
 
+=======
+    <!-- Main Content -->
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     <div class="main-content">
         <div class="main-header">
             <h2><i class="bi bi-recycle"></i> Bottle Deposits</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
+<<<<<<< HEAD
 
+=======
+                    <img src="./img/avatar.jpg" alt="Profile" class="avatar-img">
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
+<<<<<<< HEAD
 
+=======
+                    <a href="profile.php"><i class="bi bi-person"></i> Profile</a>
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
                     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
@@ -371,10 +480,18 @@ function generateUniqueVoucherCode($conn)
                         <span>Bottles/Deposit:</span>
                         <span class="stat-value"><?php echo number_format($overallStats['avg_bottles_per_deposit'] ?? 0, 1); ?></span>
                     </div>
+<<<<<<< HEAD
                     <div class="stat-item">
                         <span>Time Credits (Overall):</span>
                         <span class="stat-value">
                             <?php
+=======
+                     <div class="stat-item">
+                        <span>Time Credits (Overall):</span>
+                        <span class="stat-value">
+                            <?php
+                            // Overall average time credits per deposit
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                             $overallAvgTimeCredits = ($overallStats['avg_bottles_per_deposit'] ?? 0) * getMinutesPerBottle();
                             echo number_format($overallAvgTimeCredits, 1) . ' min';
                             ?>
@@ -397,7 +514,11 @@ function generateUniqueVoucherCode($conn)
                 <div class="filter-section">
                     <h5><i class="bi bi-funnel"></i> Filter Period</h5>
                     <form method="GET" action="bottle_deposits.php">
+<<<<<<< HEAD
                         <div class="d-flex flex-wrap justify-content-between gap-2 mb-3" role="group">
+=======
+                        <div class="btn-group w-100 mb-3" role="group">
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                             <input type="radio" class="btn-check" name="time_filter" id="day_filter" value="day" <?php echo $timeFilter === 'day' ? 'checked' : ''; ?>>
                             <label class="btn btn-outline-primary time-filter-btn" for="day_filter">Last 7 Days</label>
 
@@ -604,13 +725,27 @@ function generateUniqueVoucherCode($conn)
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+<<<<<<< HEAD
+=======
+        // Toggle sidebar
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
+<<<<<<< HEAD
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
+=======
+
+        // Profile dropdown
+        document.querySelector('.dropdown-header').addEventListener('click', function() {
+            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
+        });
+
+        // Toggle custom date fields when custom radio is selected
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelectorAll('input[name="time_filter"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 const customDateGroup = document.getElementById('custom_date_group');
@@ -621,6 +756,11 @@ function generateUniqueVoucherCode($conn)
                 }
             });
         });
+<<<<<<< HEAD
+=======
+
+        // Close dropdown if clicked outside
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         window.addEventListener('click', function(e) {
             const profileDropdown = document.querySelector('.profile-dropdown');
             if (!profileDropdown.contains(e.target)) {
@@ -630,4 +770,8 @@ function generateUniqueVoucherCode($conn)
     </script>
 </body>
 
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
