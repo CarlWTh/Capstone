@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+<<<<<<< HEAD
 checkAdminAuth();
 
 $active_tab = $_GET['tab'] ?? 'active-sessions';
@@ -9,6 +10,23 @@ $offset = ($page - 1) * $per_page;
 $total_records = 0;
 $records = [];
 
+=======
+checkAdminAuth(); // This function is defined in config.php
+
+// Determine active tab
+$active_tab = $_GET['tab'] ?? 'active-sessions';
+
+// Pagination for each tab
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$per_page = 15;
+$offset = ($page - 1) * $per_page;
+
+// Initialize variables
+$total_records = 0;
+$records = [];
+
+// Use prepared statements for queries with variables
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 switch ($active_tab) {
     case 'active-sessions':
         $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL");
@@ -83,12 +101,20 @@ switch ($active_tab) {
         break;
 
     case 'bandwidth-usage':
+<<<<<<< HEAD
+=======
+        // Get total records for pagination
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $stmt = $conn->prepare("SELECT COUNT(*) FROM bandwidth_usage");
         $stmt->execute();
         $stmt->bind_result($total_records);
         $stmt->fetch();
         $stmt->close();
 
+<<<<<<< HEAD
+=======
+        // Get paginated device usage records
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $stmt = $conn->prepare("
             SELECT bu.user_id, bu.Device_MAC_Address, bu.Download, bu.Upload, bu.Total, bu.Duration, u.mac_address
             FROM bandwidth_usage bu
@@ -102,6 +128,10 @@ switch ($active_tab) {
         $records = $result->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
 
+<<<<<<< HEAD
+=======
+        // Calculate total usage stats
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $stats = [
             'total_usage' => 0,
             'download' => 0,
@@ -309,7 +339,11 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                 <li>
                     <a href="users.php">
                         <i class="bi bi-people"></i>
+<<<<<<< HEAD
                         <span>Admins</span>
+=======
+                        <span>Users</span>
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     </a>
                 </li>
                 <li>
@@ -333,11 +367,18 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
             <h2><i class="bi bi-wifi"></i> Network Monitoring</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
+<<<<<<< HEAD
                     <span><?= htmlspecialchars($_SESSION['username']) ?></span> <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
                    
                     <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
+=======
+                    <img src="./img/avatar.jpg" alt="Profile" class="avatar-img"> <span><?= htmlspecialchars($_SESSION['username']) ?></span> <i class="bi bi-chevron-down"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a href="profile.php"><i class="bi bi-person"></i> Profile</a> <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
             </div>
@@ -408,10 +449,18 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
                         <div class="bandwidth-card">
                             <h4><i class="bi bi-pie-chart"></i> Current Bandwidth Usage</h4>
                             <?php
+<<<<<<< HEAD
                                 $total_mbps = $stats['total_usage'] > 0 ? round($stats['total_usage'] / 125000, 2) : 0;
                                 $download_mbps = $stats['download'] > 0 ? round($stats['download'] / 125000, 2) : 0;
                                 $upload_mbps = $stats['upload'] > 0 ? round($stats['upload'] / 125000, 2) : 0;
                                 $usage_percent = $total_mbps > 0 ? min(100, round($total_mbps / 100 * 100)) : 0;
+=======
+                                // Convert bytes to Mbps (1 Mbps = 125000 bytes/sec)
+                                $total_mbps = $stats['total_usage'] > 0 ? round($stats['total_usage'] / 125000, 2) : 0;
+                                $download_mbps = $stats['download'] > 0 ? round($stats['download'] / 125000, 2) : 0;
+                                $upload_mbps = $stats['upload'] > 0 ? round($stats['upload'] / 125000, 2) : 0;
+                                $usage_percent = $total_mbps > 0 ? min(100, round($total_mbps / 100 * 100)) : 0; // Example scaling
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                             ?>
                             <div class="bandwidth-meter">
                                 <div class="bandwidth-progress" style="width: <?= $usage_percent ?>%"></div>
@@ -605,15 +654,27 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+<<<<<<< HEAD
+=======
+        // Toggle sidebar
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
 
+<<<<<<< HEAD
+=======
+        // Profile dropdown
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
 
+<<<<<<< HEAD
+=======
+        // Search functionality
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.getElementById('searchInput').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
             const table = document.querySelector('.transaction-logs tbody');
@@ -627,4 +688,8 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
         });
     </script>
 </body>
+<<<<<<< HEAD
+=======
+
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 </html>

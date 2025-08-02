@@ -2,10 +2,18 @@
 session_start();
 require_once 'config.php';
 
+<<<<<<< HEAD
 date_default_timezone_set('Asia/Manila');
 $conn->query("SET time_zone = '+08:00'");
 
 if (isset($_SESSION['admin_id'])) {
+=======
+// Set timezone
+date_default_timezone_set('Asia/Manila');
+$conn->query("SET time_zone = '+08:00'");
+
+if (isset($_SESSION['user_id'])) {
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     header("Location: dashboard.php");
     exit();
 }
@@ -24,12 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($verification_code)) {
         $error = "Please enter the verification code";
     } else {
+<<<<<<< HEAD
         $debug_stmt = $conn->prepare("SELECT admin_id, reset_token, reset_token_expires, NOW() as db_time FROM admin WHERE email = ?");
+=======
+        // Debug query
+        $debug_stmt = $conn->prepare("SELECT id, reset_token, reset_token_expires, NOW() as db_time FROM users WHERE email = ?");
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $debug_stmt->bind_param("s", $email);
         $debug_stmt->execute();
         $debug_result = $debug_stmt->get_result();
         
         if ($debug_result->num_rows > 0) {
+<<<<<<< HEAD
             $admin = $debug_result->fetch_assoc();
             $code_match = ($admin['reset_token'] === $verification_code);
             $not_expired = (strtotime($admin['reset_token_expires']) > time());
@@ -43,6 +57,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $update_stmt->execute();
                 
                 $_SESSION['reset_admin_id'] = $admin['admin_id'];
+=======
+            $user = $debug_result->fetch_assoc();
+            
+            // Manual verification for debugging
+            $code_match = ($user['reset_token'] === $verification_code);
+            $not_expired = (strtotime($user['reset_token_expires']) > time());
+            
+            if ($code_match && $not_expired) {
+                // Generate new secure token
+                $reset_token = bin2hex(random_bytes(32));
+                $expires = date('Y-m-d H:i:s', time() + 3600);
+                
+                $update_stmt = $conn->prepare("UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?");
+                $update_stmt->bind_param("ssi", $reset_token, $expires, $user['id']);
+                $update_stmt->execute();
+                
+                $_SESSION['reset_user_id'] = $user['id'];
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                 header("Location: reset-password.php?token=" . urlencode($reset_token));
                 exit();
             } else {

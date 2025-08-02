@@ -1,7 +1,13 @@
 <?php
 require_once 'config.php';
+<<<<<<< HEAD
 checkAdminAuth();
 
+=======
+checkAdminAuth(); // Check if admin is logged in
+
+// Handle expiry settings update
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_expiry_settings'])) {
     $expiryDays = (int)$_POST['expiry_days'];
     $expiryHours = (int)$_POST['expiry_hours'];
@@ -12,6 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_expiry_setting
 
         if (isset($_SESSION['admin_id'])) {
             $admin_id = (int)$_SESSION['admin_id'];
+<<<<<<< HEAD
+=======
+
+            // Note: Ensure 'setting_key' has UNIQUE constraint in DB
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             $stmt = $conn->prepare("
                 INSERT INTO Settings (setting_key, setting_value, admin_id)
                 VALUES ('voucher_default_duration_minutes', ?, ?)
@@ -34,18 +45,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_expiry_setting
     }
 }
 
+<<<<<<< HEAD
 $currentDefaultDurationQuery = $conn->query("SELECT setting_value FROM Settings WHERE setting_key = 'voucher_default_duration_minutes'");
 $currentDefaultDurationMinutes = 60; 
+=======
+// Get current default duration
+$currentDefaultDurationQuery = $conn->query("SELECT setting_value FROM Settings WHERE setting_key = 'voucher_default_duration_minutes'");
+$currentDefaultDurationMinutes = 60; // default 60 mins (1 hour)
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 if ($currentDefaultDurationQuery && $currentDefaultDurationQuery->num_rows > 0) {
     $row = $currentDefaultDurationQuery->fetch_row();
     $currentDefaultDurationMinutes = (float)$row[0];
 }
+<<<<<<< HEAD
 $expiryDays = 0;
 $expiryHours = 1;
 $expiryMinutes = 0;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $per_page = 20;
 $offset = ($page - 1) * $per_page;
+=======
+
+// Convert minutes to days/hours/minutes
+$expiryDays = 0;
+$expiryHours = 1;
+$expiryMinutes = 0;
+
+// Pagination
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$per_page = 20;
+$offset = ($page - 1) * $per_page;
+
+// Filter by status
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
 $statusCondition = '';
 
@@ -56,12 +88,26 @@ if ($statusFilter === 'used') {
 } elseif ($statusFilter === 'expired') {
     $statusCondition = " AND v.status = 'expired'";
 }
+<<<<<<< HEAD
 $transactionIdFilter = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;
 $transactionCondition = $transactionIdFilter > 0 ? " AND v.transaction_id = $transactionIdFilter" : '';
+=======
+
+// Filter by transaction ID (optional)
+$transactionIdFilter = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;
+$transactionCondition = $transactionIdFilter > 0 ? " AND v.transaction_id = $transactionIdFilter" : '';
+
+// Count vouchers
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $total_vouchers_query = "SELECT COUNT(*) FROM Voucher v WHERE 1=1 $statusCondition $transactionCondition";
 $total_vouchers_result = $conn->query($total_vouchers_query);
 $total_vouchers = $total_vouchers_result ? (int)$total_vouchers_result->fetch_row()[0] : 0;
 $total_pages = ceil($total_vouchers / $per_page);
+<<<<<<< HEAD
+=======
+
+// Get vouchers with pagination
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $vouchers_query = "
     SELECT v.voucher_id, v.voucher_code AS code, v.expiration, v.status, v.redeemed_at, v.redeemed_by,
            t.created_at AS deposit_time
@@ -73,7 +119,14 @@ $vouchers_query = "
 ";
 $vouchers = $conn->query($vouchers_query)->fetch_all(MYSQLI_ASSOC);
 
+<<<<<<< HEAD
 logAdminActivity('Vouchers Access', 'Viewed vouchers list');
+=======
+// Log activity
+logAdminActivity('Vouchers Access', 'Viewed vouchers list');
+
+
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 ?>
 
 <!DOCTYPE html>
@@ -236,6 +289,10 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
 </head>
 
 <body class="dashboard-container">
+<<<<<<< HEAD
+=======
+    <!-- Sidebar -->
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
@@ -281,7 +338,11 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                 <li>
                     <a href="users.php">
                         <i class="bi bi-people"></i>
+<<<<<<< HEAD
                         <span>Admins</span>
+=======
+                        <span>Users</span>
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     </a>
                 </li>
                 <li>
@@ -300,15 +361,28 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
         </nav>
     </div>
 
+<<<<<<< HEAD
+=======
+    <!-- Main Content -->
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     <div class="main-content">
         <div class="main-header">
             <h2>Vouchers</h2>
             <div class="profile-dropdown">
                 <div class="dropdown-header">
+<<<<<<< HEAD
                     <span><?php echo htmlspecialchars($_SESSION['username']); ?></span> 
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
+=======
+                    <img src="./img/avatar.jpg" alt="Profile" class="avatar-img"> <!-- Changed placeholder to local asset -->
+                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span> <!-- Changed to admin_username -->
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a href="profile.php"><i class="bi bi-person"></i> Profile</a> <!-- Added .php extension -->
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
                     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
@@ -417,6 +491,10 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
             </div>
         </div>
 
+<<<<<<< HEAD
+=======
+        <!-- Voucher Expiry Settings -->
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         <div class="settings-card">
             <h4>
                 <i class="bi bi-gear-fill"></i>
@@ -458,20 +536,43 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+<<<<<<< HEAD
+=======
+        // Toggle sidebar
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
+<<<<<<< HEAD
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
+=======
+
+        // Profile dropdown
+        document.querySelector('.dropdown-header').addEventListener('click', function() {
+            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
+        });
+
+        // Status filter
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.getElementById('status-filter').addEventListener('change', function() {
             const status = this.value;
             const url = new URL(window.location.href);
             url.searchParams.set('status', status);
+<<<<<<< HEAD
             url.searchParams.set('page', 1); 
             window.location.href = url.toString();
         });
+=======
+            url.searchParams.set('page', 1); // Reset page to 1 when changing filter
+            window.location.href = url.toString();
+        });
+
+        // Form validation
+        // Prevent double submit
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         document.querySelector('form').addEventListener('submit', function(e) {
             const days = parseInt(document.getElementById('expiry_days').value) || 0;
             const hours = parseInt(document.getElementById('expiry_hours').value) || 0;
@@ -486,6 +587,10 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                 setTimeout(() => messageBox.remove(), 5000);
                 return false;
             }
+<<<<<<< HEAD
+=======
+        
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             this.querySelector('button[type=submit]').disabled = true;
         });
     </script>

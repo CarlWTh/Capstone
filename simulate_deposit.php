@@ -8,6 +8,10 @@
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (isset($_POST['redeem'])) {
+<<<<<<< HEAD
+=======
+            // Handle voucher redemption
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             $voucherCodeToRedeem = isset($_POST['voucher_code']) ? trim($_POST['voucher_code']) : '';
             if ($voucherCodeToRedeem === '') {
                 $redeemMessage = 'Please enter a voucher code to redeem.';
@@ -18,6 +22,10 @@
                     $redeemMessage = 'Database connection failed: ' . $conn->connect_error;
                     $messageType = 'error';
                 } else {
+<<<<<<< HEAD
+=======
+                    // Check if voucher exists, is not used, and not expired
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     $stmt = $conn->prepare("SELECT voucher_id, is_used, expiry_time, deposit_id FROM Voucher WHERE code = ?");
                     $stmt->bind_param("s", $voucherCodeToRedeem);
                     $stmt->execute();
@@ -38,6 +46,10 @@
                         } else {
                             $conn->begin_transaction();
                             try {
+<<<<<<< HEAD
+=======
+                                // Create new StudentSession
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                                 $anonymousToken = bin2hex(random_bytes(16));
                                 $deviceMacAddress = null;
                                 $stmtInsertSession = $conn->prepare("INSERT INTO StudentSession (anonymous_token, device_mac_address, first_access_time, last_access_time) VALUES (?, ?, NOW(), NOW())");
@@ -46,18 +58,33 @@
                                     throw new Exception("Error creating student session: " . $stmtInsertSession->error);
                                 }
                                 $stmtInsertSession->close();
+<<<<<<< HEAD
+=======
+
+                                // Create new InternetSession linked to voucher and student session
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                                 $stmtInsertInternetSession = $conn->prepare("INSERT INTO InternetSession (anonymous_token, voucher_id, start_time) VALUES (?, ?, NOW())");
                                 $stmtInsertInternetSession->bind_param("si", $anonymousToken, $voucher['voucher_id']);
                                 if (!$stmtInsertInternetSession->execute()) {
                                     throw new Exception("Error creating internet session: " . $stmtInsertInternetSession->error);
                                 }
                                 $stmtInsertInternetSession->close();
+<<<<<<< HEAD
+=======
+
+                                // Mark voucher as used
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                                 $stmtUpdateVoucher = $conn->prepare("UPDATE Voucher SET is_used = TRUE WHERE voucher_id = ?");
                                 $stmtUpdateVoucher->bind_param("i", $voucher['voucher_id']);
                                 if (!$stmtUpdateVoucher->execute()) {
                                     throw new Exception("Error updating voucher status: " . $stmtUpdateVoucher->error);
                                 }
                                 $stmtUpdateVoucher->close();
+<<<<<<< HEAD
+=======
+
+                                // Get bottle count from BottleDeposit using deposit_id linked to voucher
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                                 $stmtBottleCount = $conn->prepare("SELECT bottle_count FROM BottleDeposit WHERE deposit_id = ?");
                                 $stmtBottleCount->bind_param("i", $voucher['deposit_id']);
                                 $stmtBottleCount->execute();
@@ -69,11 +96,21 @@
                                     $bottleCount = 0;
                                 }
                                 $stmtBottleCount->close();
+<<<<<<< HEAD
+=======
+
+                                // Calculate session duration based on bottle count
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                                 $minutesPerBottle = 2;
                                 $sessionDurationMinutes = $bottleCount * $minutesPerBottle;
                                 if ($sessionDurationMinutes <= 0) {
                                     $sessionDurationMinutes = 1;
                                 }
+<<<<<<< HEAD
+=======
+
+                                // Set session end time based on bottle count
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                                 $_SESSION['session_end_time'] = date('Y-m-d H:i:s', strtotime("+" . $sessionDurationMinutes . " minutes"));
                                 $_SESSION['show_countdown'] = true;
 
@@ -94,6 +131,10 @@
                 }
             }
         } else {
+<<<<<<< HEAD
+=======
+            // Handle deposit simulation
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             $numBottles = isset($_POST['numBottles']) ? intval($_POST['numBottles']) : 0;
 
             if ($numBottles <= 0) {
@@ -113,6 +154,10 @@
                         $conn->begin_transaction();
 
                         try {
+<<<<<<< HEAD
+=======
+                            // Insert new StudentSession
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                             $anonymousToken = bin2hex(random_bytes(16));
                             $deviceMacAddress = null;
                             $stmt = $conn->prepare("INSERT INTO StudentSession (anonymous_token, device_mac_address, first_access_time, last_access_time) VALUES (?, ?, NOW(), NOW())");
@@ -122,6 +167,11 @@
                             }
                             $sessionId = $conn->insert_id;
                             $stmt->close();
+<<<<<<< HEAD
+=======
+
+                            // Insert BottleDeposit with session_id
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                             $stmt = $conn->prepare("INSERT INTO BottleDeposit (session_id, timestamp, bottle_count) VALUES (?, NOW(), ?)");
                             $stmt->bind_param("ii", $sessionId, $numBottles);
                             if (!$stmt->execute()) {
@@ -146,8 +196,17 @@
                             $conn->commit();
                             $redeemMessage = "Successfully processed {$numBottles} bottle(s)";
                             $messageType = 'success';
+<<<<<<< HEAD
                             $minutesPerBottle = 2;
                             $sessionDurationMinutes = $numBottles * $minutesPerBottle;
+=======
+
+                            // Calculate session duration based on number of bottles
+                            $minutesPerBottle = 2;
+                            $sessionDurationMinutes = $numBottles * $minutesPerBottle;
+
+                            // Ensure session duration is at least 1 minute
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                             if ($sessionDurationMinutes <= 0) {
                                 $sessionDurationMinutes = 1;
                             }
@@ -350,6 +409,10 @@
                 font-size: 0.8rem;
             }
             
+<<<<<<< HEAD
+=======
+            /* Modal Styles */
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             .voucher-modal {
                 position: fixed;
                 top: 0;
@@ -445,6 +508,11 @@
                 </form>
             </div>
 
+<<<<<<< HEAD
+=======
+
+            <!-- Status message area -->
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             <?php if (!empty($redeemMessage)): ?>
                 <div class="message <?php echo $messageType; ?>">
                     <?php echo htmlspecialchars($redeemMessage); ?>
@@ -459,6 +527,10 @@
             </div>
         </div>
 
+<<<<<<< HEAD
+=======
+        <!-- Voucher Modal - will be shown when vouchers are generated -->
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         <?php if (!empty($voucherCodes)): ?>
             <div class="voucher-modal show" id="voucherModal">
                 <div class="voucher-modal-content">
@@ -479,6 +551,10 @@
         <?php endif; ?>
 
         <script>
+<<<<<<< HEAD
+=======
+            // Modal close functionality
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             const modal = document.getElementById('voucherModal');
             const closeModalBtn = document.getElementById('closeModal');
 
@@ -487,11 +563,21 @@
                     modal.classList.remove('show');
                 });
             }
+<<<<<<< HEAD
+=======
+
+            // Close modal when clicking outside the modal content
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             window.addEventListener('click', (event) => {
                 if (event.target === modal) {
                     modal.classList.remove('show');
                 }
             });
+<<<<<<< HEAD
+=======
+
+            // Countdown timer logic
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             <?php if (session_status() == PHP_SESSION_ACTIVE && isset($_SESSION['session_end_time']) && isset($_SESSION['show_countdown']) && $_SESSION['show_countdown']): ?>
             let endTime = new Date("<?php echo $_SESSION['session_end_time']; ?>").getTime();
             let countdownElement = document.getElementById('countdown');
@@ -515,6 +601,10 @@
     </body>
     </html>
     <?php
+<<<<<<< HEAD
+=======
+        // Clear the session variable after using it
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         if(session_status() == PHP_SESSION_ACTIVE && isset($_SESSION['session_end_time'])){
             unset($_SESSION['session_end_time']);
             unset($_SESSION['show_countdown']);

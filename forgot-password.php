@@ -1,7 +1,13 @@
 <?php
 session_start();
+<<<<<<< HEAD
 require_once 'config.php'; 
 
+=======
+require_once 'config.php'; // Ensure this path is correct
+
+// Include PHPMailer files
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 require_once 'libraries/PHPMailer-master/src/Exception.php';
 require_once 'libraries/PHPMailer-master/src/PHPMailer.php';
 require_once 'libraries/PHPMailer-master/src/SMTP.php';
@@ -9,6 +15,7 @@ require_once 'libraries/PHPMailer-master/src/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+<<<<<<< HEAD
 if (isset($_SESSION['admin_id'])) {
     header("Location: dashboard.php"); 
     exit();
@@ -16,6 +23,19 @@ if (isset($_SESSION['admin_id'])) {
 $error = '';
 $success = '';
 $debug_output = ''; 
+=======
+// Redirect if an admin is already logged in
+if (isset($_SESSION['admin_id'])) {
+    header("Location: dashboard.php"); // Assuming 'dashboard.php' is your admin dashboard
+    exit();
+}
+
+
+
+$error = '';
+$success = '';
+$debug_output = ''; // For debugging PHPMailer if needed
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
@@ -23,6 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($email)) {
         $error = "Please enter your email address";
     } else {
+<<<<<<< HEAD
+=======
+        // Check if the email exists in the 'Admin' table
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $stmt = $conn->prepare("SELECT admin_id, username, email FROM Admin WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
@@ -30,24 +54,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($result->num_rows === 1) {
             $admin = $result->fetch_assoc();
+<<<<<<< HEAD
             $verification_code = sprintf("%06d", mt_rand(100000, 999999));
             $expires = date('Y-m-d H:i:s', time() + 3600);
+=======
+
+            // Generate verification code
+            $verification_code = sprintf("%06d", mt_rand(100000, 999999));
+            $expires = date('Y-m-d H:i:s', time() + 3600); // 1 hour expiration
+
+            // Store in 'Admin' table
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             $update_stmt = $conn->prepare("UPDATE Admin SET reset_token = ?, reset_token_expires = ? WHERE admin_id = ?");
             $update_stmt->bind_param("ssi", $verification_code, $expires, $admin['admin_id']);
             $update_stmt->execute();
 
             if ($update_stmt->affected_rows === 1) {
+<<<<<<< HEAD
                 $mail = new PHPMailer(true);
                 try {
+=======
+                // Send email
+                $mail = new PHPMailer(true);
+
+                try {
+                    // Server settings
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     $mail->isSMTP();
                     $mail->Host       = SMTP_HOST;
                     $mail->SMTPAuth   = true;
                     $mail->Username   = SMTP_USERNAME;
                     $mail->Password   = SMTP_PASSWORD;
+<<<<<<< HEAD
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
                     $mail->Port       = SMTP_PORT;
                     $mail->setFrom(EMAIL_FROM, SITE_NAME . ' Admin'); 
                     $mail->addAddress($email, $admin['username']);
+=======
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Use ENCRYPTION_STARTTLS for port 587
+                    $mail->Port       = SMTP_PORT;
+
+                    // Recipients
+                    $mail->setFrom(EMAIL_FROM, SITE_NAME . ' Admin'); // Use SITE_NAME
+                    $mail->addAddress($email, $admin['username']);
+
+                    // Content
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     $mail->isHTML(true);
                     $mail->Subject = 'Admin Password Reset Verification Code for ' . SITE_NAME;
                     $mail->Body    = "Dear " . htmlspecialchars($admin['username']) . ",<br><br>" .
@@ -59,16 +111,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                      "\nThis code is valid for 1 hour. If you did not request this, please ignore this email.";
 
                     $mail->send();
+<<<<<<< HEAD
+=======
+                    // Redirect to a page where the user can enter the verification code
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                     header("Location: verify-code.php?email=" . urlencode($email));
                     exit();
                 } catch (Exception $e) {
                     $error = "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+<<<<<<< HEAD
+=======
+                    // For debugging, you might want to log $e->getMessage()
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                 }
             } else {
                 $error = "Failed to generate reset token. Please try again.";
             }
             $update_stmt->close();
         } else {
+<<<<<<< HEAD
+=======
+            // Don't reveal if email exists for security reasons
+>>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             $success = "If that email exists in our system, a verification code has been sent.";
         }
         $stmt->close();
