@@ -30,31 +30,7 @@ if (isset($_SESSION['admin_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['update_general_settings'])) { 
-        $site_name = trim($_POST['site_name']);
-        $site_url = trim($_POST['site_url']);
-        $admin_email = trim($_POST['admin_email']);
-        $timezone = trim($_POST['timezone']);
-
-        if (!empty($site_name) && !empty($site_url) && filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
-    
-            if (isset($_SESSION['admin_id'])) {
-                $admin_id = $_SESSION['admin_id'];
-                $update_email_stmt = $conn->prepare("UPDATE Admin SET email = ? WHERE admin_id = ?");
-                $update_email_stmt->bind_param("si", $admin_email, $admin_id);
-                $update_email_stmt->execute();
-                $update_email_stmt->close();
-            }
-
-            date_default_timezone_set($timezone);
-            $conn->query("SET time_zone = '" . date('P') . "'");
-
-            redirectWithMessage('settings.php', 'success', 'General settings updated successfully!');
-            logAdminActivity('General Settings Update', 'Updated site name, URL, admin email, and timezone.');
-        } else {
-            redirectWithMessage('settings.php', 'error', 'Please fill all fields with valid data for general settings.');
-        }
-    } elseif (isset($_POST['change_password'])) {
+    if (isset($_POST['change_password'])) {
         $current_password = $_POST['current_password'];
         $new_password = $_POST['new_password'];
         $confirm_password = $_POST['confirm_password'];
@@ -114,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         bandwidth_limit_kbps = VALUES(bandwidth_limit_kbps),
                                         maintenance_mode = VALUES(maintenance_mode),
                                         auto_reboot_schedule = VALUES(auto_reboot_schedule),
-                                        admin_id = VALUES(admin_id) -- Update admin_id if it changes
+                                        admin_id = VALUES(admin_id)
             ");
             $stmt->bind_param("idiss", $admin_id, $minutes_per_bottle, $bandwidth_limit_kbps, $maintenance_mode, $auto_reboot_schedule);
 
@@ -242,7 +218,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="dropdown-content">
-                   
+                    
                     <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
                     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
@@ -300,8 +276,8 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                         <div class="form-group">
                             <label for="auto_reboot_schedule">Auto Reboot Schedule</label>
                             <input type="text" id="auto_reboot_schedule" name="auto_reboot_schedule"
-                                   class="form-control" value="<?= htmlspecialchars($current_settings['auto_reboot_schedule'] ?? '') ?>"
-                                   placeholder="e.g., daily 03:00 AM">
+                                       class="form-control" value="<?= htmlspecialchars($current_settings['auto_reboot_schedule'] ?? '') ?>"
+                                       placeholder="e.g., daily 03:00 AM">
                             <small class="text-muted">Set a schedule for automatic system reboots.</small>
                         </div>
 
@@ -361,53 +337,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                     </form>
                 </div>
             </div>
-
-            <div class="settings-card">
-                <div class="settings-header">
-                    <div class="settings-icon">
-                        <i class="bi bi-sliders"></i>
-                    </div>
-                    <h2>General Settings</h2>
-                </div>
-                <div class="settings-body">
-                    <form method="POST">
-                        <div class="form-group">
-                            <label for="site_name">Site Name</label>
-                            <input type="text" id="site_name" name="site_name" value="<?php echo htmlspecialchars(SITE_NAME); ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="site_url">Site URL</label>
-                            <div class="input-with-button">
-                                <input type="url" id="site_url" name="site_url" value="<?php echo htmlspecialchars(SITE_URL); ?>" required>
-                                <span class="input-suffix">/</span>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="admin_email">Admin Email</label>
-                            <input type="email" id="admin_email" name="admin_email" value="<?= htmlspecialchars($admin_email_from_db) ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="timezone">Timezone</label>
-                            <select id="timezone" name="timezone" class="form-control">
-                                <option value="Asia/Manila" <?= date_default_timezone_get() === 'Asia/Manila' ? 'selected' : '' ?>>Asia/Manila</option>
-                                <option value="UTC" <?= date_default_timezone_get() === 'UTC' ? 'selected' : '' ?>>UTC</option>
-                                <option value="America/New_York" <?= date_default_timezone_get() === 'America/New_York' ? 'selected' : '' ?>>America/New_York</option>
-                                <option value="Europe/London" <?= date_default_timezone_get() === 'Europe/London' ? 'selected' : '' ?>>Europe/London</option>
-                            </select>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" name="update_general_settings" class="btn btn-primary">
-                                <i class="bi bi-save"></i> Save Changes
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
+            
             <div class="settings-card">
                 <div class="settings-header">
                     <div class="settings-icon">
@@ -432,7 +362,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                                     <div class="strength-segment"></div>
                                     <div class="strength-segment"></div>
                                 </div>
-                                <small class="help-text">Use 8+ characters with mix of letters, numbers & symbols</small>
+                                <small class="help-text">Use 8+ characters with a mix of letters, numbers & symbols</small>
                             </div>
                         </div>
 
@@ -447,79 +377,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
-
-            <div class="settings-card">
-                <div class="settings-header">
-                    <div class="settings-icon">
-                        <i class="bi bi-cloud-arrow-up"></i>
-                    </div>
-                    <h2>Backup & Restore</h2>
-                </div>
-                <div class="settings-body">
-                    <div class="backup-info">
-                        <p>Last backup: <strong>2023-06-15 14:30</strong></p>
-                        <p>Backup size: <strong>24.5 MB</strong></p>
-                    </div>
-
-                    <div class="backup-progress">
-                        <div class="progress">
-                            <div class="progress-bar bg-success" style="width: 75%"></div>
-                        </div>
-                        <small>Storage used: 75% of 100MB</small>
-                    </div>
-
-                    <div class="settings-actions">
-                        <button class="btn btn-secondary">
-                            <i class="bi bi-cloud-download"></i> Create Backup
-                        </button>
-                        <button class="btn btn-secondary">
-                            <i class="bi bi-cloud-upload"></i> Restore
-                        </button>
-                        <button class="btn btn-danger">
-                            <i class="bi bi-trash"></i> Clear Backups
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-card">
-                <div class="settings-header">
-                    <div class="settings-icon">
-                        <i class="bi bi-info-circle"></i>
-                    </div>
-                    <h2>System Information</h2>
-                </div>
-                <div class="settings-body">
-                    <div class="system-info">
-                        <div class="info-item">
-                            <span class="info-label">PHP Version:</span>
-                            <span class="info-value"><?php echo phpversion(); ?></span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Database:</span>
-                            <span class="info-value">MySQL <?php echo $conn->server_info; ?></span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Server OS:</span>
-                            <span class="info-value"><?php echo php_uname('s'); ?></span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">System Load:</span>
-                            <span class="info-value">0.75 (1 min avg)</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Memory Usage:</span>
-                            <span class="info-value">128MB / 512MB</span>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button class="btn btn-secondary">
-                            <i class="bi bi-arrow-repeat"></i> Check for Updates
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
