@@ -2,10 +2,6 @@
 session_start();
 require_once 'config.php';
 
-<<<<<<< HEAD
-=======
-// Ensure the user has gone through the password reset process
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 if (!isset($_SESSION['reset_admin_id']) || !isset($_SESSION['reset_admin_email'])) {
     header("Location: forgot-password.php");
     exit();
@@ -18,10 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
 
-<<<<<<< HEAD
-=======
-    // Retrieve admin_id from the session
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     $admin_id = $_SESSION['reset_admin_id'];
 
     if (empty($password) || empty($confirm_password)) {
@@ -29,7 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match.";
     } else {
-<<<<<<< HEAD
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("UPDATE Admin SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE admin_id = ?");
         if ($stmt === false) {
@@ -38,32 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("si", $hashed_password, $admin_id); 
             if ($stmt->execute()) {
             $success = "Password has been reset successfully. You may now log in.";
-=======
-        // Hash the new password
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-        // Update the admin's password using their ID
-        // Also clear any reset tokens to prevent reuse
-        $stmt = $conn->prepare("UPDATE Admin SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE admin_id = ?");
-        // Check if the prepare statement was successful
-        if ($stmt === false) {
-            $error = "Error preparing statement: " . $conn->error;
-        } else {
-            $stmt->bind_param("si", $hashed_password, $admin_id); // 's' for string (hashed_password), 'i' for integer (admin_id)
-            if ($stmt->execute()) {
-            $success = "Password has been reset successfully. You may now log in.";
-            // Clear session variables after successful reset for security
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             session_unset();
             session_destroy();
             header("Location: login.php");
             exit();
             } else {
-<<<<<<< HEAD
             $error = "Error updating password: " . $stmt->error; 
-=======
-            $error = "Error updating password: " . $stmt->error; // More specific error message
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             }
             $stmt->close();
         }

@@ -2,36 +2,18 @@
 session_start();
 require_once 'config.php';
 
-<<<<<<< HEAD
 if (isset($_SESSION['admin_id'])) {
     header("Location: dashboard.php");
     exit();
 }
-=======
-// Redirect if already logged in
-if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");
-    exit();
-}
-
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
 $error = '';
 $success = '';
 $valid_token = false;
 $token = '';
 
-<<<<<<< HEAD
 if (isset($_GET['token']) && !empty($_GET['token'])) {
     $token = $_GET['token'];
     $stmt = $conn->prepare("SELECT admin_id FROM admin WHERE reset_token = ? AND reset_token_expires > NOW()");
-=======
-// Check if token is provided in the URL
-if (isset($_GET['token']) && !empty($_GET['token'])) {
-    $token = $_GET['token'];
-    
-    // Verify token validity
-    $stmt = $conn->prepare("SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()");
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     $stmt->bind_param("s", $token);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -45,43 +27,22 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
 } else {
     $error = "No reset token provided. Please request a password reset from the forgot password page.";
 }
-<<<<<<< HEAD
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-=======
-
-// Process form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-    
-    // Validate password
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
     if (strlen($password) < 8) {
         $error = "Password must be at least 8 characters long.";
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match.";
     } else {
-<<<<<<< HEAD
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
         
         $stmt = $conn->prepare("UPDATE admin SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE reset_token = ?");
-=======
-        // Update the password
-        $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        
-        $stmt = $conn->prepare("UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE reset_token = ?");
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
         $stmt->bind_param("ss", $password_hash, $token);
         $stmt->execute();
         
         if ($stmt->affected_rows === 1) {
-<<<<<<< HEAD
 
-=======
-            // Password reset successful
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
             header("Location: login.php?password_reset=success");
             exit();
         } else {
@@ -122,10 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
                         required
                         minlength="8"
                     >
-<<<<<<< HEAD
-=======
-                    <i class="icon-lock"></i>
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                 </div>
                 
                 <div class="form-group">
@@ -138,10 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
                         required
                         minlength="8"
                     >
-<<<<<<< HEAD
-=======
-                    <i class="icon-lock"></i>
->>>>>>> a3d9f77d153268535a66a38a42913a3249f7211a
                 </div>
                 
                 <button type="submit" class="login-button">
