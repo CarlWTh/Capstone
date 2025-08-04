@@ -29,3 +29,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirectWithMessage('bins.php', 'error', 'Invalid request method.');
 }
 ?>
+
+// jomel
