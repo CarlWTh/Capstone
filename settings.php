@@ -303,7 +303,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                             <label>SMS Alert Threshold</label>
                             <div class="input-with-button">
                                 <input type="number" name="sms_threshold" value="<?= htmlspecialchars($current_settings['bin_full_threshold']) ?>" min="1" max="100" class="form-control" required>
-                                <span class="input-suffix">% full</span>
+                                <span class="input-suffix">%Full</span>
                             </div>
                             <small class="text-muted">Send SMS when bin reaches this capacity</small>
                         </div>
@@ -311,7 +311,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                         <div class="form-group">
                             <label>Alert Recipients</label>
                             <textarea name="sms_recipients" class="form-control" rows="3" placeholder="Enter phone numbers separated by commas"><?= htmlspecialchars($current_settings['sms_recipients_list'] ?? '09123456789, 09987654321') ?></textarea>
-                            <small class="text-muted">Include country code (e.g. +63 for Philippines)</small>
+                            
                         </div>
 
                         <div class="form-group">
@@ -324,7 +324,7 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                             <div class="d-flex">
                                 <input type="text" class="form-control me-2" placeholder="Enter test number">
                                 <button type="button" class="btn btn-secondary">
-                                    <i class="bi bi-send"></i> Send Test
+                                     Send Test
                                 </button>
                             </div>
                         </div>
