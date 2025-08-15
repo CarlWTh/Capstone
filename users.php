@@ -153,6 +153,12 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                     </a>
                 </li>
                 <li>
+                    <a href="settings.php">
+                        <i class="bi bi-gear"></i> 
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li>
                     <a href="logout.php">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>
@@ -165,18 +171,6 @@ logAdminActivity('Admin Access', 'Viewed admins list');
     <div class="main-content">
         <div class="main-header">
             <h2><i class="bi bi-people"></i> Admin Management</h2>
-            <div class="profile-dropdown">
-                <div class="dropdown-header">
-                    
-                    <span><?= htmlspecialchars($_SESSION['username']) ?></span> 
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-                <div class="dropdown-content">
-                   
-                    <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
-                    <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
-                </div>
-            </div>
         </div>
 
         <?php displayFlashMessage(); ?>
@@ -195,7 +189,6 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                     <table class="transaction-logs">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Username</th>
                                 <th>Email</th>
                                 <th>Admin Status</th>
@@ -207,7 +200,6 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                             <?php if (!empty($admins)): ?>
                                 <?php foreach ($admins as $admin): ?>
                                     <tr>
-                                        <td><?= htmlspecialchars($admin['admin_id']) ?></td>
                                         <td><?= htmlspecialchars($admin['username']) ?></td>
                                         <td><?= htmlspecialchars($admin['email']) ?></td>
                                         <td>

@@ -63,7 +63,7 @@ $total_vouchers_result = $conn->query($total_vouchers_query);
 $total_vouchers = $total_vouchers_result ? (int)$total_vouchers_result->fetch_row()[0] : 0;
 $total_pages = ceil($total_vouchers / $per_page);
 $vouchers_query = "
-    SELECT v.voucher_id, v.voucher_code AS code, v.expiration, v.status, v.redeemed_at, v.redeemed_by,
+    SELECT v.voucher_id, v.voucher_code AS code, v.expiration, v.status, v.redeemed_at,
            t.created_at AS deposit_time
     FROM Voucher v
     JOIN Transactions t ON v.transaction_id = t.transaction_id
@@ -291,6 +291,12 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                     </a>
                 </li>
                 <li>
+                    <a href="settings.php">
+                        <i class="bi bi-gear"></i> 
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li>
                     <a href="logout.php">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>
@@ -302,17 +308,7 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
 
     <div class="main-content">
         <div class="main-header">
-            <h2>Vouchers</h2>
-            <div class="profile-dropdown">
-                <div class="dropdown-header">
-                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span> 
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-                <div class="dropdown-content">
-                    <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
-                    <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
-                </div>
-            </div>
+            <h2><i class="bi bi-ticket-perforated"></i>Vouchers</h2>
         </div>
 
         <?php displayFlashMessage(); ?>
@@ -344,7 +340,6 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                                 <th>Status</th>
                                 <th>Created at</th>
                                 <th>Redeemed At</th>
-                                <th>Redeemed By</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -378,24 +373,6 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                                         </td>
                                         <td><?php echo date('M j, Y h:i A', strtotime($voucher['deposit_time'])); ?></td>
                                         <td><?= $voucher['redeemed_at'] ? date('M j, Y h:i A', strtotime($voucher['redeemed_at'])) : 'N/A' ?></td>
-                                        <td>
-                                            <?php if ($voucher['redeemed_by']): ?>
-                                                <?php
-                                                $redeemedByQuery = $conn->prepare("SELECT mac_address FROM user WHERE user_id = ?");
-                                                $redeemedByQuery->bind_param("i", $voucher['redeemed_by']);
-                                                $redeemedByQuery->execute();
-                                                $redeemedByResult = $redeemedByQuery->get_result();
-                                                if ($redeemedByResult && $redeemedByResult->num_rows > 0) {
-                                                    $redeemedByRow = $redeemedByResult->fetch_assoc();
-                                                    echo htmlspecialchars($redeemedByRow['mac_address']);
-                                                } else {
-                                                    echo 'Unknown User';
-                                                }
-                                                $redeemedByQuery->close();
-                                                ?>
-                                            <?php else: ?>
-                                                N/A
-                                            <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>

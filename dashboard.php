@@ -104,6 +104,12 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                         </a>
                     </li>
                     <li>
+                        <a href="settings.php">
+                            <i class="bi bi-gear"></i> 
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="logout.php">
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Logout</span>
@@ -116,19 +122,6 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
         <div class="main-content" id="mainContent">
             <div class="main-header">
                 <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
-
-                <div class="profile-dropdown">
-                    <div class="dropdown-header" id="profileDropdown">
-
-                        <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
-                        <i class="bi bi-chevron-down"></i>
-                    </div>
-                    <div class="dropdown-content" id="profileDropdownContent">
-
-                        <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
-                        <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
-                    </div>
-                </div>
             </div>
 
             <?php displayFlashMessage(); ?>
@@ -183,7 +176,6 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
-                                            <th>ID</th>
                                             <th>Bottle Count</th>
                                             <th>Time Credits</th>
                                             <th>Voucher</th>
@@ -193,7 +185,6 @@ logAdminActivity('Dashboard Access', 'Accessed admin dashboard');
                                     <tbody>
                                         <?php foreach ($recent_deposits as $deposit): ?>
                                             <tr>
-                                                <td><?php echo $deposit['transaction_id']; ?></td>
                                                 <td><?php echo $deposit['bottle_count']; ?></td>
                                                 <td><?php echo ($deposit['bottle_count'] * 5) . ' min'; ?></td>
                                                 <td><?php echo htmlspecialchars($deposit['voucher_code'] ?? 'N/A'); ?></td>

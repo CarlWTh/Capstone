@@ -303,6 +303,12 @@ function generateUniqueVoucherCode($conn)
                     </a>
                 </li>
                 <li>
+                    <a href="settings.php">
+                        <i class="bi bi-gear"></i> 
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li>
                     <a href="logout.php">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>
@@ -315,18 +321,6 @@ function generateUniqueVoucherCode($conn)
     <div class="main-content">
         <div class="main-header">
             <h2><i class="bi bi-recycle"></i> Bottle Deposits</h2>
-            <div class="profile-dropdown">
-                <div class="dropdown-header">
-
-                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-                <div class="dropdown-content">
-
-                    <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
-                    <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
-                </div>
-            </div>
         </div>
 
         <?php displayFlashMessage(); ?>
@@ -521,7 +515,6 @@ function generateUniqueVoucherCode($conn)
                     <table class="table table-hover deposit-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Bottles</th>
                                 <th>Time Credits</th>
                                 <th>Timestamp</th>
@@ -532,7 +525,6 @@ function generateUniqueVoucherCode($conn)
                             <?php if (!empty($deposits)): ?>
                                 <?php foreach ($deposits as $deposit): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($deposit['deposit_id']); ?></td>
                                         <td>
                                             <i class="bi bi-recycle bottle-icon"></i>
                                             <?php echo htmlspecialchars($deposit['bottle_count']); ?>

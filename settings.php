@@ -289,54 +289,6 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                     </form>
                 </div>
             </div>
-
-            <div class="settings-card">
-                <div class="settings-header">
-                    <div class="settings-icon">
-                        <i class="bi bi-trash"></i>
-                    </div>
-                    <h2>Trash Bin Settings</h2>
-                </div>
-                <div class="settings-body">
-                    <form method="POST">
-                        <div class="form-group">
-                            <label>SMS Alert Threshold</label>
-                            <div class="input-with-button">
-                                <input type="number" name="sms_threshold" value="<?= htmlspecialchars($current_settings['bin_full_threshold']) ?>" min="1" max="100" class="form-control" required>
-                                <span class="input-suffix">%Full</span>
-                            </div>
-                            <small class="text-muted">Send SMS when bin reaches this capacity</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Alert Recipients</label>
-                            <textarea name="sms_recipients" class="form-control" rows="3" placeholder="Enter phone numbers separated by commas"><?= htmlspecialchars($current_settings['sms_recipients_list'] ?? '09123456789, 09987654321') ?></textarea>
-                            
-                        </div>
-
-                        <div class="form-group">
-                            <label>Alert Message</label>
-                            <textarea name="sms_message" class="form-control" rows="3"><?= htmlspecialchars($current_settings['sms_alert_message'] ?? 'Trash bin #{bin_id} is {percentage}% full. Please empty soon.') ?></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Test SMS Function</label>
-                            <div class="d-flex">
-                                <input type="text" class="form-control me-2" placeholder="Enter test number">
-                                <button type="button" class="btn btn-secondary">
-                                     Send Test
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" name="update_trash_bin_settings" class="btn btn-primary">
-                                <i class="bi bi-save"></i> Save Settings
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
             
             <div class="settings-card">
                 <div class="settings-header">
@@ -379,8 +331,10 @@ logAdminActivity('Settings Access', 'Accessed settings page');
                     </form>
                 </div>
             </div>
+            
         </div>
     </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
