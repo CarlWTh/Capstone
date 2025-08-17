@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 15, 2025 at 03:56 AM
+-- Generation Time: Aug 17, 2025 at 07:11 AM
 -- Server version: 11.6.2-MariaDB
 -- PHP Version: 8.2.12
 
@@ -43,33 +43,7 @@ CREATE TABLE `admin` (
 --
 
 INSERT INTO `admin` (`admin_id`, `username`, `email`, `password_hash`, `is_admin`, `reset_token`, `reset_token_expires`, `created_at`) VALUES
-(1, 'admin', 'justinejohnorosco.basc@gmail.com', '$2y$10$F1ozJFJDgqN/QDinZJEzse5cTz0gyN0xIh5xifarpyHrIh75ovsl.', 1, NULL, NULL, '2025-08-15 01:55:05');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `bandwidth_usage`
---
-
-CREATE TABLE `bandwidth_usage` (
-  `user_id` int(11) NOT NULL,
-  `Device_MAC_Address` varchar(17) NOT NULL,
-  `Download` bigint(20) DEFAULT 0,
-  `Upload` bigint(20) DEFAULT 0,
-  `Total` bigint(20) DEFAULT 0,
-  `Duration` int(11) DEFAULT 0,
-  `last_updated_at` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `bandwidth_usage`
---
-
-INSERT INTO `bandwidth_usage` (`user_id`, `Device_MAC_Address`, `Download`, `Upload`, `Total`, `Duration`, `last_updated_at`) VALUES
-(1, '00:1A:2B:3C:4D:5E', 125000000, 25000000, 150000000, 7200, '2025-07-24 01:19:55'),
-(2, 'AA:BB:CC:DD:EE:FF', 75000000, 25000000, 100000000, 5400, '2025-07-24 01:19:55'),
-(19, '11:22:33:44:55:66', 50000000, 10000000, 60000000, 3600, '2025-07-24 01:19:55'),
-(20, '99:88:77:66:55:44', 200000000, 50000000, 250000000, 14400, '2025-07-24 01:19:55');
+(1, 'admin', 'justinejohnorosco.basc@gmail.com', '$2y$10$3I6Sg.uAP6cQaRt4hXBeseWM/d.lmmBgLvJ6XyaE55AcEuSaTNSJS', 1, NULL, NULL, '2025-08-15 01:55:05');
 
 -- --------------------------------------------------------
 
@@ -109,9 +83,35 @@ CREATE TABLE `systemlog` (
 --
 
 INSERT INTO `systemlog` (`log_id`, `admin_id`, `action`, `details`, `timestamp`) VALUES
-(1, 1, 'Dashboard Access', 'Accessed admin dashboard', '2025-08-15 01:55:27'),
-(2, 1, 'Bottle Deposits Access', 'Viewed bottle deposits list', '2025-08-15 01:55:32'),
-(3, 1, 'Settings Access', 'Accessed settings page', '2025-08-15 01:55:34');
+(1, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:43:56'),
+(2, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:44:30'),
+(3, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:46:32'),
+(4, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:47:42'),
+(5, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:48:41'),
+(6, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:49:12'),
+(7, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:49:38'),
+(8, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:49:58'),
+(9, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:50:14'),
+(10, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:50:35'),
+(11, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:51:28'),
+(12, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:51:51'),
+(13, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 06:53:45'),
+(14, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 07:03:35'),
+(15, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 07:05:21'),
+(16, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 07:06:01'),
+(17, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 07:06:37'),
+(18, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 07:06:55'),
+(19, 1, 'Settings Access', 'Accessed settings page', '2025-08-16 07:07:06'),
+(20, 1, 'Settings Access', 'Accessed settings page', '2025-08-17 01:36:44'),
+(21, 1, 'Password Change', 'Changed account password', '2025-08-17 01:53:25'),
+(22, 1, 'Settings Access', 'Accessed settings page', '2025-08-17 01:53:46'),
+(23, 1, 'Password Change', 'Changed account password', '2025-08-17 01:54:03'),
+(24, 1, 'Settings Access', 'Accessed settings page', '2025-08-17 01:54:43'),
+(25, 1, 'Settings Access', 'Accessed settings page', '2025-08-17 03:48:04'),
+(26, 1, 'Settings Access', 'Accessed settings page', '2025-08-17 03:48:20'),
+(27, 1, 'Settings Access', 'Accessed settings page', '2025-08-17 03:49:21'),
+(28, 1, 'Settings Access', 'Accessed settings page', '2025-08-17 03:49:25'),
+(29, 1, 'Settings Access', 'Accessed settings page', '2025-08-17 05:01:43');
 
 -- --------------------------------------------------------
 
@@ -150,31 +150,6 @@ INSERT INTO `transactions` (`transaction_id`, `user_id`, `bottle_count`, `time_c
 (24, 1, 1, 6, '2025-07-23 08:15:29'),
 (25, 1, 1, 6, '2025-07-23 08:16:21'),
 (26, 1, 1, 2, '2025-07-23 08:19:10');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `trashbin`
---
-
-CREATE TABLE `trashbin` (
-  `trashbin_id` int(11) NOT NULL,
-  `janitor_id` int(11) NOT NULL,
-  `status` enum('empty','partial','full') NOT NULL,
-  `fill_level_percent` decimal(10,2) NOT NULL,
-  `capacity` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `last_emptied_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `trashbin`
---
-
-INSERT INTO `trashbin` (`trashbin_id`, `janitor_id`, `status`, `fill_level_percent`, `capacity`, `last_emptied_at`) VALUES
-(8, 2, 'empty', 0.00, 10.00, '2025-07-24 07:24:44'),
-(9, 2, 'empty', 0.00, 10.00, '2025-07-24 07:23:58'),
-(10, 3, 'empty', 0.00, 10.00, '2025-07-24 07:24:12'),
-(11, 1, 'empty', 0.00, 10.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -285,13 +260,6 @@ ALTER TABLE `admin`
   ADD UNIQUE KEY `email` (`email`);
 
 --
--- Indexes for table `bandwidth_usage`
---
-ALTER TABLE `bandwidth_usage`
-  ADD PRIMARY KEY (`user_id`),
-  ADD KEY `Device_MAC_Address` (`Device_MAC_Address`);
-
---
 -- Indexes for table `settings`
 --
 ALTER TABLE `settings`
@@ -312,13 +280,6 @@ ALTER TABLE `systemlog`
 ALTER TABLE `transactions`
   ADD PRIMARY KEY (`transaction_id`),
   ADD KEY `user_id` (`user_id`);
-
---
--- Indexes for table `trashbin`
---
-ALTER TABLE `trashbin`
-  ADD PRIMARY KEY (`trashbin_id`),
-  ADD KEY `janitor_id` (`janitor_id`);
 
 --
 -- Indexes for table `user`
@@ -364,19 +325,13 @@ ALTER TABLE `settings`
 -- AUTO_INCREMENT for table `systemlog`
 --
 ALTER TABLE `systemlog`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
   MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
-
---
--- AUTO_INCREMENT for table `trashbin`
---
-ALTER TABLE `trashbin`
-  MODIFY `trashbin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `user`
@@ -401,13 +356,6 @@ ALTER TABLE `voucher`
 --
 
 --
--- Constraints for table `bandwidth_usage`
---
-ALTER TABLE `bandwidth_usage`
-  ADD CONSTRAINT `bandwidth_usage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
-  ADD CONSTRAINT `bandwidth_usage_ibfk_2` FOREIGN KEY (`Device_MAC_Address`) REFERENCES `user` (`mac_address`);
-
---
 -- Constraints for table `settings`
 --
 ALTER TABLE `settings`
@@ -424,12 +372,6 @@ ALTER TABLE `systemlog`
 --
 ALTER TABLE `transactions`
   ADD CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`);
-
---
--- Constraints for table `trashbin`
---
-ALTER TABLE `trashbin`
-  ADD CONSTRAINT `trashbin_ibfk_1` FOREIGN KEY (`janitor_id`) REFERENCES `janitor` (`janitor_id`);
 
 --
 -- Constraints for table `usersessions`
