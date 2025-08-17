@@ -27,7 +27,7 @@ $logs_query = "
 $logs_result = $conn->query($logs_query);
 $logs = $logs_result ? $logs_result->fetch_all(MYSQLI_ASSOC) : [];
 
-logAdminActivity('Activity Logs', 'Viewed admin logs');
+
 ?>
 
 <!DOCTYPE html>
@@ -74,21 +74,9 @@ logAdminActivity('Activity Logs', 'Viewed admin logs');
                     </a>
                 </li>
                 <li>
-                    <a href="bins.php">
-                        <i class="bi bi-trash"></i>
-                        <span>Trash Bins</span>
-                    </a>
-                </li>
-                <li class="">
-                    <a href="sessions.php">
-                        <i class="bi bi-wifi"></i>
-                        <span>Network Monitoring</span>
-                    </a>
-                </li>
-                <li>
                     <a href="users.php">
                         <i class="bi bi-people"></i>
-                        <span>Admins</span>
+                        <span>Sessions</span>
                     </a>
                 </li>
                 <li class="active">
@@ -97,6 +85,12 @@ logAdminActivity('Activity Logs', 'Viewed admin logs');
                         <span>Activity Logs</span>
                     </a>
                 </li>
+                <li>
+                        <a href="profile.php">
+                            <i class="bi bi-person-circle"></i>
+                            <span>My Account</span>
+                        </a>
+                    </li>
                 <li>
                     <a href="settings.php">
                         <i class="bi bi-gear"></i> 

@@ -73,7 +73,6 @@ $vouchers_query = "
 ";
 $vouchers = $conn->query($vouchers_query)->fetch_all(MYSQLI_ASSOC);
 
-logAdminActivity('Vouchers Access', 'Viewed vouchers list');
 ?>
 
 <!DOCTYPE html>
@@ -267,21 +266,9 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                     </a>
                 </li>
                 <li>
-                    <a href="bins.php">
-                        <i class="bi bi-trash"></i>
-                        <span>Trash Bins</span>
-                    </a>
-                </li>
-                <li class="">
-                    <a href="sessions.php">
-                        <i class="bi bi-wifi"></i>
-                        <span>Network Monitoring</span>
-                    </a>
-                </li>
-                <li>
                     <a href="users.php">
                         <i class="bi bi-people"></i>
-                        <span>Admins</span>
+                        <span>Sessions</span>
                     </a>
                 </li>
                 <li>
@@ -290,6 +277,12 @@ logAdminActivity('Vouchers Access', 'Viewed vouchers list');
                         <span>Activity Logs</span>
                     </a>
                 </li>
+                <li >
+                        <a href="profile.php">
+                            <i class="bi bi-person-circle"></i>
+                            <span>My Account</span>
+                        </a>
+                    </li>
                 <li>
                     <a href="settings.php">
                         <i class="bi bi-gear"></i> 

@@ -17,8 +17,8 @@ if (ini_get("session.use_cookies")) {
 }
 session_destroy();
 
-if (isset($_COOKIE['remember_admin_token'])) { 
-    setcookie('remember_admin_token', '', time() - 3600, '/'); 
+if (isset($_COOKIE['remember'])) { 
+    setcookie('remember', '', time() - 3600, '/'); 
 }
 
 header("Location: login.php");

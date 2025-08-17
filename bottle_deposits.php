@@ -137,7 +137,6 @@ $deposits = $conn->query("
     LIMIT 20
 ")->fetch_all(MYSQLI_ASSOC);
 
-logAdminActivity('Bottle Deposits Access', 'Viewed bottle deposits list');
 
 function generateUniqueVoucherCode($conn)
 {
@@ -162,89 +161,7 @@ function generateUniqueVoucherCode($conn)
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        .stats-card {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow);
-            height: 100%;
-        }
-
-        .stats-card h4 {
-            margin-bottom: 1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .stat-item:last-child {
-            border-bottom: none;
-        }
-
-        .stat-value {
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        .filter-section {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow);
-            height: 100%;
-        }
-
-        .trend-up {
-            color: #4caf50;
-        }
-
-        .trend-down {
-            color: #ff5252;
-        }
-
-        .chart-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 1.5rem;
-        }
-
-        .deposit-table th {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .bottle-icon {
-            color: var(--primary-color);
-            font-size: 1.25rem;
-            margin-right: 0.5rem;
-        }
-
-        .time-filter-btn {
-            border-radius: 8px;
-            font-weight: 500;
-        }
-
-        .time-filter-btn.active {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-    </style>
+    <link rel="stylesheet" href="/css/bottle-deposit.css">
 </head>
 
 <body class="dashboard-container">
@@ -279,21 +196,9 @@ function generateUniqueVoucherCode($conn)
                     </a>
                 </li>
                 <li>
-                    <a href="bins.php">
-                        <i class="bi bi-trash"></i>
-                        <span>Trash Bins</span>
-                    </a>
-                </li>
-                <li class="">
-                    <a href="sessions.php">
-                        <i class="bi bi-wifi"></i>
-                        <span>Network Monitoring</span>
-                    </a>
-                </li>
-                <li>
                     <a href="users.php">
                         <i class="bi bi-people"></i>
-                        <span>Admins</span>
+                        <span>Sessions</span>
                     </a>
                 </li>
                 <li>
@@ -302,6 +207,12 @@ function generateUniqueVoucherCode($conn)
                         <span>Activity Logs</span>
                     </a>
                 </li>
+                <li>
+                        <a href="profile.php">
+                            <i class="bi bi-person-circle"></i>
+                            <span>My Account</span>
+                        </a>
+                    </li>
                 <li>
                     <a href="settings.php">
                         <i class="bi bi-gear"></i> 
@@ -327,98 +238,143 @@ function generateUniqueVoucherCode($conn)
 
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="stats-card">
-                    <h4><i class="bi bi-collection"></i> Total Deposits</h4>
-                    <div class="stat-item">
-                        <span>All Time:</span>
-                        <span class="stat-value"><?php echo number_format($overallStats['total_deposits'] ?? 0); ?></span>
+                <div class="deposit-stats-card deposit-stats-card-deposits">
+                    <div class="deposit-stats-header">
+                        <i class="bi bi-collection header-icon" style="color: #007bff;"></i>
+                        Total Deposits
                     </div>
-                    <div class="stat-item">
-                        <span>This Period:</span>
-                        <span class="stat-value">
-                            <?php echo number_format(array_sum(array_column($depositStats, 'deposit_count'))); ?>
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h4><i class="bi bi-recycle"></i> Total Bottles</h4>
-                    <div class="stat-item">
-                        <span>All Time:</span>
-                        <span class="stat-value"><?php echo number_format($overallStats['total_bottles'] ?? 0); ?></span>
-                    </div>
-                    <div class="stat-item">
-                        <span>This Period:</span>
-                        <span class="stat-value">
-                            <?php echo number_format(array_sum(array_column($depositStats, 'total_bottles'))); ?>
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h4><i class="bi bi-graph-up"></i> Average</h4>
-                    <div class="stat-item">
-                        <span>Bottles/Deposit:</span>
-                        <span class="stat-value"><?php echo number_format($overallStats['avg_bottles_per_deposit'] ?? 0, 1); ?></span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Time Credits (Overall):</span>
-                        <span class="stat-value">
-                            <?php
-                            $overallAvgTimeCredits = ($overallStats['avg_bottles_per_deposit'] ?? 0) * getMinutesPerBottle();
-                            echo number_format($overallAvgTimeCredits, 1) . ' min';
-                            ?>
-                        </span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Bottles/Deposit (Period):</span>
-                        <span class="stat-value">
-                            <?php
-                            $total_bottles_period = array_sum(array_column($depositStats, 'total_bottles'));
-                            $total_deposits_period = array_sum(array_column($depositStats, 'deposit_count'));
-                            echo $total_deposits_period > 0 ? number_format($total_bottles_period / $total_deposits_period, 1) : '0.0';
-                            ?>
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="filter-section">
-                    <h5><i class="bi bi-funnel"></i> Filter Period</h5>
-                    <form method="GET" action="bottle_deposits.php">
-                        <div class="d-flex flex-wrap justify-content-between gap-2 mb-3" role="group">
-                            <input type="radio" class="btn-check" name="time_filter" id="day_filter" value="day" <?php echo $timeFilter === 'day' ? 'checked' : ''; ?>>
-                            <label class="btn btn-outline-primary time-filter-btn" for="day_filter">Last 7 Days</label>
-
-                            <input type="radio" class="btn-check" name="time_filter" id="week_filter" value="week" <?php echo $timeFilter === 'week' ? 'checked' : ''; ?>>
-                            <label class="btn btn-outline-primary time-filter-btn" for="week_filter">Last 4 Weeks</label>
-
-                            <input type="radio" class="btn-check" name="time_filter" id="month_filter" value="month" <?php echo $timeFilter === 'month' ? 'checked' : ''; ?>>
-                            <label class="btn btn-outline-primary time-filter-btn" for="month_filter">Last 6 Months</label>
+                    <div class="deposit-stats-body">
+                        <div class="stat-item">
+                            <span class="stat-label">
+                                <i class="bi bi-infinity metric-icon"></i>
+                                All Time
+                            </span>
+                            <span class="stat-value"><?php echo number_format($overallStats['total_deposits'] ?? 0); ?></span>
                         </div>
+                        <div class="stat-item">
+                            <span class="stat-label">
+                                <i class="bi bi-calendar-range metric-icon"></i>
+                                This Period
+                            </span>
+                            <span class="stat-value">
+                                <?php echo number_format(array_sum(array_column($depositStats, 'deposit_count'))); ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="mb-3">
-                            <input type="radio" class="btn-check" name="time_filter" id="custom_filter" value="custom" <?php echo $timeFilter === 'custom' ? 'checked' : ''; ?>>
-                            <label class="btn btn-outline-primary time-filter-btn w-100" for="custom_filter">Custom Range</label>
+            <div class="col-md-3">
+                <div class="deposit-stats-card deposit-stats-card-bottles">
+                    <div class="deposit-stats-header">
+                        <i class="bi bi-recycle header-icon" style="color: #28a745;"></i>
+                        Total Bottles
+                    </div>
+                    <div class="deposit-stats-body">
+                        <div class="stat-item">
+                            <span class="stat-label">
+                                <i class="bi bi-infinity metric-icon"></i>
+                                All Time
+                            </span>
+                            <span class="stat-value"><?php echo number_format($overallStats['total_bottles'] ?? 0); ?></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">
+                                <i class="bi bi-calendar-range metric-icon"></i>
+                                This Period
+                            </span>
+                            <span class="stat-value">
+                                <?php echo number_format(array_sum(array_column($depositStats, 'total_bottles'))); ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="deposit-stats-card deposit-stats-card-average">
+                    <div class="deposit-stats-header">
+                        <i class="bi bi-graph-up header-icon" style="color: #17a2b8;"></i>
+                        Averages
+                    </div>
+                    <div class="deposit-stats-body">
+                        <div class="stat-item">
+                            <span class="stat-label">
+                                <i class="bi bi-calculator metric-icon"></i>
+                                Bottles/Deposit
+                            </span>
+                            <span class="stat-value"><?php echo number_format($overallStats['avg_bottles_per_deposit'] ?? 0, 1); ?></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">
+                                <i class="bi bi-clock metric-icon"></i>
+                                Time Credits
+                            </span>
+                            <span class="stat-value">
+                                <?php
+                                $overallAvgTimeCredits = ($overallStats['avg_bottles_per_deposit'] ?? 0) * getMinutesPerBottle();
+                                echo number_format($overallAvgTimeCredits, 1) . ' min';
+                                ?>
+                            </span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">
+                                <i class="bi bi-calendar-week metric-icon"></i>
+                                Period Avg
+                            </span>
+                            <span class="stat-value">
+                                <?php
+                                $total_bottles_period = array_sum(array_column($depositStats, 'total_bottles'));
+                                $total_deposits_period = array_sum(array_column($depositStats, 'deposit_count'));
+                                echo $total_deposits_period > 0 ? number_format($total_bottles_period / $total_deposits_period, 1) : '0.0';
+                                ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="modern-filter-section">
+                    <h5 class="filter-title">
+                        <i class="bi bi-funnel header-icon" style="color: #6f42c1;"></i>
+                        Filter Period
+                    </h5>
+                    <form method="GET" action="bottle_deposits.php">
+                        <div class="d-flex flex-column gap-3 mb-3">
+                            <label class="modern-filter-btn <?php echo $timeFilter === 'day' ? 'active' : ''; ?>">
+                                <input type="radio" name="time_filter" value="day" <?php echo $timeFilter === 'day' ? 'checked' : ''; ?> style="display: none;">
+                                Last 7 Days
+                            </label>
+
+                            <label class="modern-filter-btn <?php echo $timeFilter === 'week' ? 'active' : ''; ?>">
+                                <input type="radio" name="time_filter" value="week" <?php echo $timeFilter === 'week' ? 'checked' : ''; ?> style="display: none;">
+                                Last 4 Weeks
+                            </label>
+
+                            <label class="modern-filter-btn <?php echo $timeFilter === 'month' ? 'active' : ''; ?>">
+                                <input type="radio" name="time_filter" value="month" <?php echo $timeFilter === 'month' ? 'checked' : ''; ?> style="display: none;">
+                                Last 6 Months
+                            </label>
+
+                            <label class="modern-filter-btn <?php echo $timeFilter === 'custom' ? 'active' : ''; ?>">
+                                <input type="radio" name="time_filter" value="custom" <?php echo $timeFilter === 'custom' ? 'checked' : ''; ?> style="display: none;">
+                                Custom Range
+                            </label>
                         </div>
 
                         <div id="custom_date_group" style="display: <?php echo $timeFilter === 'custom' ? 'block' : 'none'; ?>;">
                             <div class="mb-3">
-                                <label class="form-label">Start Date</label>
-                                <input type="date" name="custom_start_date" class="form-control" value="<?php echo htmlspecialchars($customStartDate); ?>">
+                                <label class="form-label" style="color: #495057; font-weight: 600;">Start Date</label>
+                                <input type="date" name="custom_start_date" class="form-control modern-date-input" value="<?php echo htmlspecialchars($customStartDate); ?>">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">End Date</label>
-                                <input type="date" name="custom_end_date" class="form-control" value="<?php echo htmlspecialchars($customEndDate); ?>">
+                                <label class="form-label" style="color: #495057; font-weight: 600;">End Date</label>
+                                <input type="date" name="custom_end_date" class="form-control modern-date-input" value="<?php echo htmlspecialchars($customEndDate); ?>">
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="apply-filter-btn">
                             <i class="bi bi-filter"></i> Apply Filter
                         </button>
                     </form>
@@ -426,11 +382,14 @@ function generateUniqueVoucherCode($conn)
             </div>
         </div>
 
-        <div class="chart-container">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4><i class="bi bi-graph-up"></i> Deposit Trends</h4>
+        <div class="modern-chart-container">
+            <div class="chart-header">
+                <h4 class="chart-title">
+                    <i class="bi bi-graph-up"></i>
+                    Deposit Trends
+                </h4>
                 <div>
-                    <span class="badge bg-primary">
+                    <span class="period-badge">
                         <?php
                         $filterText = '';
                         if ($timeFilter === 'day') $filterText = 'Last 7 Days (Daily)';
@@ -444,15 +403,15 @@ function generateUniqueVoucherCode($conn)
             </div>
 
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table modern-table">
                     <thead>
                         <tr>
-                            <th>Period</th>
-                            <th>Deposits</th>
-                            <th>Bottles</th>
-                            <th>Avg. Bottles</th>
-                            <th>Avg. Time Credits</th>
-                            <th>Trend (vs. prev. period)</th>
+                            <th><i class="bi bi-calendar3 me-2"></i>Period</th>
+                            <th><i class="bi bi-collection me-2"></i>Deposits</th>
+                            <th><i class="bi bi-recycle me-2"></i>Bottles</th>
+                            <th><i class="bi bi-calculator me-2"></i>Avg. Bottles</th>
+                            <th><i class="bi bi-clock me-2"></i>Avg. Time Credits</th>
+                            <th><i class="bi bi-graph-up me-2"></i>Trend</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -463,30 +422,44 @@ function generateUniqueVoucherCode($conn)
                             if ($prevCount !== null) {
                                 if ($stat['deposit_count'] > $prevCount) {
                                     $percentageChange = $prevCount > 0 ? round(($stat['deposit_count'] - $prevCount) / $prevCount * 100) : 100;
-                                    $trendIcon = '<i class="bi bi-arrow-up trend-up"></i> ' . $percentageChange . '%';
+                                    $trendIcon = '<i class="bi bi-arrow-up trend-up"></i> +' . $percentageChange . '%';
                                 } elseif ($stat['deposit_count'] < $prevCount) {
                                     $percentageChange = $prevCount > 0 ? round(($prevCount - $stat['deposit_count']) / $prevCount * 100) : 100;
-                                    $trendIcon = '<i class="bi bi-arrow-down trend-down"></i> ' . $percentageChange . '%';
+                                    $trendIcon = '<i class="bi bi-arrow-down trend-down"></i> -' . $percentageChange . '%';
                                 } else {
-                                    $trendIcon = '<span class="text-muted">No change</span>';
+                                    $trendIcon = '<span class="text-muted"><i class="bi bi-dash"></i> No change</span>';
                                 }
                             }
                             $prevCount = $stat['deposit_count'];
                         ?>
                             <tr>
                                 <td>
-                                    <span>
+                                    <strong style="color: #495057;">
                                         <?php echo htmlspecialchars($stat['period']); ?>
+                                    </strong>
+                                </td>
+                                <td>
+                                    <span class="badge" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 6px 12px; border-radius: 12px;">
+                                        <?php echo number_format($stat['deposit_count']); ?>
                                     </span>
                                 </td>
-                                <td><?php echo number_format($stat['deposit_count']); ?></td>
-                                <td><?php echo number_format($stat['total_bottles']); ?></td>
-                                <td><?php echo number_format($stat['avg_bottles_per_deposit'], 1); ?></td>
                                 <td>
-                                    <?php
-                                    $avgTimeCreditsPerPeriodDeposit = $stat['avg_bottles_per_deposit'] * getMinutesPerBottle();
-                                    echo number_format($avgTimeCreditsPerPeriodDeposit, 1) . ' min';
-                                    ?>
+                                    <span class="badge" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; padding: 6px 12px; border-radius: 12px;">
+                                        <?php echo number_format($stat['total_bottles']); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span style="color: #6c757d; font-family: monospace; font-weight: 600;">
+                                        <?php echo number_format($stat['avg_bottles_per_deposit'], 1); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span style="color: #6c757d; font-family: monospace; font-weight: 600;">
+                                        <?php
+                                        $avgTimeCreditsPerPeriodDeposit = $stat['avg_bottles_per_deposit'] * getMinutesPerBottle();
+                                        echo number_format($avgTimeCreditsPerPeriodDeposit, 1) . ' min';
+                                        ?>
+                                    </span>
                                 </td>
                                 <td><?php echo $trendIcon; ?></td>
                             </tr>
@@ -494,7 +467,8 @@ function generateUniqueVoucherCode($conn)
                         <?php if (empty($depositStats)): ?>
                             <tr>
                                 <td colspan="6" class="text-center py-4 text-muted">
-                                    <i class="bi bi-info-circle"></i> No deposit data available for the selected period.
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    No deposit data available for the selected period.
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -503,22 +477,26 @@ function generateUniqueVoucherCode($conn)
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0"><i class="bi bi-clock-history"></i> Recent Deposits</h3>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDepositModal">
-                    <i class="bi bi-plus"></i> Add Deposit
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h3 class="modern-card-title">
+                    <i class="bi bi-clock-history"></i>
+                    Recent Deposits
+                </h3>
+                <button class="modern-btn-primary" data-bs-toggle="modal" data-bs-target="#addDepositModal">
+                    <i class="bi bi-plus"></i>
+                    Add Deposit
                 </button>
             </div>
-            <div class="card-body">
+            <div class="modern-card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover deposit-table">
+                    <table class="table modern-table">
                         <thead>
                             <tr>
-                                <th>Bottles</th>
-                                <th>Time Credits</th>
-                                <th>Timestamp</th>
-                                <th>Vouchers</th>
+                                <th><i class="bi bi-recycle me-2"></i>Bottles</th>
+                                <th><i class="bi bi-clock me-2"></i>Time Credits</th>
+                                <th><i class="bi bi-calendar3 me-2"></i>Timestamp</th>
+                                <th><i class="bi bi-ticket-perforated me-2"></i>Vouchers</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -526,18 +504,31 @@ function generateUniqueVoucherCode($conn)
                                 <?php foreach ($deposits as $deposit): ?>
                                     <tr>
                                         <td>
-                                            <i class="bi bi-recycle bottle-icon"></i>
-                                            <?php echo htmlspecialchars($deposit['bottle_count']); ?>
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <i class="bi bi-recycle bottle-icon"></i>
+                                                <span style="font-weight: 600; color: #495057;">
+                                                    <?php echo htmlspecialchars($deposit['bottle_count']); ?>
+                                                </span>
+                                            </div>
                                         </td>
                                         <td>
-                                            <?php
-                                            $timeCredits = $deposit['bottle_count'] * getMinutesPerBottle();
-                                            echo number_format($timeCredits) . ' min';
-                                            ?>
+                                            <span class="badge" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 8px 16px; border-radius: 12px; font-family: monospace;">
+                                                <?php
+                                                $timeCredits = $deposit['bottle_count'] * getMinutesPerBottle();
+                                                echo number_format($timeCredits) . ' min';
+                                                ?>
+                                            </span>
                                         </td>
-                                        <td><?php echo htmlspecialchars(date('M j, Y h:i A', strtotime($deposit['timestamp']))); ?></td>
                                         <td>
-                                            <a href="vouchers.php?transaction_id=<?php echo htmlspecialchars($deposit['deposit_id']); ?>" class="btn btn-sm btn-outline-primary">
+                                            <span style="color: #6c757d; font-size: 14px;">
+                                                <?php echo htmlspecialchars(date('M j, Y h:i A', strtotime($deposit['timestamp']))); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="vouchers.php?transaction_id=<?php echo htmlspecialchars($deposit['deposit_id']); ?>" 
+                                               class="btn btn-outline-primary btn-sm" 
+                                               style="border-radius: 12px; font-weight: 500; padding: 8px 16px;">
+                                                <i class="bi bi-eye me-1"></i>
                                                 View Vouchers
                                             </a>
                                         </td>
@@ -545,8 +536,12 @@ function generateUniqueVoucherCode($conn)
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        <i class="bi bi-info-circle"></i> No recent deposits found.
+                                    <td colspan="4" class="text-center py-5">
+                                        <div style="color: #6c757d;">
+                                            <i class="bi bi-info-circle" style="font-size: 2rem; margin-bottom: 16px; display: block;"></i>
+                                            <h5>No recent deposits found</h5>
+                                            <p class="mb-0">Start by adding your first bottle deposit!</p>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endif; ?>
@@ -556,35 +551,44 @@ function generateUniqueVoucherCode($conn)
             </div>
         </div>
 
-        <div class="modal fade" id="addDepositModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
+        <!-- Modern Modal -->
+        <div class="modal fade modern-modal" id="addDepositModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i class="bi bi-plus-circle"></i> Add New Deposit
+                            <i class="bi bi-plus-circle"></i>
+                            Add New Deposit
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <form method="POST" action="bottle_deposits.php">
                         <input type="hidden" name="add_deposit" value="1">
                         <div class="modal-body">
-                            <div class="mb-3">
-                                <label for="bottle_count" class="form-label">
-                                    <i class="bi bi-recycle"></i> Number of Bottles
+                            <div class="mb-4">
+                                <label for="bottle_count" class="form-label" style="color: #495057; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <i class="bi bi-recycle" style="color: #28a745;"></i>
+                                    Number of Bottles
                                 </label>
-                                <input type="number" class="form-control" id="bottle_count"
-                                    name="bottle_count" min="1" required
-                                    placeholder="Enter number of bottles deposited">
-                                <div class="form-text">
+                                <input type="number" 
+                                       class="form-control modern-form-control" 
+                                       id="bottle_count"
+                                       name="bottle_count" 
+                                       min="1" 
+                                       required
+                                       placeholder="Enter number of bottles deposited"
+                                       style="font-size: 16px;">
+                                <div class="form-text" style="color: #6c757d; margin-top: 8px; font-size: 14px;">
+                                    <i class="bi bi-info-circle me-1"></i>
                                     Each bottle will generate a unique voucher code for internet access.
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 12px; padding: 12px 24px; font-weight: 500;">
                                 <i class="bi bi-x"></i> Cancel
                             </button>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="modern-btn-primary">
                                 <i class="bi bi-save"></i> Add Deposit
                             </button>
                         </div>
@@ -600,23 +604,42 @@ function generateUniqueVoucherCode($conn)
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
-        document.querySelector('.dropdown-header').addEventListener('click', function() {
-            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
-        });
-        document.querySelectorAll('input[name="time_filter"]').forEach(radio => {
-            radio.addEventListener('change', function() {
+
+        // Modern filter button interactions
+        document.querySelectorAll('.modern-filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.modern-filter-btn').forEach(b => b.classList.remove('active'));
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Check the radio button
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                }
+                
+                // Show/hide custom date range
                 const customDateGroup = document.getElementById('custom_date_group');
-                if (this.value === 'custom') {
+                if (radio && radio.value === 'custom') {
                     customDateGroup.style.display = 'block';
                 } else {
                     customDateGroup.style.display = 'none';
                 }
             });
         });
-        window.addEventListener('click', function(e) {
-            const profileDropdown = document.querySelector('.profile-dropdown');
-            if (!profileDropdown.contains(e.target)) {
-                document.querySelector('.dropdown-content').classList.remove('show-dropdown');
+
+        // Initialize filter state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeRadio = document.querySelector('input[name="time_filter"]:checked');
+            if (activeRadio) {
+                const customDateGroup = document.getElementById('custom_date_group');
+                if (activeRadio.value === 'custom') {
+                    customDateGroup.style.display = 'block';
+                } else {
+                    customDateGroup.style.display = 'none';
+                }
             }
         });
     </script>

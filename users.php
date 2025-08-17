@@ -2,99 +2,184 @@
 require_once 'config.php';
 checkAdminAuth();
 
+$active_tab = $_GET['tab'] ?? 'active-sessions';
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$per_page = 10;
+$per_page = 15;
 $offset = ($page - 1) * $per_page;
-$total_admins_query = $conn->query("SELECT COUNT(*) FROM Admin");
-$total_admins = $total_admins_query->fetch_row()[0];
-$total_pages = ceil($total_admins / $per_page);
-$stmt = $conn->prepare("
-    SELECT admin_id, username, email, created_at, is_admin
-    FROM Admin
-    ORDER BY created_at DESC
-    LIMIT ? OFFSET ?
-");
-$stmt->bind_param("ii", $per_page, $offset);
-$stmt->execute();
-$admins = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$total_records = 0;
+$records = [];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['toggle_admin'])) {
-        $admin_id = (int)$_POST['admin_id'];
-        $current_is_admin_status = (int)$_POST['current_is_admin_status']; 
-        $new_is_admin_status = $current_is_admin_status ? 0 : 1; 
+switch ($active_tab) {
+    case 'active-sessions':
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL");
+        $stmt->execute();
+        $stmt->bind_result($total_records);
+        $stmt->fetch();
+        $stmt->close();
 
-        if ($admin_id == $_SESSION['admin_id'] && $new_is_admin_status == 0) {
-            redirectWithMessage('users.php', 'error', 'You cannot revoke your own admin rights!');
-        } else {
-            $stmt = $conn->prepare("UPDATE Admin SET is_admin = ? WHERE admin_id = ?");
-            $stmt->bind_param("ii", $new_is_admin_status, $admin_id);
+        $stmt = $conn->prepare("
+            SELECT us.session_id, us.ip_address, us.start_time, us.end_time, us.duration_minutes,
+                   u.mac_address, v.voucher_code
+            FROM UserSessions us
+            JOIN User u ON us.user_id = u.user_id
+            LEFT JOIN Voucher v ON us.voucher_id = v.voucher_id
+            WHERE us.end_time IS NULL
+            ORDER BY us.start_time DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $per_page, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $records = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        break;
 
-            if ($stmt->execute()) {
-                $action = $new_is_admin_status ? 'granted admin rights to' : 'revoked admin rights from';
-                logAdminActivity('Admin Update', "$action admin #$admin_id");
-                redirectWithMessage('users.php', 'success', 'Admin updated successfully!');
-            } else {
-                redirectWithMessage('users.php', 'error', 'Failed to update admin: ' . $conn->error);
-            }
-        }
-    } elseif (isset($_POST['delete_admin'])) {
-        $admin_id = (int)$_POST['admin_id'];
+    case 'session-logs':
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions");
+        $stmt->execute();
+        $stmt->bind_result($total_records);
+        $stmt->fetch();
+        $stmt->close();
 
-        if ($admin_id == $_SESSION['admin_id']) {
-            redirectWithMessage('users.php', 'error', 'You cannot delete your own account!');
-        }
+        $stmt = $conn->prepare("
+            SELECT us.session_id, us.ip_address, us.start_time, us.end_time, us.duration_minutes,
+                   u.mac_address, v.voucher_code
+            FROM UserSessions us
+            JOIN User u ON us.user_id = u.user_id
+            LEFT JOIN Voucher v ON us.voucher_id = v.voucher_id
+            ORDER BY us.start_time DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $per_page, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $records = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        break;
 
-        $stmt = $conn->prepare("DELETE FROM Admin WHERE admin_id = ?");
-        $stmt->bind_param("i", $admin_id);
+    case 'user-sessions':
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM User");
+        $stmt->execute();
+        $stmt->bind_result($total_records);
+        $stmt->fetch();
+        $stmt->close();
 
-        if ($stmt->execute()) {
-            logAdminActivity('Admin Delete', "Deleted admin #$admin_id");
-            redirectWithMessage('users.php', 'success', 'Admin deleted successfully!');
-        } else {
-            redirectWithMessage('users.php', 'error', 'Failed to delete admin: ' . $conn->error);
-        }
-    }
-    elseif (isset($_POST['add_admin'])) {
-        $username = trim($_POST['username']);
-        $email = trim($_POST['email']);
-        $password = $_POST['password'];
-
-        if (empty($username) || empty($email) || empty($password)) {
-            redirectWithMessage('users.php', 'error', 'All fields are required to add a new admin.');
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            redirectWithMessage('users.php', 'error', 'Invalid email format.');
-        } else {
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $is_admin = 1;
-            $stmt = $conn->prepare("INSERT INTO Admin (username, email, password, is_admin) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("sssi", $username, $email, $hashed_password, $is_admin);
-
-            if ($stmt->execute()) {
-                logAdminActivity('Admin Create', "Added new admin: $username");
-                redirectWithMessage('users.php', 'success', 'New admin added successfully!');
-            } else {
-                if ($conn->errno == 1062) {
-                    redirectWithMessage('users.php', 'error', 'Username or email already exists.');
-                } else {
-                    redirectWithMessage('users.php', 'error', 'Error adding admin: ' . $conn->error);
-                }
-            }
-        }
-    }
+        $stmt = $conn->prepare("
+            SELECT u.user_id, us.ip_address, u.time_credits, u.last_active, u.created_at,
+                   COUNT(us.session_id) as internet_session_count,
+                   MIN(us.start_time) as first_session_access,
+                   MAX(us.end_time) as last_session_access
+            FROM User u
+            LEFT JOIN UserSessions us ON u.user_id = us.user_id
+            GROUP BY u.user_id
+            ORDER BY u.user_id DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $per_page, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $records = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        break;
 }
 
-logAdminActivity('Admin Access', 'Viewed admins list');
+$total_pages = $per_page > 0 ? ceil($total_records / $per_page) : 1;
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Management - <?= SITE_NAME ?></title>
+    <title>Network Monitoring - <?= SITE_NAME ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .monitoring-tabs {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 1.5rem;
+        }
+
+        .monitoring-tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-weight: 500;
+            color: var(--light-text);
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .monitoring-tab:hover {
+            color: var(--primary-color);
+        }
+
+        .monitoring-tab.active {
+            color: var(--primary-color);
+        }
+
+        .monitoring-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-color);
+        }
+
+        .tab-badge {
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            margin-left: 0.3rem;
+        }
+
+        .session-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-completed {
+            background-color: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+        }
+
+        .mac-address {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+        }
+
+        .token-preview {
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
 </head>
 
 <body class="dashboard-container">
@@ -129,21 +214,9 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                     </a>
                 </li>
                 <li>
-                    <a href="bins.php">
-                        <i class="bi bi-trash"></i>
-                        <span>Trash Bins</span>
-                    </a>
-                </li>
-                <li class="">
-                    <a href="sessions.php">
-                        <i class="bi bi-wifi"></i>
-                        <span>Network Monitoring</span>
-                    </a>
-                </li>
-                <li class="active">
                     <a href="users.php">
                         <i class="bi bi-people"></i>
-                        <span>Admins</span>
+                        <span>Sessions</span>
                     </a>
                 </li>
                 <li>
@@ -153,11 +226,17 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                     </a>
                 </li>
                 <li>
-                    <a href="settings.php">
-                        <i class="bi bi-gear"></i> 
-                        <span>Settings</span>
-                    </a>
-                </li>
+                        <a href="profile.php">
+                            <i class="bi bi-person-circle"></i>
+                            <span>My Account</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="settings.php">
+                            <i class="bi bi-gear"></i> 
+                            <span>Settings</span>
+                        </a>
+                    </li>
                 <li>
                     <a href="logout.php">
                         <i class="bi bi-box-arrow-right"></i>
@@ -170,18 +249,61 @@ logAdminActivity('Admin Access', 'Viewed admins list');
 
     <div class="main-content">
         <div class="main-header">
-            <h2><i class="bi bi-people"></i> Admin Management</h2>
+            <h2><i class="bi bi-people"></i>Sessions</h2>
         </div>
 
         <?php displayFlashMessage(); ?>
 
         <div class="card">
-
             <div class="card-header">
-                <h3>System Users</h3>
-                <button class="btn btn-primary" id="addAdminBtn">
-                    <i class="bi bi-plus"></i> Add Admin
-                </button>
+                <div class="monitoring-tabs">
+                    <button class="monitoring-tab <?= $active_tab === 'active-sessions' ? 'active' : '' ?>"
+                        onclick="window.location='?tab=active-sessions'">
+                        <i class="bi bi-activity"></i> Active Sessions
+                        <span class="tab-badge">
+                            <?php
+                            $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL");
+                            $stmt->execute();
+                            $stmt->bind_result($count);
+                            $stmt->fetch();
+                            $stmt->close();
+                            echo htmlspecialchars($count);
+                            ?>
+                        </span>
+                    </button>
+                    <button class="monitoring-tab <?= $active_tab === 'session-logs' ? 'active' : '' ?>"
+                        onclick="window.location='?tab=session-logs'">
+                        <i class="bi bi-list-check"></i> Session Logs
+                        <span class="tab-badge">
+                            <?php
+                            $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions");
+                            $stmt->execute();
+                            $stmt->bind_result($count);
+                            $stmt->fetch();
+                            $stmt->close();
+                            echo htmlspecialchars($count);
+                            ?>
+                        </span>
+                    </button>
+                    <button class="monitoring-tab <?= $active_tab === 'user-sessions' ? 'active' : '' ?>"
+                        onclick="window.location='?tab=user-sessions'">
+                        <i class="bi bi-phone"></i> User Sessions
+                        <span class="tab-badge">
+                            <?php
+                            $stmt = $conn->prepare("SELECT COUNT(*) FROM User");
+                            $stmt->execute();
+                            $stmt->bind_result($count);
+                            $stmt->fetch();
+                            $stmt->close();
+                            echo htmlspecialchars($count);
+                            ?>
+                        </span>
+                    </button>
+                </div>
+
+                <div class="filter-options">
+                    <input type="text" id="searchInput" placeholder="Search..." class="form-control">
+                </div>
             </div>
 
             <div class="card-body">
@@ -189,158 +311,121 @@ logAdminActivity('Admin Access', 'Viewed admins list');
                     <table class="transaction-logs">
                         <thead>
                             <tr>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Admin Status</th>
-                                <th>Created At</th>
-                                <th>Actions</th>
+                                <?php if ($active_tab === 'user-sessions'): ?>
+                                    <th>User ID</th>
+                                    <th>IP Address</th>
+                                    <th>Time Credits</th>
+                                    <th>Total Sessions</th>
+                                    <th>First Access</th>
+                                    <th>Last Access</th>
+                                <?php else: ?>
+                                    <th>Session ID</th>
+                                    <th>MAC Address</th>
+                                    <th>Voucher Code</th>
+                                    <th>Start Time</th>
+                                    <?php if ($active_tab === 'session-logs'): ?>
+                                        <th>End Time</th>
+                                    <?php endif; ?>
+                                    <th>Status</th>
+                                    <th>Duration</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($admins)): ?>
-                                <?php foreach ($admins as $admin): ?>
+                            <?php if (empty($records)): ?>
+                                <tr>
+                                    <td colspan="<?= $active_tab === 'user-sessions' ? 6 : ($active_tab === 'session-logs' ? 7 : 6) ?>" class="text-center py-4 text-muted">
+                                        <i class="bi bi-info-circle"></i> No records found
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($records as $record): ?>
                                     <tr>
-                                        <td><?= htmlspecialchars($admin['username']) ?></td>
-                                        <td><?= htmlspecialchars($admin['email']) ?></td>
-                                        <td>
-                                            <?php if ($admin['admin_id'] == $_SESSION['admin_id']): ?>
-                                                <span class="status green">You (Admin)</span>
-                                            <?php else: ?>
-                                                <form method="POST" class="d-inline">
-                                                    <input type="hidden" name="admin_id" value="<?= htmlspecialchars($admin['admin_id']) ?>">
-                                                    <input type="hidden" name="current_is_admin_status" value="<?= htmlspecialchars($admin['is_admin']) ?>">
-                                                    <button type="submit" name="toggle_admin" class="btn btn-sm <?= $admin['is_admin'] ? 'btn-success' : 'btn-secondary' ?>">
-                                                        <?= $admin['is_admin'] ? 'Revoke Admin' : 'Grant Admin' ?>
-                                                    </button>
-                                                </form>
+                                        <?php if ($active_tab === 'user-sessions'): ?>
+                                            <td><?= htmlspecialchars($record['user_id']) ?></td>
+                                            <td><span class="mac-address"><?= htmlspecialchars($record['ip_address'] ?: 'N/A') ?></span></td>
+                                            <td><?= number_format($record['time_credits']) . ' min' ?></td>
+                                            <td><?= htmlspecialchars($record['internet_session_count']) ?></td>
+                                            <td><?= $record['first_session_access'] ? date('M j, Y h:i A', strtotime($record['first_session_access'])) : 'N/A' ?></td>
+                                            <td><?= $record['last_session_access'] ? date('M j, Y h:i A', strtotime($record['last_session_access'])) : 'N/A' ?></td>
+                                        <?php else: ?>
+                                            <td><?= htmlspecialchars($record['session_id']) ?></td>
+                                            <td><span class="mac-address"><?= htmlspecialchars($record['ip_address']) ?></span></td>
+                                            <td><?= htmlspecialchars($record['voucher_code'] ?? 'N/A') ?></td>
+                                            <td><?= date('M j, Y h:i A', strtotime($record['start_time'])) ?></td>
+                                            <?php if ($active_tab === 'session-logs'): ?>
+                                                <td><?= $record['end_time'] ? date('M j, Y h:i A', strtotime($record['end_time'])) : '-' ?></td>
                                             <?php endif; ?>
-                                        </td>
-                                        <td><?= date('M j, Y h:i A', strtotime($admin['created_at'])) ?></td>
-                                        <td>
-                                            <?php if ($admin['admin_id'] != $_SESSION['admin_id']): ?>
-                                                <button class="btn btn-sm btn-danger delete-admin"
-                                                    data-admin-id="<?= htmlspecialchars($admin['admin_id']) ?>"
-                                                    data-username="<?= htmlspecialchars($admin['username']) ?>">
-                                                    <i class="bi bi-trash"></i> Delete
-                                                </button>
-                                            <?php endif; ?>
-                                        </td>
+                                            <td>
+                                                <span class="session-status <?= $record['end_time'] ? 'status-completed' : 'status-active' ?>">
+                                                    <i class="bi <?= $record['end_time'] ? 'bi-check-circle' : 'bi-activity' ?>"></i>
+                                                    <?= $record['end_time'] ? 'Completed' : 'Active' ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php
+                                                if ($record['end_time']) {
+                                                    $duration = strtotime($record['end_time']) - strtotime($record['start_time']);
+                                                    echo gmdate("H\h i\m", $duration);
+                                                } else {
+                                                    $duration = time() - strtotime($record['start_time']);
+                                                    echo gmdate("H\h i\m", $duration) . ' (ongoing)';
+                                                }
+                                                ?>
+                                            </td>
+                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="6">No admin users found.</td>
-                                </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
-                <div class="pagination">
-                    <a href="?page=<?= $page - 1 ?>" class="btn btn-secondary <?= $page <= 1 ? 'disabled' : '' ?>">
-                        <i class="bi bi-chevron-left"></i> Prev
-                    </a>
-                    <span>Page <?= $page ?> of <?= $total_pages ?></span>
-                    <a href="?page=<?= $page + 1 ?>" class="btn btn-secondary <?= $page >= $total_pages ? 'disabled' : '' ?>">
-                        Next <i class="bi bi-chevron-right"></i>
-                    </a>
+                <div class="pagination mt-4">
+                    <?php if ($page > 1): ?>
+                        <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page - 1 ?>" class="btn btn-secondary">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </a>
+                    <?php else: ?>
+                        <button class="btn btn-secondary" disabled>
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </button>
+                    <?php endif; ?>
+
+                    <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
+
+                    <?php if ($page < $total_pages): ?>
+                        <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page + 1 ?>" class="btn btn-secondary">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    <?php else: ?>
+                        <button class="btn btn-secondary" disabled>
+                            Next <i class="bi bi-chevron-right"></i>
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal" id="addAdminModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Add New Admin</h3>
-                <button class="close add-modal-close">&times;</button>
-            </div>
-            <form method="POST">
-                <input type="hidden" name="add_admin" value="1">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary add-modal-cancel">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Admin</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal" id="deleteModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Deletion</h3>
-                <button class="close delete-modal-close">&times;</button>
-            </div>
-            <form method="POST">
-                <input type="hidden" name="delete_admin" value="1">
-                <input type="hidden" name="admin_id" id="deleteAdminId">
-                <div class="modal-body">
-                    <p>Are you sure you want to delete admin "<span id="deleteAdminName"></span>"?</p>
-                    <p class="text-danger">This action cannot be undone!</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary delete-modal-cancel">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function closeAllModals() {
-            document.querySelectorAll('.modal').forEach(modal => {
-                modal.classList.remove('show');
-            });
-        }
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('collapsed');
+        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
-        document.querySelector('.dropdown-header').addEventListener('click', function() {
-            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
-        });
-        document.getElementById('addAdminBtn').addEventListener('click', function() {
-            document.getElementById('addAdminModal').classList.add('show');
-        });
-        document.querySelectorAll('.add-modal-close, .add-modal-cancel').forEach(btn => {
-            btn.addEventListener('click', function() {
-                closeAllModals();
-            });
-        });
-        document.querySelectorAll('.delete-admin').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.getElementById('deleteAdminId').value = this.dataset.adminId;
-                document.getElementById('deleteAdminName').textContent = this.dataset.username;
-                document.getElementById('deleteModal').classList.add('show');
-            });
-        });
-        document.querySelectorAll('.delete-modal-close, .delete-modal-cancel').forEach(btn => {
-            btn.addEventListener('click', function() {
-                closeAllModals();
-            });
-        });
-        window.addEventListener('click', function(event) {
-            document.querySelectorAll('.modal').forEach(modal => {
-                if (event.target == modal) {
-                    modal.classList.remove('show');
-                }
-            });
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const table = document.querySelector('.transaction-logs tbody');
+
+            if (table) {
+                table.querySelectorAll('tr').forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            }
         });
     </script>
 </body>
-
 </html>

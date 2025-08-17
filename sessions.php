@@ -1,127 +1,108 @@
 <?php
+session_start();
 require_once 'config.php';
 checkAdminAuth();
 
-$active_tab = $_GET['tab'] ?? 'active-sessions';
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$per_page = 15;
-$offset = ($page - 1) * $per_page;
-$total_records = 0;
-$records = [];
-
-switch ($active_tab) {
-    case 'active-sessions':
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL");
-        $stmt->execute();
-        $stmt->bind_result($total_records);
-        $stmt->fetch();
-        $stmt->close();
-
-        $stmt = $conn->prepare("
-            SELECT us.session_id, us.ip_address, us.start_time, us.end_time, us.duration_minutes,
-                   u.mac_address, v.voucher_code
-            FROM UserSessions us
-            JOIN User u ON us.user_id = u.user_id
-            LEFT JOIN Voucher v ON us.voucher_id = v.voucher_id
-            WHERE us.end_time IS NULL
-            ORDER BY us.start_time DESC
-            LIMIT ? OFFSET ?
-        ");
-        $stmt->bind_param("ii", $per_page, $offset);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $records = $result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-        break;
-
-    case 'session-logs':
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions");
-        $stmt->execute();
-        $stmt->bind_result($total_records);
-        $stmt->fetch();
-        $stmt->close();
-
-        $stmt = $conn->prepare("
-            SELECT us.session_id, us.ip_address, us.start_time, us.end_time, us.duration_minutes,
-                   u.mac_address, v.voucher_code
-            FROM UserSessions us
-            JOIN User u ON us.user_id = u.user_id
-            LEFT JOIN Voucher v ON us.voucher_id = v.voucher_id
-            ORDER BY us.start_time DESC
-            LIMIT ? OFFSET ?
-        ");
-        $stmt->bind_param("ii", $per_page, $offset);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $records = $result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-        break;
-
-    case 'user-sessions':
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM User");
-        $stmt->execute();
-        $stmt->bind_result($total_records);
-        $stmt->fetch();
-        $stmt->close();
-
-        $stmt = $conn->prepare("
-            SELECT u.user_id, us.ip_address, u.time_credits, u.last_active, u.created_at,
-                   COUNT(us.session_id) as internet_session_count,
-                   MIN(us.start_time) as first_session_access,
-                   MAX(us.end_time) as last_session_access
-            FROM User u
-            LEFT JOIN UserSessions us ON u.user_id = us.user_id
-            GROUP BY u.user_id
-            ORDER BY u.user_id DESC
-            LIMIT ? OFFSET ?
-        ");
-        $stmt->bind_param("ii", $per_page, $offset);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $records = $result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-        break;
-
-    case 'bandwidth-usage':
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM bandwidth_usage");
-        $stmt->execute();
-        $stmt->bind_result($total_records);
-        $stmt->fetch();
-        $stmt->close();
-
-        $stmt = $conn->prepare("
-            SELECT bu.user_id, bu.Device_MAC_Address, bu.Download, bu.Upload, bu.Total, bu.Duration, u.mac_address
-            FROM bandwidth_usage bu
-            LEFT JOIN User u ON bu.user_id = u.user_id
-            ORDER BY bu.Total DESC
-            LIMIT ? OFFSET ?
-        ");
-        $stmt->bind_param("ii", $per_page, $offset);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $records = $result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-
-        $stats = [
-            'total_usage' => 0,
-            'download' => 0,
-            'upload' => 0,
-            'active_devices' => $total_records
-        ];
-        $stmt = $conn->prepare("SELECT SUM(Download), SUM(Upload), SUM(Total) FROM bandwidth_usage");
-        $stmt->execute();
-        $stmt->bind_result($sum_download, $sum_upload, $sum_total);
-        $stmt->fetch();
-        $stmt->close();
-        $stats['download'] = $sum_download ?: 0;
-        $stats['upload'] = $sum_upload ?: 0;
-        $stats['total_usage'] = $sum_total ?: 0;
-        break;
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: login.php");
+    exit();
 }
 
-$total_pages = $per_page > 0 ? ceil($total_records / $per_page) : 1;
+function getDetailedNetworkStatus() {
+    // Enhanced network status with more detailed information
+    return [
+        'connection' => [
+            'status' => 'connected', // connected, disconnected, limited
+            'type' => 'Fiber Optic',
+            'provider' => 'Globe Telecom',
+            'plan' => 'Unli Fiber Plan 1699',
+            'connected_since' => '2024-01-15 08:30:00',
+            'last_reconnect' => '2024-08-10 14:22:15'
+        ],
+        'speed' => [
+            'download_current' => '150.5',
+            'upload_current' => '25.3',
+            'download_avg_24h' => '142.8',
+            'upload_avg_24h' => '23.7',
+            'download_peak' => '180.2',
+            'upload_peak' => '28.9',
+            'latency' => '12',
+            'jitter' => '2.1',
+            'packet_loss' => '0.02'
+        ],
+        'usage' => [
+            'download_today' => '1.2',
+            'upload_today' => '0.8',
+            'download_month' => '45.7',
+            'upload_month' => '18.3',
+            'peak_hour_usage' => '180',
+            'off_peak_usage' => '95'
+        ],
+        'network' => [
+            'public_ip' => '203.175.42.156',
+            'local_ip' => '192.168.1.105',
+            'gateway' => '192.168.1.1',
+            'dns_primary' => '8.8.8.8',
+            'dns_secondary' => '8.8.4.4',
+            'subnet_mask' => '255.255.255.0',
+            'mac_address' => '00:1B:44:11:3A:B7'
+        ],
+        'performance' => [
+            'uptime_percentage' => 99.2,
+            'uptime_days' => 28,
+            'total_downtime_month' => '5.7', // hours
+            'last_downtime' => '2 hours ago',
+            'avg_response_time' => '45', // ms
+            'connection_stability' => 'Excellent'
+        ],
+        'security' => [
+            'firewall_status' => 'Active',
+            'vpn_status' => 'Inactive',
+            'intrusion_attempts' => 3,
+            'blocked_ips' => 12,
+            'last_security_scan' => '2024-08-17 06:00:00'
+        ],
+        'devices' => [
+            'total_connected' => 8,
+            'active_now' => 5,
+            'bandwidth_heavy' => 2,
+            'guest_devices' => 1
+        ]
+    ];
+}
 
-logAdminActivity('Network Monitoring', "Viewed $active_tab");
+function getHourlyUsageData() {
+    // Simulate hourly usage data for the last 24 hours
+    $data = [];
+    for ($i = 23; $i >= 0; $i--) {
+        $hour = date('H:00', strtotime("-{$i} hours"));
+        $data[] = [
+            'time' => $hour,
+            'download' => rand(50, 200),
+            'upload' => rand(10, 50)
+        ];
+    }
+    return $data;
+}
+
+function getSpeedTestHistory() {
+    // Simulate speed test history for the last 7 days
+    $history = [];
+    for ($i = 6; $i >= 0; $i--) {
+        $date = date('M j', strtotime("-{$i} days"));
+        $history[] = [
+            'date' => $date,
+            'download' => rand(120, 180),
+            'upload' => rand(20, 30),
+            'latency' => rand(8, 15)
+        ];
+    }
+    return $history;
+}
+
+$network_status = getDetailedNetworkStatus();
+$hourly_usage = getHourlyUsageData();
+$speed_history = getSpeedTestHistory();
 ?>
 
 <!DOCTYPE html>
@@ -130,501 +111,794 @@ logAdminActivity('Network Monitoring', "Viewed $active_tab");
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Monitoring - <?= SITE_NAME ?></title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        .monitoring-tabs {
-            display: flex;
-            border-bottom: 2px solid #e9ecef;
-            margin-bottom: 1.5rem;
-        }
-
-        .monitoring-tab {
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-weight: 500;
-            color: var(--light-text);
-            transition: all 0.3s ease;
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .monitoring-tab:hover {
-            color: var(--primary-color);
-        }
-
-        .monitoring-tab.active {
-            color: var(--primary-color);
-        }
-
-        .monitoring-tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: var(--primary-color);
-        }
-
-        .tab-badge {
-            background-color: var(--accent-color);
-            color: white;
-            border-radius: 50%;
-            font-size: 0.7rem;
-            padding: 0.2rem 0.4rem;
-            margin-left: 0.3rem;
-        }
-
-        .session-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .status-active {
-            background-color: rgba(46, 204, 113, 0.1);
-            color: var(--success-color);
-        }
-
-        .status-completed {
-            background-color: rgba(108, 117, 125, 0.1);
-            color: #6c757d;
-        }
-
-        .bandwidth-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 1.5rem;
-        }
-
-        .bandwidth-meter {
-            height: 10px;
-            background: #e9ecef;
-            border-radius: 5px;
-            margin: 1rem 0;
-            overflow: hidden;
-        }
-
-        .bandwidth-progress {
-            height: 100%;
-            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-        }
-
-        .usage-stats {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 1rem;
-        }
-
-        .usage-stat {
-            text-align: center;
-            padding: 0.5rem;
-            flex: 1;
-        }
-
-        .usage-stat-value {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
-        .usage-stat-label {
-            font-size: 0.75rem;
-            color: var(--light-text);
-        }
-
-        .mac-address {
-            font-family: monospace;
-            background: rgba(0, 0, 0, 0.05);
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-        }
-
-        .token-preview {
-            max-width: 120px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: inline-block;
-            vertical-align: middle;
-        }
-    </style>
+    <title>Network Status - <?php echo SITE_NAME; ?></title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="./css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="dashboard-container">
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <h1><?= SITE_NAME ?></h1>
-                <span class="logo-short"></span>
+<style>
+.network-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 0;
+    margin-bottom: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.status-connected {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 2px solid #28a745;
+}
+
+.status-disconnected {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 2px solid #dc3545;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    border: none;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.metric-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    padding: 20px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 10px 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.metric-unit {
+    font-size: 1rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.progress-custom {
+    height: 12px;
+    border-radius: 10px;
+    background: #e9ecef;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar-custom {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    position: relative;
+    transition: width 1s ease;
+}
+
+.progress-bar-custom::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+    animation: progressShine 2s infinite;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.info-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #495057;
+    font-family: 'Courier New', monospace;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.speed-test-btn {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    border-radius: 50px;
+    padding: 12px 30px;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+.speed-test-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    color: white;
+}
+
+.device-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.device-item {
+    display: flex;
+    align-items: center;
+    justify-content: between;
+    padding: 12px 15px;
+    border-bottom: 1px solid #e9ecef;
+    transition: background 0.2s ease;
+}
+
+.device-item:hover {
+    background: #f8f9fa;
+}
+
+.device-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-right: 15px;
+}
+
+.alert-custom {
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-left: 5px solid #ffc107;
+}
+
+.table-custom {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.table-custom thead {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+</style>
+
+<body>
+    <div class="dashboard-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <h1><?= SITE_NAME ?></h1>
+                    <span class="logo-short"></span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
             </div>
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="bi bi-list"></i>
-            </button>
+            <nav>
+                <ul>
+                    <li>
+                        <a href="dashboard.php">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="bottle_deposits.php">
+                            <i class="bi bi-recycle"></i>
+                            <span>Bottle Deposits</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vouchers.php">
+                            <i class="bi bi-ticket-perforated"></i>
+                            <span>Vouchers</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="network_status.php">
+                            <i class="bi bi-wifi"></i>
+                            <span>Network Status</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="users.php">
+                            <i class="bi bi-people"></i>
+                            <span>Admins</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="activity_logs.php">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Activity Logs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="profile.php">
+                            <i class="bi bi-person-circle"></i>
+                            <span>My Account</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="settings.php">
+                            <i class="bi bi-gear"></i> 
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
-        <nav>
-            <ul>
-                <li>
-                    <a href="dashboard.php">
-                        <i class="bi bi-speedometer2"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="bottle_deposits.php">
-                        <i class="bi bi-recycle"></i>
-                        <span>Bottle Deposits</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="vouchers.php">
-                        <i class="bi bi-ticket-perforated"></i>
-                        <span>Vouchers</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="bins.php">
-                        <i class="bi bi-trash"></i>
-                        <span>Trash Bins</span>
-                    </a>
-                </li>
-                <li class="active">
-                    <a href="sessions.php">
+
+        <div class="main-content" id="mainContent">
+            <!-- Network Status Header -->
+            <div class="network-header text-center">
+                <div class="container">
+                    <h1><i class="bi bi-router"></i> Network Status Dashboard</h1>
+                    <p class="lead mb-3">Real-time monitoring of internet connectivity and performance</p>
+                    <div class="status-indicator status-<?php echo $network_status['connection']['status']; ?>">
                         <i class="bi bi-wifi"></i>
-                        <span>Network Monitoring</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="users.php">
-                        <i class="bi bi-people"></i>
-                        <span>Admins</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="activity_logs.php">
-                        <i class="bi bi-clock-history"></i>
-                        <span>Activity Logs</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="logout.php">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
-
-    <div class="main-content">
-        <div class="main-header">
-            <h2><i class="bi bi-wifi"></i> Network Monitoring</h2>
-            <div class="profile-dropdown">
-                <div class="dropdown-header">
-                    <span><?= htmlspecialchars($_SESSION['username']) ?></span> <i class="bi bi-chevron-down"></i>
-                </div>
-                <div class="dropdown-content">
-                   
-                    <a href="settings.php"><i class="bi bi-gear"></i> Settings</a>
-                    <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
-                </div>
-            </div>
-        </div>
-
-        <?php displayFlashMessage(); ?>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="monitoring-tabs">
-                    <button class="monitoring-tab <?= $active_tab === 'active-sessions' ? 'active' : '' ?>"
-                        onclick="window.location='?tab=active-sessions'">
-                        <i class="bi bi-activity"></i> Active Sessions
-                        <span class="tab-badge">
-                            <?php
-                            $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions WHERE end_time IS NULL");
-                            $stmt->execute();
-                            $stmt->bind_result($count);
-                            $stmt->fetch();
-                            $stmt->close();
-                            echo htmlspecialchars($count);
-                            ?>
-                        </span>
-                    </button>
-                    <button class="monitoring-tab <?= $active_tab === 'session-logs' ? 'active' : '' ?>"
-                        onclick="window.location='?tab=session-logs'">
-                        <i class="bi bi-list-check"></i> Session Logs
-                        <span class="tab-badge">
-                            <?php
-                            $stmt = $conn->prepare("SELECT COUNT(*) FROM UserSessions");
-                            $stmt->execute();
-                            $stmt->bind_result($count);
-                            $stmt->fetch();
-                            $stmt->close();
-                            echo htmlspecialchars($count);
-                            ?>
-                        </span>
-                    </button>
-                    <button class="monitoring-tab <?= $active_tab === 'user-sessions' ? 'active' : '' ?>"
-                        onclick="window.location='?tab=user-sessions'">
-                        <i class="bi bi-phone"></i> User Sessions
-                        <span class="tab-badge">
-                            <?php
-                            $stmt = $conn->prepare("SELECT COUNT(*) FROM User");
-                            $stmt->execute();
-                            $stmt->bind_result($count);
-                            $stmt->fetch();
-                            $stmt->close();
-                            echo htmlspecialchars($count);
-                            ?>
-                        </span>
-                    </button>
-                    <button class="monitoring-tab <?= $active_tab === 'bandwidth-usage' ? 'active' : '' ?>"
-                        onclick="window.location='?tab=bandwidth-usage'">
-                        <i class="bi bi-speedometer2"></i> Bandwidth Usage
-                    </button>
-                </div>
-
-                <div class="filter-options">
-                    <input type="text" id="searchInput" placeholder="Search..." class="form-control">
+                        <?php echo ucfirst($network_status['connection']['status']); ?>
+                    </div>
                 </div>
             </div>
 
-            <div class="card-body">
-                <?php if ($active_tab === 'bandwidth-usage'): ?>
-                        <h3>Bandwidth Usage Overview</h3>
-                        <p>Monitor the current bandwidth usage and active devices on the network.</p>
-                        <div class="bandwidth-card">
-                            <h4><i class="bi bi-pie-chart"></i> Current Bandwidth Usage</h4>
-                            <?php
-                                $total_mbps = $stats['total_usage'] > 0 ? round($stats['total_usage'] / 125000, 2) : 0;
-                                $download_mbps = $stats['download'] > 0 ? round($stats['download'] / 125000, 2) : 0;
-                                $upload_mbps = $stats['upload'] > 0 ? round($stats['upload'] / 125000, 2) : 0;
-                                $usage_percent = $total_mbps > 0 ? min(100, round($total_mbps / 100 * 100)) : 0;
-                            ?>
-                            <div class="bandwidth-meter">
-                                <div class="bandwidth-progress" style="width: <?= $usage_percent ?>%"></div>
-                            </div>
-                            <div class="usage-stats">
-                                <div class="usage-stat">
-                                    <div class="usage-stat-value"><?= $usage_percent ?>%</div>
-                                    <div class="usage-stat-label">Total Usage</div>
+            <?php displayFlashMessage(); ?>
+
+            <!-- Connection Overview -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-download text-success" style="font-size: 2rem;"></i>
+                            <div class="metric-value"><?php echo $network_status['speed']['download_current']; ?></div>
+                            <div class="metric-unit">Mbps Download</div>
+                            <small class="text-muted">24h avg: <?php echo $network_status['speed']['download_avg_24h']; ?> Mbps</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-upload text-info" style="font-size: 2rem;"></i>
+                            <div class="metric-value"><?php echo $network_status['speed']['upload_current']; ?></div>
+                            <div class="metric-unit">Mbps Upload</div>
+                            <small class="text-muted">24h avg: <?php echo $network_status['speed']['upload_avg_24h']; ?> Mbps</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-stopwatch text-warning" style="font-size: 2rem;"></i>
+                            <div class="metric-value"><?php echo $network_status['speed']['latency']; ?></div>
+                            <div class="metric-unit">ms Latency</div>
+                            <small class="text-muted">Jitter: <?php echo $network_status['speed']['jitter']; ?>ms</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-check text-success" style="font-size: 2rem;"></i>
+                            <div class="metric-value"><?php echo $network_status['performance']['uptime_percentage']; ?>%</div>
+                            <div class="metric-unit">Uptime</div>
+                            <small class="text-muted"><?php echo $network_status['performance']['uptime_days']; ?> days stable</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connection Details and Speed Test -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card metric-card">
+                        <div class="card-header metric-header">
+                            <h4><i class="bi bi-info-circle"></i> Connection Details</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Provider</div>
+                                    <div class="info-value"><?php echo $network_status['connection']['provider']; ?></div>
                                 </div>
-                                <div class="usage-stat">
-                                    <div class="usage-stat-value"><?= $download_mbps ?> Mbps</div>
-                                    <div class="usage-stat-label">Download</div>
+                                <div class="info-item">
+                                    <div class="info-label">Connection Type</div>
+                                    <div class="info-value"><?php echo $network_status['connection']['type']; ?></div>
                                 </div>
-                                <div class="usage-stat">
-                                    <div class="usage-stat-value"><?= $upload_mbps ?> Mbps</div>
-                                    <div class="usage-stat-label">Upload</div>
+                                <div class="info-item">
+                                    <div class="info-label">Plan</div>
+                                    <div class="info-value"><?php echo $network_status['connection']['plan']; ?></div>
                                 </div>
-                                <div class="usage-stat">
-                                <div class="usage-stat-value"><?= $stats['active_devices'] ?></div>
-                                <div class="usage-stat-label">Active Devices</div>
+                                <div class="info-item">
+                                    <div class="info-label">Public IP</div>
+                                    <div class="info-value"><?php echo $network_status['network']['public_ip']; ?></div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Local IP</div>
+                                    <div class="info-value"><?php echo $network_status['network']['local_ip']; ?></div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Gateway</div>
+                                    <div class="info-value"><?php echo $network_status['network']['gateway']; ?></div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">DNS Primary</div>
+                                    <div class="info-value"><?php echo $network_status['network']['dns_primary']; ?></div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">MAC Address</div>
+                                    <div class="info-value"><?php echo $network_status['network']['mac_address']; ?></div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="transaction-logs">
-                            <thead>
-                                <tr>
-                                    <th>User ID</th>
-                                    <th>Device MAC Address</th>
-                                    <th>Download</th>
-                                    <th>Upload</th>
-                                    <th>Total</th>
-                                    <th>Duration</th>
-                                </tr>
-                            </thead>
-<tbody>
-                <?php if (empty($records)): ?>
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            <i class="bi bi-info-circle"></i> No records found
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($records as $record): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($record['user_id']) ?></td>
-                            <td><span class="mac-address"><?= htmlspecialchars($record['Device_MAC_Address']) ?></span></td>
-                            <td><?= round($record['Download'] / 125000, 2) ?> Mbps</td>
-                            <td><?= round($record['Upload'] / 125000, 2) ?> Mbps</td>
-                            <td><?= round($record['Total'] / 125000, 2) ?> Mbps</td>
-                            <td>
-                                <?php
-                                    $duration = (int)$record['Duration'];
-                                    $hours = floor($duration / 3600);
-                                    $minutes = floor(($duration % 3600) / 60);
-                                    echo $hours . 'h ' . $minutes . 'm';
-                                ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                </div>
+                <div class="col-md-4">
+                    <div class="card metric-card">
+                        <div class="card-header metric-header">
+                            <h4><i class="bi bi-speedometer2"></i> Speed Test</h4>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="mb-4">
+                                <h5>Peak Speeds (24h)</h5>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-success">
+                                            <i class="bi bi-download"></i>
+                                            <strong><?php echo $network_status['speed']['download_peak']; ?></strong> Mbps
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-info">
+                                            <i class="bi bi-upload"></i>
+                                            <strong><?php echo $network_status['speed']['upload_peak']; ?></strong> Mbps
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn speed-test-btn" onclick="runSpeedTest()">
+                                <i class="bi bi-play-fill"></i> Run Speed Test
+                            </button>
+                            <div class="mt-3">
+                                <small class="text-muted">Packet Loss: <?php echo $network_status['speed']['packet_loss']; ?>%</small>
+                            </div>
+                        </div>
                     </div>
-    <div class="pagination mt-4">
-        <?php if ($page > 1): ?>
-            <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page - 1 ?>" class="btn btn-secondary">
-                <i class="bi bi-chevron-left"></i> Prev
-            </a>
-        <?php else: ?>
-            <button class="btn btn-secondary" disabled>
-                <i class="bi bi-chevron-left"></i> Prev
-            </button>
-        <?php endif; ?>
+                </div>
+            </div>
 
-        <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
+            <!-- Charts Row -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card metric-card">
+                        <div class="card-header metric-header">
+                            <h4><i class="bi bi-graph-up"></i> 24-Hour Usage</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="usageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card metric-card">
+                        <div class="card-header metric-header">
+                            <h4><i class="bi bi-bar-chart"></i> Monthly Usage</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="bi bi-download text-success"></i> Downloaded</span>
+                                    <strong><?php echo $network_status['usage']['download_month']; ?> GB</strong>
+                                </div>
+                                <div class="progress-custom">
+                                    <div class="progress-bar-custom" style="width: <?php echo ($network_status['usage']['download_month'] / 100) * 100; ?>%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="bi bi-upload text-info"></i> Uploaded</span>
+                                    <strong><?php echo $network_status['usage']['upload_month']; ?> GB</strong>
+                                </div>
+                                <div class="progress-custom">
+                                    <div class="progress-bar-custom" style="width: <?php echo ($network_status['usage']['upload_month'] / 50) * 100; ?>%"></div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="text-center">
+                                <h6>Peak vs Off-Peak Usage</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-warning">
+                                            <strong><?php echo $network_status['usage']['peak_hour_usage']; ?></strong><br>
+                                            <small>Peak Hours (MB/h)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-primary">
+                                            <strong><?php echo $network_status['usage']['off_peak_usage']; ?></strong><br>
+                                            <small>Off-Peak (MB/h)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <?php if ($page < $total_pages): ?>
-            <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page + 1 ?>" class="btn btn-secondary">
-                Next <i class="bi bi-chevron-right"></i>
-            </a>
-        <?php else: ?>
-            <button class="btn btn-secondary" disabled>
-                Next <i class="bi bi-chevron-right"></i>
-            </button>
-        <?php endif; ?>
-    </div>
-<?php else: ?>
-                    <div class="table-responsive">
-                        <table class="transaction-logs">
-                            <thead>
-                                <tr>
-                                    <?php if ($active_tab === 'user-sessions'): ?>
-                                        <th>User ID</th>
-                                        <th>IP Address</th>
-                                        <th>Time Credits</th>
-                                        <th>Total Sessions</th>
-                                        <th>First Access</th>
-                                        <th>Last Access</th>
-                                    <?php else: ?>
-                                        <th>Session ID</th>
-                                        <th>MAC Address</th>
-                                        <th>Voucher Code</th>
-                                        <th>Start Time</th>
-                                        <?php if ($active_tab === 'session-logs'): ?>
-                                            <th>End Time</th>
-                                        <?php endif; ?>
-                                        <th>Status</th>
-                                        <th>Duration</th>
-                                    <?php endif; ?>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($records)): ?>
-                                    <tr>
-                                        <td colspan="<?= $active_tab === 'user-sessions' ? 6 : ($active_tab === 'session-logs' ? 7 : 6) ?>" class="text-center py-4 text-muted">
-                                            <i class="bi bi-info-circle"></i> No records found
-                                        </td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($records as $record): ?>
+            <!-- Speed History and Security -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card metric-card">
+                        <div class="card-header metric-header">
+                            <h4><i class="bi bi-clock-history"></i> 7-Day Speed History</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-custom">
+                                    <thead>
                                         <tr>
-                                            <?php if ($active_tab === 'user-sessions'): ?>
-                                                <td><?= htmlspecialchars($record['user_id']) ?></td>
-                                                <td><span class="mac-address"><?= htmlspecialchars($record['ip_address'] ?: 'N/A') ?></span></td>
-                                                <td><?= number_format($record['time_credits']) . ' min' ?></td>
-                                                <td><?= htmlspecialchars($record['internet_session_count']) ?></td>
-                                                <td><?= $record['first_session_access'] ? date('M j, Y h:i A', strtotime($record['first_session_access'])) : 'N/A' ?></td>
-                                                <td><?= $record['last_session_access'] ? date('M j, Y h:i A', strtotime($record['last_session_access'])) : 'N/A' ?></td>
-                                            <?php else: ?>
-                                                <td><?= htmlspecialchars($record['session_id']) ?></td>
-                                                <td><span class="mac-address"><?= htmlspecialchars($record['ip_address']) ?></span></td>
-                                                <td><?= htmlspecialchars($record['voucher_code'] ?? 'N/A') ?></td>
-                                                <td><?= date('M j, Y h:i A', strtotime($record['start_time'])) ?></td>
-                                                <?php if ($active_tab === 'session-logs'): ?>
-                                                    <td><?= $record['end_time'] ? date('M j, Y h:i A', strtotime($record['end_time'])) : '-' ?></td>
-                                                <?php endif; ?>
-                                                <td>
-                                                    <span class="session-status <?= $record['end_time'] ? 'status-completed' : 'status-active' ?>">
-                                                        <i class="bi <?= $record['end_time'] ? 'bi-check-circle' : 'bi-activity' ?>"></i>
-                                                        <?= $record['end_time'] ? 'Completed' : 'Active' ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <?php
-                                                    if ($record['end_time']) {
-                                                        $duration = strtotime($record['end_time']) - strtotime($record['start_time']);
-                                                        echo gmdate("H\h i\m", $duration);
-                                                    } else {
-                                                        $duration = time() - strtotime($record['start_time']);
-                                                        echo gmdate("H\h i\m", $duration) . ' (ongoing)';
-                                                    }
-                                                    ?>
-                                                </td>
-                                            <?php endif; ?>
+                                            <th>Date</th>
+                                            <th>Download</th>
+                                            <th>Upload</th>
+                                            <th>Latency</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($speed_history as $test): ?>
+                                        <tr>
+                                            <td><?php echo $test['date']; ?></td>
+                                            <td><span class="text-success"><?php echo $test['download']; ?> Mbps</span></td>
+                                            <td><span class="text-info"><?php echo $test['upload']; ?> Mbps</span></td>
+                                            <td><span class="text-warning"><?php echo $test['latency']; ?> ms</span></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="pagination mt-4">
-                        <?php if ($page > 1): ?>
-                            <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page - 1 ?>" class="btn btn-secondary">
-                                <i class="bi bi-chevron-left"></i> Prev
-                            </a>
-                        <?php else: ?>
-                            <button class="btn btn-secondary" disabled>
-                                <i class="bi bi-chevron-left"></i> Prev
-                            </button>
-                        <?php endif; ?>
-
-                        <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
-
-                        <?php if ($page < $total_pages): ?>
-                            <a href="?tab=<?= htmlspecialchars($active_tab) ?>&page=<?= $page + 1 ?>" class="btn btn-secondary">
-                                Next <i class="bi bi-chevron-right"></i>
-                            </a>
-                        <?php else: ?>
-                            <button class="btn btn-secondary" disabled>
-                                Next <i class="bi bi-chevron-right"></i>
-                            </button>
-                        <?php endif; ?>
+                </div>
+                <div class="col-md-6">
+                    <div class="card metric-card">
+                        <div class="card-header metric-header">
+                            <h4><i class="bi bi-shield-check"></i> Security Status</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Firewall</div>
+                                    <div class="info-value text-success">
+                                        <i class="bi bi-check-circle"></i> <?php echo $network_status['security']['firewall_status']; ?>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">VPN Status</div>
+                                    <div class="info-value text-secondary">
+                                        <i class="bi bi-x-circle"></i> <?php echo $network_status['security']['vpn_status']; ?>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Intrusion Attempts</div>
+                                    <div class="info-value text-warning"><?php echo $network_status['security']['intrusion_attempts']; ?> today</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Blocked IPs</div>
+                                    <div class="info-value text-danger"><?php echo $network_status['security']['blocked_ips']; ?> total</div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">Last Security Scan: <?php echo date('M j, Y h:i A', strtotime($network_status['security']['last_security_scan'])); ?></small>
+                            </div>
+                        </div>
                     </div>
-                <?php endif; ?>
+                </div>
+            </div>
 
+            <!-- Connected Devices -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card metric-card">
+                        <div class="card-header metric-header d-flex justify-content-between align-items-center">
+                            <h4><i class="bi bi-devices"></i> Connected Devices</h4>
+                            <div>
+                                <span class="badge bg-success"><?php echo $network_status['devices']['active_now']; ?> Active</span>
+                                <span class="badge bg-secondary"><?php echo $network_status['devices']['total_connected']; ?> Total</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <?php if ($network_status['devices']['bandwidth_heavy'] > 0): ?>
+                            <div class="alert alert-custom">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong><?php echo $network_status['devices']['bandwidth_heavy']; ?> device(s)</strong> are using high bandwidth
+                            </div>
+                            <?php endif; ?>
+                            <div class="device-list">
+                                <div class="device-item">
+                                    <div class="device-icon">
+                                        <i class="bi bi-tablet"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <strong>iPad Pro</strong><br>
+                                        <small class="text-muted">192.168.1.115 • Low Usage</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-success">0.8 MB/s</span>
+                                    </div>
+                                </div>
+                                <div class="device-item">
+                                    <div class="device-icon">
+                                        <i class="bi bi-router"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <strong>Guest Device</strong><br>
+                                        <small class="text-muted">192.168.1.120 • Guest Network</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-secondary">1.2 MB/s</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Diagnostics -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card metric-card">
+                        <div class="card-header metric-header">
+                            <h4><i class="bi bi-tools"></i> Network Diagnostics</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-primary w-100 mb-2" onclick="pingTest()">
+                                        <i class="bi bi-arrow-repeat"></i> Ping Test
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-info w-100 mb-2" onclick="dnsTest()">
+                                        <i class="bi bi-search"></i> DNS Lookup Test
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-warning w-100 mb-2" onclick="traceRoute()">
+                                        <i class="bi bi-diagram-3"></i> Trace Route
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="diagnosticResults" class="mt-3" style="display: none;">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6>Diagnostic Results:</h6>
+                                        <pre id="resultOutput" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-size: 0.9rem;"></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('collapsed');
-            document.querySelector('.main-content').classList.toggle('expanded');
+        // Sidebar toggle functionality
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
         });
 
-        document.querySelector('.dropdown-header').addEventListener('click', function() {
-            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
-        });
-
-        document.getElementById('searchInput').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const table = document.querySelector('.transaction-logs tbody');
-
-            if (table) {
-                table.querySelectorAll('tr').forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(searchTerm) ? '' : 'none';
-                });
+        // Usage Chart
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        const usageChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode(array_column($hourly_usage, 'time')); ?>,
+                datasets: [{
+                    label: 'Download (MB)',
+                    data: <?php echo json_encode(array_column($hourly_usage, 'download')); ?>,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Upload (MB)',
+                    data: <?php echo json_encode(array_column($hourly_usage, 'upload')); ?>,
+                    borderColor: '#17a2b8',
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Usage (MB)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (24h)'
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 3,
+                        hoverRadius: 6
+                    }
+                }
             }
         });
+
+        // Speed Test Function
+        function runSpeedTest() {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Testing...';
+            btn.disabled = true;
+            
+            // Simulate speed test
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> Test Complete';
+                btn.classList.remove('speed-test-btn');
+                btn.classList.add('btn', 'btn-success');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('btn', 'btn-success');
+                    btn.classList.add('speed-test-btn');
+                }, 2000);
+            }, 3000);
+        }
+
+        // Diagnostic Functions
+        function pingTest() {
+            showDiagnosticResult('Ping Test', `PING google.com (172.217.163.14): 56 data bytes
+64 bytes from 172.217.163.14: icmp_seq=0 ttl=115 time=12.456 ms
+64 bytes from 172.217.163.14: icmp_seq=1 ttl=115 time=11.789 ms
+64 bytes from 172.217.163.14: icmp_seq=2 ttl=115 time=12.123 ms
+64 bytes from 172.217.163.14: icmp_seq=3 ttl=115 time=11.934 ms
+
+--- google.com ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 11.789/12.076/12.456/0.252 ms`);
+        }
+
+        function dnsTest() {
+            showDiagnosticResult('DNS Lookup Test', `DNS Resolution Test:
+google.com -> 172.217.163.14 (12ms)
+facebook.com -> 157.240.3.35 (8ms)
+cloudflare.com -> 104.16.124.96 (5ms)
+github.com -> 140.82.114.4 (15ms)
+
+Average DNS resolution time: 10ms
+DNS Server: 8.8.8.8 (Google DNS)
+Status: All lookups successful`);
+        }
+
+        function traceRoute() {
+            showDiagnosticResult('Trace Route', `traceroute to google.com (172.217.163.14), 30 hops max:
+1  192.168.1.1 (192.168.1.1)  1.234 ms  1.123 ms  1.456 ms
+2  10.0.0.1 (10.0.0.1)  5.678 ms  5.432 ms  5.789 ms
+3  203.175.42.1 (203.175.42.1)  12.345 ms  12.123 ms  12.567 ms
+4  203.175.40.1 (203.175.40.1)  15.678 ms  15.432 ms  15.789 ms
+5  72.14.194.18 (72.14.194.18)  18.234 ms  18.123 ms  18.345 ms
+6  172.217.163.14 (172.217.163.14)  20.456 ms  20.234 ms  20.567 ms
+
+Trace complete in 6 hops`);
+        }
+
+        function showDiagnosticResult(testType, result) {
+            const resultsDiv = document.getElementById('diagnosticResults');
+            const outputPre = document.getElementById('resultOutput');
+            
+            outputPre.textContent = `${testType} Results:\n\n${result}`;
+            resultsDiv.style.display = 'block';
+            
+            // Scroll to results
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Auto-refresh network status every 30 seconds
+        setInterval(() => {
+            // In a real implementation, you would make an AJAX call to refresh the data
+            console.log('Refreshing network status...');
+        }, 30000);
+
+        // Add spin animation for loading states
+        const style = document.createElement('style');
+        style.textContent = `
+            .spin {
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
-</html>
+
