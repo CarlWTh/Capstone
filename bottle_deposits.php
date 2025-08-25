@@ -2,7 +2,6 @@
 require_once 'config.php';
 checkAdminAuth(); 
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
     $bottleCount = (int) $_POST['bottle_count'];
     $voucherDuration = getMinutesPerBottle(); 
@@ -43,6 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
         redirectWithMessage('bottle_deposits.php', 'error', 'Bottle count must be greater than 0.');
     }
 }
+
+// Pagination for recent deposits
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$depositsPerPage = isset($_GET['per_page']) ? max(5, min(50, intval($_GET['per_page']))) : 10;
+$offset = ($page - 1) * $depositsPerPage;
+
+// Get total count of deposits for pagination
+$totalDepositsResult = $conn->query("SELECT COUNT(*) as total FROM Transactions");
+$totalDeposits = $totalDepositsResult->fetch_assoc()['total'];
+$totalPages = ceil($totalDeposits / $depositsPerPage);
+
 $timeFilter = $_GET['time_filter'] ?? 'week';
 $customStartDate = $_GET['custom_start_date'] ?? '';
 $customEndDate = $_GET['custom_end_date'] ?? '';
@@ -61,6 +71,7 @@ if ($timeFilter === 'day') {
     $params = array($customStartDate, $customEndDate);
     $paramTypes = 'ss';
 }
+
 $groupBy = '';
 $dateFormat = '';
 
@@ -109,6 +120,7 @@ if (!empty($params)) {
 } else {
     $depositStats = $conn->query($statsQuery)->fetch_all(MYSQLI_ASSOC);
 }
+
 $overallStatsQuery = "
     SELECT
         COUNT(*) as total_deposits,
@@ -130,13 +142,18 @@ if (!empty($params)) {
     $overallStats = $conn->query($overallStatsQuery)->fetch_assoc();
 }
 
-$deposits = $conn->query("
+// Fetch paginated deposits
+$depositsQuery = "
     SELECT transaction_id AS deposit_id, bottle_count, created_at AS timestamp
     FROM Transactions
     ORDER BY created_at DESC
-    LIMIT 20
-")->fetch_all(MYSQLI_ASSOC);
+    LIMIT ? OFFSET ?
+";
 
+$stmt = $conn->prepare($depositsQuery);
+$stmt->bind_param("ii", $depositsPerPage, $offset);
+$stmt->execute();
+$deposits = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 function generateUniqueVoucherCode($conn)
 {
@@ -148,6 +165,29 @@ function generateUniqueVoucherCode($conn)
         $stmt->store_result();
     } while ($stmt->num_rows > 0);
     return $voucherCode;
+}
+
+// Helper function to generate pagination URL
+function generatePaginationUrl($page, $perPage = null, $preserveParams = true) {
+    $params = [];
+    
+    if ($preserveParams) {
+        // Preserve existing GET parameters
+        foreach ($_GET as $key => $value) {
+            if ($key !== 'page' && $key !== 'per_page') {
+                $params[$key] = $value;
+            }
+        }
+    }
+    
+    $params['page'] = $page;
+    if ($perPage !== null) {
+        $params['per_page'] = $perPage;
+    } elseif (isset($_GET['per_page'])) {
+        $params['per_page'] = $_GET['per_page'];
+    }
+    
+    return 'bottle_deposits.php?' . http_build_query($params);
 }
 ?>
 
@@ -162,6 +202,108 @@ function generateUniqueVoucherCode($conn)
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/bottle-deposit.css">
+    <style>
+        /* Modern Pagination - Activity Logs Style */
+        .modern-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 32px;
+            padding: 24px 0;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .modern-pagination .btn {
+            border: 2px solid #e9ecef;
+            background: white;
+            color: #495057;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modern-pagination .btn:hover {
+            border-color: #007bff;
+            color: #007bff;
+            background: #f8f9ff;
+        }
+
+        .modern-pagination .btn.disabled,
+        .modern-pagination .btn:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .pagination-info {
+            font-size: 0.9em;
+            color: #6c757d;
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .per-page-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #6c757d;
+            position: absolute;
+            right: 0;
+            background: #f8f9fa;
+            padding: 8px 16px;
+            border-radius: 12px;
+        }
+
+        .per-page-select {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 14px;
+            color: #495057;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .per-page-select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .pagination-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .modern-pagination {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .per-page-selector {
+                position: static;
+                margin-bottom: 16px;
+            }
+            
+            .pagination-wrapper {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+    </style>
 </head>
 
 <body class="dashboard-container">
@@ -341,6 +483,10 @@ function generateUniqueVoucherCode($conn)
                         Filter Period
                     </h5>
                     <form method="GET" action="bottle_deposits.php">
+                        <input type="hidden" name="page" value="1">
+                        <?php if (isset($_GET['per_page'])): ?>
+                            <input type="hidden" name="per_page" value="<?php echo htmlspecialchars($_GET['per_page']); ?>">
+                        <?php endif; ?>
                         <div class="d-flex flex-column gap-3 mb-3">
                             <label class="modern-filter-btn <?php echo $timeFilter === 'day' ? 'active' : ''; ?>">
                                 <input type="radio" name="time_filter" value="day" <?php echo $timeFilter === 'day' ? 'checked' : ''; ?> style="display: none;">
@@ -548,6 +694,47 @@ function generateUniqueVoucherCode($conn)
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Modern Pagination - Activity Logs Style -->
+                <?php if ($totalPages > 1): ?>
+                    <div class="pagination-wrapper">
+                        <div class="per-page-selector">
+                            <span>Show:</span>
+                            <select class="per-page-select" onchange="changePerPage(this.value)">
+                                <option value="5" <?php echo $depositsPerPage == 5 ? 'selected' : ''; ?>>5</option>
+                                <option value="10" <?php echo $depositsPerPage == 10 ? 'selected' : ''; ?>>10</option>
+                                <option value="20" <?php echo $depositsPerPage == 20 ? 'selected' : ''; ?>>20</option>
+                                <option value="50" <?php echo $depositsPerPage == 50 ? 'selected' : ''; ?>>50</option>
+                            </select>
+                        </div>
+
+                        <div class="modern-pagination">
+                            <?php if ($page > 1): ?>
+                                <a href="<?php echo generatePaginationUrl($page - 1); ?>" class="btn">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
+                            <?php else: ?>
+                                <button class="btn disabled">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </button>
+                            <?php endif; ?>
+
+                            <div class="pagination-info">
+                                Showing <?php echo number_format(($page - 1) * $depositsPerPage + 1); ?>-<?php echo number_format(min($page * $depositsPerPage, $totalDeposits)); ?> of <?php echo number_format($totalDeposits); ?> deposits (Page <?php echo $page; ?> of <?php echo $totalPages; ?>)
+                            </div>
+
+                            <?php if ($page < $totalPages): ?>
+                                <a href="<?php echo generatePaginationUrl($page + 1); ?>" class="btn">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            <?php else: ?>
+                                <button class="btn disabled">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -585,8 +772,8 @@ function generateUniqueVoucherCode($conn)
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 12px; padding: 12px 24px; font-weight: 500;">
-                                <i class="bi bi-x"></i> Cancel
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px; padding: 10px 18px; font-weight: 700; color: #0d0e0fff;">
+                                <i class="bi bi-x" style="font-size: 20px;"></i> Cancel
                             </button>
                             <button type="submit" class="modern-btn-primary">
                                 <i class="bi bi-save"></i> Add Deposit
@@ -640,6 +827,43 @@ function generateUniqueVoucherCode($conn)
                 } else {
                     customDateGroup.style.display = 'none';
                 }
+            }
+        });
+
+        // Pagination: Change items per page
+        function changePerPage(perPage) {
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('per_page', perPage);
+            urlParams.set('page', '1'); // Reset to first page
+            window.location.search = urlParams.toString();
+        }
+
+        // Add smooth scrolling to pagination links
+        document.querySelectorAll('.modern-pagination .btn').forEach(link => {
+            if (link.href && !link.classList.contains('disabled')) {
+                link.addEventListener('click', function(e) {
+                    // Add loading state
+                    this.style.opacity = '0.7';
+                    this.style.pointerEvents = 'none';
+                    
+                    // Add a subtle loading indicator
+                    const originalContent = this.innerHTML;
+                    const isNext = this.innerHTML.includes('Next');
+                    const isPrev = this.innerHTML.includes('Previous');
+                    
+                    if (isNext) {
+                        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
+                    } else if (isPrev) {
+                        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
+                    }
+                    
+                    // Let the navigation proceed naturally after a brief delay
+                    setTimeout(() => {
+                        this.innerHTML = originalContent;
+                        this.style.opacity = '1';
+                        this.style.pointerEvents = 'auto';
+                    }, 300);
+                });
             }
         });
     </script>

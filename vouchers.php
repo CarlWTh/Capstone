@@ -2,47 +2,6 @@
 require_once 'config.php';
 checkAdminAuth();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_expiry_settings'])) {
-    $expiryDays = (int)$_POST['expiry_days'];
-    $expiryHours = (int)$_POST['expiry_hours'];
-    $expiryMinutes = (int)$_POST['expiry_minutes'];
-
-    if ($expiryDays >= 0 && $expiryHours >= 0 && $expiryMinutes >= 0) {
-        $totalMinutes = ($expiryDays * 24 * 60) + ($expiryHours * 60) + $expiryMinutes;
-
-        if (isset($_SESSION['admin_id'])) {
-            $admin_id = (int)$_SESSION['admin_id'];
-            $stmt = $conn->prepare("
-                INSERT INTO Settings (setting_key, setting_value, admin_id)
-                VALUES ('voucher_default_duration_minutes', ?, ?)
-                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), admin_id = VALUES(admin_id)
-            ");
-            $stmt->bind_param("di", $totalMinutes, $admin_id);
-
-            if ($stmt->execute()) {
-                logAdminActivity('Voucher Settings Updated', "Updated default voucher duration to $expiryDays days, $expiryHours hours, $expiryMinutes minutes");
-                redirectWithMessage('vouchers.php', 'success', 'Voucher expiry settings updated successfully!');
-            } else {
-                redirectWithMessage('vouchers.php', 'error', 'Failed to update voucher expiry settings: ' . $stmt->error);
-            }
-            $stmt->close();
-        } else {
-            redirectWithMessage('vouchers.php', 'error', 'Admin ID not set in session for voucher settings update.');
-        }
-    } else {
-        redirectWithMessage('vouchers.php', 'error', 'Invalid expiry time values.');
-    }
-}
-
-$currentDefaultDurationQuery = $conn->query("SELECT setting_value FROM Settings WHERE setting_key = 'voucher_default_duration_minutes'");
-$currentDefaultDurationMinutes = 60; 
-if ($currentDefaultDurationQuery && $currentDefaultDurationQuery->num_rows > 0) {
-    $row = $currentDefaultDurationQuery->fetch_row();
-    $currentDefaultDurationMinutes = (float)$row[0];
-}
-$expiryDays = 0;
-$expiryHours = 1;
-$expiryMinutes = 0;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $per_page = 20;
 $offset = ($page - 1) * $per_page;
@@ -86,150 +45,325 @@ $vouchers = $conn->query($vouchers_query)->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
     <style>
-        .settings-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 1) 100%);
-            color: black;
-            border-radius: 15px;
-            padding: 25px;
-            margin-top: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .settings-card h4 {
-            margin-bottom: 20px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .time-input-group {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .time-input-item {
-            text-align: center;
-        }
-
-        .time-input-item label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .time-input-item input {
-            width: 80px;
-            padding: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(49, 48, 48, 0.1);
-            color: black;
-            text-align: center;
-            font-size: 1.1em;
-            font-weight: bold;
-        }
-
-        .time-input-item input:focus {
-            outline: none;
-            border-color: rgba(42, 41, 41, 0.8);
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .time-input-item input::placeholder {
-            color: rgba(36, 35, 35, 0.7);
-        }
-
-        .settings-info {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-left: 4px solid #03a3a0ff;
-        }
-
-        .settings-info i {
-            margin-right: 8px;
-        }
-
-        .btn-save-settings {
-            background: #03a3a0ff;
+        /* Modern Statistics Cards for Vouchers */
+        .voucher-stats-card {
             border: none;
-            padding: 10px 25px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            background: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
             transition: all 0.3s ease;
+            position: relative;
         }
 
-        .btn-save-settings:hover {
-            background: #03a3a0ff;
-            transform: translateY(-1px);
+        .voucher-stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        .voucher-stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+        }
+
+        .voucher-stats-card-vouchers {
+            --accent-gradient: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+        }
+
+        /* Modern Filter Section */
+        .modern-filter-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .modern-filter-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .filter-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
         }
 
         .filter-options {
             display: flex;
-            gap: 10px;
+            gap: 16px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
-        .filter-options select {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+        .filter-options h5 {
+            margin: 0;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modern-filter-select {
+            border: 2px solid #e9ecef;
             background: white;
-        }
-
-        .export-btn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
+            color: #495057;
+            border-radius: 12px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
             cursor: pointer;
-            transition: background 0.3s ease;
+            min-width: 160px;
         }
 
-        .export-btn:hover {
-            background: #0056b3;
+        .modern-filter-select:hover {
+            border-color: #6f42c1;
+            color: #6f42c1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(111, 66, 193, 0.15);
         }
 
-        .pagination {
+        .modern-filter-select:focus {
+            border-color: #6f42c1;
+            box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+            outline: none;
+        }
+
+        /* Modern Card */
+        .modern-card {
+            border: none;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .modern-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+        }
+
+        .modern-card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #e9ecef;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .modern-card-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+        }
+
+        .modern-card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #495057;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modern-card-body {
+            padding: 32px;
+        }
+
+        /* Modern Table */
+        .modern-table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            background: white;
+            margin: 0;
+            width: 100%;
+        }
+
+        .modern-table thead th {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+            color: white;
+            font-weight: 600;
+            padding: 16px;
+            border: none;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modern-table tbody tr {
+            border-bottom: 1px solid #f1f3f4;
+            transition: all 0.2s ease;
+        }
+
+        .modern-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .modern-table tbody td {
+            padding: 16px;
+            border: none;
+            vertical-align: middle;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.used {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+        }
+
+        .status-badge.unused {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
+        }
+
+        .status-badge.expired {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        /* Modern Pagination */
+        .modern-pagination {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 16px;
+            margin-top: 32px;
+            padding: 24px 0;
+        }
+
+        .modern-pagination .btn {
+            border: 2px solid #e9ecef;
+            background: white;
+            color: #495057;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modern-pagination .btn:hover {
+            border-color: #6f42c1;
+            color: #6f42c1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(111, 66, 193, 0.2);
+        }
+
+        .modern-pagination .btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
         }
 
         .pagination-info {
             font-size: 0.9em;
-            color: #666;
+            color: #6c757d;
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 500;
         }
 
-        .status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h4 {
             font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
         }
 
-        .status.green { /* Used */
-            background: #d4edda;
-            color: #155724;
+        .empty-state p {
+            margin: 0;
+            font-size: 0.9em;
         }
 
-        .status.red { /* Expired */
-            background: #f8d7da;
-            color: #721c24;
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .modern-card-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .modern-pagination {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .modern-card-body {
+                padding: 24px 20px;
+            }
+
+            .modern-card-header {
+                padding: 20px;
+            }
         }
 
-        .status.orange { /* Unused */
-            background: #fff3cd;
-            color: #856404;
+        /* Code styling for voucher codes */
+        .voucher-code {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-weight: 600;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #495057;
         }
     </style>
 </head>
@@ -301,21 +435,24 @@ $vouchers = $conn->query($vouchers_query)->fetch_all(MYSQLI_ASSOC);
 
     <div class="main-content">
         <div class="main-header">
-            <h2><i class="bi bi-ticket-perforated"></i>Vouchers</h2>
+            <h2><i class="bi bi-ticket-perforated"></i>Voucher Management</h2>
         </div>
 
         <?php displayFlashMessage(); ?>
 
-        <div class="card">
-            <div class="card-header">
-                <h3>All Vouchers
+        <!-- Vouchers Table Card -->
+        <div class="modern-card voucher-stats-card-vouchers">
+            <div class="modern-card-header">
+                <h3 class="modern-card-title">
+                    <i class="bi bi-ticket-perforated"></i>
+                    All Vouchers
                     <?php if ($transactionIdFilter > 0): ?>
-                        <small class="text-muted">(for Transaction ID: #<?= $transactionIdFilter ?>)</small>
+                        <small class="text-muted">(Transaction ID: #<?= $transactionIdFilter ?>)</small>
                     <?php endif; ?>
                 </h3>
                 <div class="filter-options">
-                    <h5>Filter</h5>
-                    <select id="status-filter">
+                    <h5><i class="bi bi-funnel"></i> Filter:</h5>
+                    <select id="status-filter" class="modern-filter-select">
                         <option value="">All Statuses</option>
                         <option value="used" <?php echo $statusFilter === 'used' ? 'selected' : ''; ?>>Used</option>
                         <option value="unused" <?php echo $statusFilter === 'unused' ? 'selected' : ''; ?>>Unused</option>
@@ -323,49 +460,55 @@ $vouchers = $conn->query($vouchers_query)->fetch_all(MYSQLI_ASSOC);
                     </select>
                 </div>
             </div>
-            <div class="card-body">
+            <div class="modern-card-body">
                 <div class="table-responsive">
-                    <table class="transaction-logs">
+                    <table class="modern-table">
                         <thead>
                             <tr>
-                                <th>Code</th>
-                                <th>Expiration</th>
-                                <th>Status</th>
-                                <th>Created at</th>
-                                <th>Redeemed At</th>
+                                <th><i class="bi bi-qr-code"></i> Voucher Code</th>
+                                <th><i class="bi bi-calendar-event"></i> Expiration</th>
+                                <th><i class="bi bi-check-circle"></i> Status</th>
+                                <th><i class="bi bi-clock"></i> Created At</th>
+                                <th><i class="bi bi-check2-circle"></i> Redeemed At</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($vouchers)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">
-                                        <i class="bi bi-info-circle"></i> No vouchers found for the selected criteria.
+                                    <td colspan="5">
+                                        <div class="empty-state">
+                                            <i class="bi bi-inbox"></i>
+                                            <h4>No Vouchers Found</h4>
+                                            <p>No vouchers found matching your selected criteria.</p>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($vouchers as $voucher): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($voucher['code']); ?></td>
+                                        <td>
+                                            <span class="voucher-code"><?php echo htmlspecialchars($voucher['code']); ?></span>
+                                        </td>
                                         <td><?php echo date('M j, Y h:i A', strtotime($voucher['expiration'])); ?></td>
                                         <td>
                                             <?php
                                             $status_class = '';
                                             $status_text = '';
                                             if ($voucher['status'] === 'used') {
-                                                $status_class = 'green';
+                                                $status_class = 'used';
                                                 $status_text = 'Used';
                                             } elseif ($voucher['status'] === 'expired') {
-                                                $status_class = 'red';
+                                                $status_class = 'expired';
                                                 $status_text = 'Expired';
                                             } else { // 'unused'
-                                                $status_class = 'orange';
+                                                $status_class = 'unused';
                                                 $status_text = 'Unused';
                                             }
                                             ?>
-                                            <span class="status <?= $status_class ?>"><?= $status_text ?></span>
+                                            <span class="status-badge <?= $status_class ?>"><?= $status_text ?></span>
                                         </td>
                                         <td><?php echo date('M j, Y h:i A', strtotime($voucher['deposit_time'])); ?></td>
-                                        <td><?= $voucher['redeemed_at'] ? date('M j, Y h:i A', strtotime($voucher['redeemed_at'])) : 'N/A' ?></td>
+                                        <td><?= $voucher['redeemed_at'] ? date('M j, Y h:i A', strtotime($voucher['redeemed_at'])) : '<span class="text-muted">N/A</span>' ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -373,68 +516,36 @@ $vouchers = $conn->query($vouchers_query)->fetch_all(MYSQLI_ASSOC);
                     </table>
                 </div>
 
-                <div class="pagination">
+                <!-- Modern Pagination -->
+                <div class="modern-pagination">
                     <a href="?page=<?php echo max(1, $page - 1); ?>&status=<?php echo $statusFilter; ?><?= $transactionIdFilter > 0 ? '&transaction_id=' . $transactionIdFilter : '' ?>"
-                        class="btn btn-secondary <?php echo $page <= 1 ? 'disabled' : ''; ?>">
+                        class="btn <?php echo $page <= 1 ? 'disabled' : ''; ?>">
                         <i class="bi bi-chevron-left"></i> Previous
                     </a>
-                    <span class="pagination-info">Page <?php echo $page; ?> of <?php echo $total_pages; ?></span>
+                    <div class="pagination-info">Page <?php echo $page; ?> of <?php echo $total_pages; ?></div>
                     <a href="?page=<?php echo min($total_pages, $page + 1); ?>&status=<?php echo $statusFilter; ?><?= $transactionIdFilter > 0 ? '&transaction_id=' . $transactionIdFilter : '' ?>"
-                        class="btn btn-secondary <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
+                        class="btn <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
                         Next <i class="bi bi-chevron-right"></i>
                     </a>
                 </div>
             </div>
         </div>
-
-        <div class="settings-card">
-            <h4>
-                <i class="bi bi-gear-fill"></i>
-                Default Voucher Duration Settings
-            </h4>
-
-            <div class="settings-info">
-                <i class="bi bi-info-circle"></i>
-                <strong>Current Setting:</strong> New vouchers provide
-                <?php echo number_format($currentDefaultDurationMinutes, 0); ?> minutes of internet access.
-            </div>
-
-            <form method="POST" action="vouchers.php">
-                <input type="hidden" name="update_expiry_settings" value="1">
-
-                <div class="time-input-group">
-                    <div class="time-input-item">
-                        <label for="expiry_days">Days</label>
-                        <input type="number" id="expiry_days" name="expiry_days" value="<?php echo $expiryDays; ?>" min="0" max="365" placeholder="0">
-                    </div>
-
-                    <div class="time-input-item">
-                        <label for="expiry_hours">Hours</label>
-                        <input type="number" id="expiry_hours" name="expiry_hours" value="<?php echo $expiryHours; ?>" min="0" max="23" placeholder="0">
-                    </div>
-
-                    <div class="time-input-item">
-                        <label for="expiry_minutes">Minutes</label>
-                        <input type="number" id="expiry_minutes" name="expiry_minutes" value="<?php echo $expiryMinutes; ?>" min="0" max="59" placeholder="0">
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-save-settings">
-                    <i class="bi bi-check-circle"></i> Save Settings
-                </button>
-            </form>
-        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Sidebar toggle functionality
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
+
+        // Dropdown functionality
         document.querySelector('.dropdown-header').addEventListener('click', function() {
             document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
         });
+
+        // Status filter functionality
         document.getElementById('status-filter').addEventListener('change', function() {
             const status = this.value;
             const url = new URL(window.location.href);
@@ -442,21 +553,91 @@ $vouchers = $conn->query($vouchers_query)->fetch_all(MYSQLI_ASSOC);
             url.searchParams.set('page', 1); 
             window.location.href = url.toString();
         });
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const days = parseInt(document.getElementById('expiry_days').value) || 0;
-            const hours = parseInt(document.getElementById('expiry_hours').value) || 0;
-            const minutes = parseInt(document.getElementById('expiry_minutes').value) || 0;
-        
-            if (days === 0 && hours === 0 && minutes === 0) {
-                e.preventDefault();
-                const messageBox = document.createElement('div');
-                messageBox.className = 'alert alert-danger';
-                messageBox.innerHTML = `<p>Please set at least one time value (days, hours, or minutes).</p>`;
-                document.querySelector('.main-content').prepend(messageBox);
-                setTimeout(() => messageBox.remove(), 5000);
-                return false;
-            }
-            this.querySelector('button[type=submit]').disabled = true;
+
+        // Add smooth animations for hover effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add intersection observer for cards animation
+            const cards = document.querySelectorAll('.modern-card');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(card);
+            });
+
+            // Add click animations to buttons
+            const buttons = document.querySelectorAll('.modern-pagination .btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    if (!this.classList.contains('disabled')) {
+                        // Create ripple effect
+                        const ripple = document.createElement('span');
+                        const rect = this.getBoundingClientRect();
+                        const size = Math.max(rect.width, rect.height);
+                        const x = e.clientX - rect.left - size / 2;
+                        const y = e.clientY - rect.top - size / 2;
+                        
+                        ripple.style.cssText = `
+                            position: absolute;
+                            border-radius: 50%;
+                            background: rgba(255, 255, 255, 0.6);
+                            transform: scale(0);
+                            animation: ripple 0.6s linear;
+                            width: ${size}px;
+                            height: ${size}px;
+                            left: ${x}px;
+                            top: ${y}px;
+                            pointer-events: none;
+                        `;
+                        
+                        this.style.position = 'relative';
+                        this.style.overflow = 'hidden';
+                        this.appendChild(ripple);
+                        
+                        setTimeout(() => {
+                            ripple.remove();
+                        }, 600);
+                    }
+                });
+            });
+
+            // Add CSS for ripple animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(4);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+
+        // Enhanced table row interactions
+        const tableRows = document.querySelectorAll('.modern-table tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(4px)';
+                this.style.boxShadow = '4px 0 12px rgba(0, 0, 0, 0.1)';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+                this.style.boxShadow = 'none';
+            });
         });
     </script>
 </body>

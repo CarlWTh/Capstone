@@ -15,6 +15,21 @@ if ($settings_query && $settings_query->num_rows > 0) {
     ];
 }
 
+// Get voucher settings
+$currentDefaultDurationQuery = $conn->query("SELECT setting_value FROM Settings WHERE setting_key = 'voucher_default_duration_minutes'");
+$currentDefaultDurationMinutes = 60; 
+if ($currentDefaultDurationQuery && $currentDefaultDurationQuery->num_rows > 0) {
+    $row = $currentDefaultDurationQuery->fetch_row();
+    $currentDefaultDurationMinutes = (float)$row[0];
+}
+
+// Convert minutes to days, hours, minutes for display
+$totalMinutes = $currentDefaultDurationMinutes;
+$displayDays = floor($totalMinutes / (24 * 60));
+$remainingMinutes = $totalMinutes % (24 * 60);
+$displayHours = floor($remainingMinutes / 60);
+$displayMinutes = $remainingMinutes % 60;
+
 $admin_email_from_db = '';
 if (isset($_SESSION['admin_id'])) {
     $admin_id = $_SESSION['admin_id'];
@@ -86,6 +101,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
         } else {
             redirectWithMessage('settings.php', 'error', 'Admin ID not set in session for internet settings update.');
+        }
+    } elseif (isset($_POST['update_voucher_settings'])) {
+        $expiryDays = (int)$_POST['expiry_days'];
+        $expiryHours = (int)$_POST['expiry_hours'];
+        $expiryMinutes = (int)$_POST['expiry_minutes'];
+
+        if ($expiryDays >= 0 && $expiryHours >= 0 && $expiryMinutes >= 0) {
+            $totalMinutes = ($expiryDays * 24 * 60) + ($expiryHours * 60) + $expiryMinutes;
+
+            if (isset($_SESSION['admin_id'])) {
+                $admin_id = (int)$_SESSION['admin_id'];
+                $stmt = $conn->prepare("
+                    INSERT INTO Settings (setting_key, setting_value, admin_id)
+                    VALUES ('voucher_default_duration_minutes', ?, ?)
+                    ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), admin_id = VALUES(admin_id)
+                ");
+                $stmt->bind_param("di", $totalMinutes, $admin_id);
+
+                if ($stmt->execute()) {
+                    logAdminActivity('Voucher Settings Updated', "Updated default voucher duration to $expiryDays days, $expiryHours hours, $expiryMinutes minutes");
+                    redirectWithMessage('settings.php', 'success', 'Voucher settings updated successfully!');
+                } else {
+                    redirectWithMessage('settings.php', 'error', 'Failed to update voucher settings: ' . $stmt->error);
+                }
+                $stmt->close();
+            } else {
+                redirectWithMessage('settings.php', 'error', 'Admin ID not set in session for voucher settings update.');
+            }
+        } else {
+            redirectWithMessage('settings.php', 'error', 'Invalid expiry time values.');
         }
     } elseif (isset($_POST['update_system_settings'])) {
         $session_timeout = (int)$_POST['session_timeout'];
@@ -199,6 +244,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .stat-label {
             color: #666;
             font-size: 0.9em;
+        }
+
+        /* Voucher Settings Styles */
+        .voucher-settings-info {
+            background: linear-gradient(135deg, #e8f4fd 0%, #d1ecf1 100%);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .voucher-settings-info i {
+            margin-right: 8px;
+        }
+
+        .time-input-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .time-input-item {
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .time-input-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .time-input-item input {
+            width: 100%;
+            max-width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+            color: #495057;
+            text-align: center;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .time-input-item input:focus {
+            outline: none;
+            border-color: #6f42c1;
+            box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+            background: white;
         }
     </style>
 </head>
@@ -354,6 +456,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-actions">
                             <button type="submit" name="update_internet_settings" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Voucher Settings -->
+            <div class="settings-card">
+                <div class="settings-header voucher-header">
+                    <div class="settings-icon">
+                        <i class="bi bi-ticket-perforated"></i>
+                    </div>
+                    <h2>Voucher Settings</h2>
+                </div>
+                <div class="settings-body">
+                    <div class="voucher-settings-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Current Setting:</strong> New vouchers provide
+                        <?php echo number_format($currentDefaultDurationMinutes, 0); ?> minutes of internet access.
+                    </div>
+
+                    <form method="POST">
+                        <input type="hidden" name="update_voucher_settings" value="1">
+
+                        <div class="form-group">
+                            <label>Default Voucher Duration</label>
+                            <div class="time-input-group">
+                                <div class="time-input-item">
+                                    <label for="expiry_days">Days</label>
+                                    <input type="number" id="expiry_days" name="expiry_days" value="<?php echo $displayDays; ?>" min="0" max="365" placeholder="0">
+                                </div>
+
+                                <div class="time-input-item">
+                                    <label for="expiry_hours">Hours</label>
+                                    <input type="number" id="expiry_hours" name="expiry_hours" value="<?php echo $displayHours; ?>" min="0" max="23" placeholder="0">
+                                </div>
+
+                                <div class="time-input-item">
+                                    <label for="expiry_minutes">Minutes</label>
+                                    <input type="number" id="expiry_minutes" name="expiry_minutes" value="<?php echo $displayMinutes; ?>" min="0" max="59" placeholder="0">
+                                </div>
+                            </div>
+                            <small class="text-muted">Set the default duration for new vouchers generated from bottle deposits.</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Save Voucher Settings
                             </button>
                         </div>
                     </form>
@@ -538,6 +688,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
 
+        // Voucher settings form validation
+        document.querySelector('form[method="POST"]').addEventListener('submit', function(e) {
+            // Check if this is the voucher settings form
+            if (this.querySelector('input[name="update_voucher_settings"]')) {
+                const days = parseInt(document.getElementById('expiry_days').value) || 0;
+                const hours = parseInt(document.getElementById('expiry_hours').value) || 0;
+                const minutes = parseInt(document.getElementById('expiry_minutes').value) || 0;
+            
+                if (days === 0 && hours === 0 && minutes === 0) {
+                    e.preventDefault();
+                    const messageBox = document.createElement('div');
+                    messageBox.className = 'alert alert-danger';
+                    messageBox.style.cssText = `
+                        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 16px 24px;
+                        margin-bottom: 24px;
+                        box-shadow: 0 4px 16px rgba(220, 53, 69, 0.2);
+                    `;
+                    messageBox.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Please set at least one time value (days, hours, or minutes).`;
+                    document.querySelector('.main-content').insertBefore(messageBox, document.querySelector('.settings-grid'));
+                    setTimeout(() => messageBox.remove(), 5000);
+                    return false;
+                }
+                
+                // Add loading state to button
+                const submitBtn = this.querySelector('button[type=submit]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+            }
+        });
+
         function backupDatabase() {
             if (confirm('Are you sure you want to create a database backup?')) {
                 // You would implement the backup functionality here
@@ -551,6 +735,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 alert('Database optimization initiated. You will receive a notification when complete.');
             }
         }
+
+        // Add smooth animations for settings cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.settings-card');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(card);
+            });
+
+            // Add focus effects to time inputs
+            const timeInputs = document.querySelectorAll('.time-input-item input');
+            timeInputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.style.transform = 'scale(1.05)';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.style.transform = 'scale(1)';
+                });
+            });
+        });
     </script>
 </body>
 </html>

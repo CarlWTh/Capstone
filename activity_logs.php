@@ -27,7 +27,6 @@ $logs_query = "
 $logs_result = $conn->query($logs_query);
 $logs = $logs_result ? $logs_result->fetch_all(MYSQLI_ASSOC) : [];
 
-
 ?>
 
 <!DOCTYPE html>
@@ -40,6 +39,318 @@ $logs = $logs_result ? $logs_result->fetch_all(MYSQLI_ASSOC) : [];
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="./css/styles.css">
+    <style>
+        /* Modern Statistics Cards for Activity Logs */
+        .activity-stats-card {
+            border: none;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            background: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .activity-stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+        }
+
+        .activity-stats-card-logs {
+            --accent-gradient: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+
+        /* Modern Card */
+        .modern-card {
+            border: none;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .modern-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+
+        .modern-card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #e9ecef;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modern-card-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+
+        .modern-card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #495057;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modern-card-body {
+            padding: 32px;
+        }
+
+        /* Modern Search Input */
+        .modern-search-input {
+            border: 2px solid #e9ecef;
+            background: white;
+            color: #495057;
+            border-radius: 12px;
+            padding: 12px 16px 12px 44px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 250px;
+        }
+
+        .search-wrapper {
+            display: inline-block;
+        }
+
+        .search-wrapper::before {
+            content: '\F52A';
+            font-family: 'Bootstrap Icons';
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            z-index: 2;
+        }
+
+        .modern-search-input:focus {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+            outline: none;
+        }
+
+        /* Modern Table */
+        .modern-table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            background: white;
+            margin: 0;
+            width: 100%;
+        }
+
+        .modern-table thead th {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+            color: white;
+            font-weight: 600;
+            padding: 16px;
+            border: none;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modern-table tbody tr {
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .modern-table tbody td {
+            padding: 16px;
+            border: none;
+            vertical-align: middle;
+            
+        }
+
+        /* Admin Badge */
+        .admin-badge {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Action Type Styling */
+        .action-type {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            background: #f8f9fa;
+            color: #495057;
+            border-left: 3px solid #e74c3c;
+        }
+
+        /* Details Text */
+        .details-text {
+            font-size: 0.9em;
+            color: #6c757d;
+            line-height: 1.4;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        /* Timestamp Styling */
+        .timestamp {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 0.85em;
+            color: #495057;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        /* Modern Pagination */
+        .modern-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 32px;
+            padding: 24px 0;
+        }
+
+        .modern-pagination .btn {
+            border: 2px solid #e9ecef;
+            background: white;
+            color: #495057;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modern-pagination .btn:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .modern-pagination .btn.disabled,
+        .modern-pagination .btn:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .pagination-info {
+            font-size: 0.9em;
+            color: #6c757d;
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h4 {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 0.9em;
+        }
+
+        /* Filter Section Styles */
+        .filter-options {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-options h5 {
+            margin: 0;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .modern-card-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .modern-pagination {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .modern-card-body {
+                padding: 24px 20px;
+            }
+
+            .modern-card-header {
+                padding: 20px;
+            }
+
+            .modern-search-input {
+                min-width: 200px;
+                width: 100%;
+            }
+
+            .details-text {
+                max-width: 200px;
+            }
+        }
+
+        /* Activity Type Colors */
+        .action-login { border-left-color: #28a745; }
+        .action-logout { border-left-color: #ffc107; }
+        .action-create { border-left-color: #007bff; }
+        .action-update { border-left-color: #17a2b8; }
+        .action-delete { border-left-color: #dc3545; }
+        .action-settings { border-left-color: #6f42c1; }
+    </style>
 </head>
 
 <body class="dashboard-container">
@@ -114,61 +425,109 @@ $logs = $logs_result ? $logs_result->fetch_all(MYSQLI_ASSOC) : [];
 
         <?php displayFlashMessage(); ?>
 
-        <div class="card">
-            <div class="card-header">
-                <h3><i class="bi bi-person-gear"></i> System Logs</h3>
+        <!-- Activity Logs Table Card -->
+        <div class="modern-card activity-stats-card-logs">
+            <div class="modern-card-header">
+                <h3 class="modern-card-title">
+                    <i class="bi bi-person-gear"></i>
+                    System Activity Logs
+                </h3>
                 <div class="filter-options">
-                    <input type="text" id="searchLogs" placeholder="Search logs..." class="form-control">
+                    <div class="search-wrapper">
+                        <input type="text" id="searchLogs" placeholder="🔍 Search logs..." class="modern-search-input">
+                    </div>
                 </div>
             </div>
-
-            <div class="card-body">
+            <div class="modern-card-body">
                 <div class="table-responsive">
-                    <table class="transaction-logs">
+                    <table class="modern-table">
                         <thead>
                             <tr>
-                                <th>Admin</th>
-                                <th>Action</th>
-                                <th>Details</th>
-                                <th>Timestamp</th>
+                                <th><i class="bi bi-person-check"></i> Admin</th>
+                                <th><i class="bi bi-lightning"></i> Action</th>
+                                <th><i class="bi bi-info-circle"></i> Details</th>
+                                <th><i class="bi bi-clock"></i> Timestamp</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="logsTableBody">
                             <?php if (!empty($logs)): ?>
                                 <?php foreach ($logs as $log): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($log['username']) ?></td>
-                                        <td><?= htmlspecialchars($log['action']) ?></td>
-                                        <td><?= htmlspecialchars($log['details']) ?></td>
-                                        <td><?= date('M j, Y h:i A', strtotime($log['timestamp'])) ?></td>
+                                    <tr class="log-row">
+                                        <td>
+                                            <span class="admin-badge">
+                                                <i class="bi bi-person-gear"></i>
+                                                <?= htmlspecialchars($log['username']) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php
+                                            $actionClass = '';
+                                            $actionLower = strtolower($log['action']);
+                                            if (strpos($actionLower, 'login') !== false) {
+                                                $actionClass = 'action-login';
+                                            } elseif (strpos($actionLower, 'logout') !== false) {
+                                                $actionClass = 'action-logout';
+                                            } elseif (strpos($actionLower, 'create') !== false) {
+                                                $actionClass = 'action-create';
+                                            } elseif (strpos($actionLower, 'update') !== false) {
+                                                $actionClass = 'action-update';
+                                            } elseif (strpos($actionLower, 'delete') !== false) {
+                                                $actionClass = 'action-delete';
+                                            } elseif (strpos($actionLower, 'settings') !== false) {
+                                                $actionClass = 'action-settings';
+                                            }
+                                            ?>
+                                            <span class="action-type <?= $actionClass ?>">
+                                                <?= htmlspecialchars($log['action']) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="details-text">
+                                                <?= htmlspecialchars($log['details']) ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="timestamp">
+                                                <?= date('M j, Y h:i A', strtotime($log['timestamp'])) ?>
+                                            </span>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="5" class="text-center py-4 text-muted"><i class="bi bi-info-circle"></i> No logs found.</td></tr>
+                                <tr>
+                                    <td colspan="4">
+                                        <div class="empty-state">
+                                            <i class="bi bi-inbox"></i>
+                                            <h4>No Activity Logs Found</h4>
+                                            <p>No system activity logs are currently available.</p>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
-                <div class="pagination mt-4">
+                <!-- Modern Pagination -->
+                <div class="modern-pagination">
                     <?php if ($page > 1): ?>
-                        <a href="?page=<?= $page - 1 ?>" class="btn btn-secondary">
-                            <i class="bi bi-chevron-left"></i> Prev
+                        <a href="?page=<?= $page - 1 ?>" class="btn">
+                            <i class="bi bi-chevron-left"></i> Previous
                         </a>
                     <?php else: ?>
-                        <button class="btn btn-secondary" disabled>
-                            <i class="bi bi-chevron-left"></i> Prev
+                        <button class="btn disabled">
+                            <i class="bi bi-chevron-left"></i> Previous
                         </button>
                     <?php endif; ?>
 
-                    <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
+                    <div class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></div>
 
                     <?php if ($page < $total_pages): ?>
-                        <a href="?page=<?= $page + 1 ?>" class="btn btn-secondary">
+                        <a href="?page=<?= $page + 1 ?>" class="btn">
                             Next <i class="bi bi-chevron-right"></i>
                         </a>
                     <?php else: ?>
-                        <button class="btn btn-secondary" disabled>
+                        <button class="btn disabled">
                             Next <i class="bi bi-chevron-right"></i>
                         </button>
                     <?php endif; ?>
@@ -179,32 +538,56 @@ $logs = $logs_result ? $logs_result->fetch_all(MYSQLI_ASSOC) : [];
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Sidebar toggle functionality
         document.querySelector('.sidebar-toggle').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
             document.querySelector('.main-content').classList.toggle('expanded');
         });
-
-        document.querySelector('.dropdown-header').addEventListener('click', function() {
-            document.querySelector('.dropdown-content').classList.toggle('show-dropdown');
-        });
-
-        window.addEventListener('click', function(event) {
-            if (!event.target.closest('.profile-dropdown')) {
-                const dropdown = document.querySelector('.dropdown-content');
-                if (dropdown.classList.contains('show-dropdown')) {
-                    dropdown.classList.remove('show-dropdown');
-                }
-            }
-        });
-
-        document.getElementById('searchLogs').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const tableBody = document.querySelector('.transaction-logs tbody');
-
-            if (tableBody) { 
-                tableBody.querySelectorAll('tr').forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+        // Search functionality without highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchLogs');
+            const tableBody = document.getElementById('logsTableBody');
+            
+            if (searchInput && tableBody) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase().trim();
+                    const allRows = tableBody.querySelectorAll('tr.log-row');
+                    let visibleCount = 0;
+                    
+                    // Remove existing "no results" message
+                    const existingMessage = tableBody.querySelector('.no-results-row');
+                    if (existingMessage) {
+                        existingMessage.remove();
+                    }
+                    
+                    // Filter rows
+                    allRows.forEach(function(row) {
+                        const rowText = row.textContent.toLowerCase();
+                        const shouldShow = searchTerm === '' || rowText.includes(searchTerm);
+                        
+                        if (shouldShow) {
+                            row.style.display = '';
+                            visibleCount++;
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                    
+                    // Show "no results" message if needed
+                    if (visibleCount === 0 && searchTerm.length > 0) {
+                        const noResultsRow = document.createElement('tr');
+                        noResultsRow.className = 'no-results-row';
+                        noResultsRow.innerHTML = `
+                            <td colspan="4">
+                                <div class="empty-state">
+                                    <i class="bi bi-search"></i>
+                                    <h4>No Results Found</h4>
+                                    <p>No logs match your search term: <strong>"${searchTerm}"</strong></p>
+                                </div>
+                            </td>
+                        `;
+                        tableBody.appendChild(noResultsRow);
+                    }
                 });
             }
         });
