@@ -1,11 +1,11 @@
 <?php
 session_start();
-require_once 'config.php';
+require_once '../config.php';
 
 // ✅ Include PHPMailer
-require 'libraries/PHPMailer-master/src/Exception.php';
-require 'libraries/PHPMailer-master/src/PHPMailer.php';
-require 'libraries/PHPMailer-master/src/SMTP.php';
+require '../libraries/PHPMailer-master/src/Exception.php';
+require '../libraries/PHPMailer-master/src/PHPMailer.php';
+require '../libraries/PHPMailer-master/src/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title>Verify Code - <?= htmlspecialchars(SITE_NAME) ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body class="login-body">
     <div class="login-container">

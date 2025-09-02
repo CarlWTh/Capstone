@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config.php';
+require_once '../config.php';
 
 if (isset($_SESSION['admin_id'])) {
     header("Location: dashboard.php");
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - Bottle Recycling System</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body class="login-body">
     <div class="login-container">

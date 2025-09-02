@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php';
+require_once '../config.php';
 checkAdminAuth();
 
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -38,319 +38,12 @@ $logs = $logs_result ? $logs_result->fetch_all(MYSQLI_ASSOC) : [];
     <title>Activity Logs - <?= SITE_NAME ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="./css/styles.css">
-    <style>
-        /* Modern Statistics Cards for Activity Logs */
-        .activity-stats-card {
-            border: none;
-            border-radius: 16px;
-            margin-bottom: 24px;
-            background: white;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            position: relative;
-        }
-
-        .activity-stats-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--accent-gradient);
-        }
-
-        .activity-stats-card-logs {
-            --accent-gradient: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-
-        /* Modern Card */
-        .modern-card {
-            border: none;
-            border-radius: 16px;
-            background: white;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 24px;
-        }
-
-        .modern-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-
-        .modern-card-header {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-bottom: 1px solid #e9ecef;
-            padding: 24px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modern-card-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-
-        .modern-card-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #495057;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .modern-card-body {
-            padding: 32px;
-        }
-
-        /* Modern Search Input */
-        .modern-search-input {
-            border: 2px solid #e9ecef;
-            background: white;
-            color: #495057;
-            border-radius: 12px;
-            padding: 12px 16px 12px 44px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            min-width: 250px;
-        }
-
-        .search-wrapper {
-            display: inline-block;
-        }
-
-        .search-wrapper::before {
-            content: '\F52A';
-            font-family: 'Bootstrap Icons';
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-            z-index: 2;
-        }
-
-        .modern-search-input:focus {
-            border-color: #e74c3c;
-            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-            outline: none;
-        }
-
-        /* Modern Table */
-        .modern-table {
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-            background: white;
-            margin: 0;
-            width: 100%;
-        }
-
-        .modern-table thead th {
-            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
-            color: white;
-            font-weight: 600;
-            padding: 16px;
-            border: none;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .modern-table tbody tr {
-            border-bottom: 1px solid #f1f3f4;
-        }
-
-        .modern-table tbody td {
-            padding: 16px;
-            border: none;
-            vertical-align: middle;
-            
-        }
-
-        /* Admin Badge */
-        .admin-badge {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* Action Type Styling */
-        .action-type {
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 8px;
-            font-size: 0.85em;
-            background: #f8f9fa;
-            color: #495057;
-            border-left: 3px solid #e74c3c;
-        }
-
-        /* Details Text */
-        .details-text {
-            font-size: 0.9em;
-            color: #6c757d;
-            line-height: 1.4;
-            max-width: 300px;
-            text-align: center;
-        }
-
-        /* Timestamp Styling */
-        .timestamp {
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-            font-size: 0.85em;
-            color: #495057;
-            background: #f8f9fa;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
-        /* Modern Pagination */
-        .modern-pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 16px;
-            margin-top: 32px;
-            padding: 24px 0;
-        }
-
-        .modern-pagination .btn {
-            border: 2px solid #e9ecef;
-            background: white;
-            color: #495057;
-            border-radius: 12px;
-            padding: 12px 20px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .modern-pagination .btn:hover {
-            border-color: #e74c3c;
-            color: #e74c3c;
-        }
-
-        .modern-pagination .btn.disabled,
-        .modern-pagination .btn:disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .pagination-info {
-            font-size: 0.9em;
-            color: #6c757d;
-            background: #f8f9fa;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-weight: 500;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 24px;
-            color: #6c757d;
-        }
-
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .empty-state h4 {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #495057;
-        }
-
-        .empty-state p {
-            margin: 0;
-            font-size: 0.9em;
-        }
-
-        /* Filter Section Styles */
-        .filter-options {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .filter-options h5 {
-            margin: 0;
-            font-weight: 600;
-            color: #495057;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .modern-card-header {
-                flex-direction: column;
-                gap: 16px;
-                text-align: center;
-            }
-
-            .modern-pagination {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .modern-card-body {
-                padding: 24px 20px;
-            }
-
-            .modern-card-header {
-                padding: 20px;
-            }
-
-            .modern-search-input {
-                min-width: 200px;
-                width: 100%;
-            }
-
-            .details-text {
-                max-width: 200px;
-            }
-        }
-
-        /* Activity Type Colors */
-        .action-login { border-left-color: #28a745; }
-        .action-logout { border-left-color: #ffc107; }
-        .action-create { border-left-color: #007bff; }
-        .action-update { border-left-color: #17a2b8; }
-        .action-delete { border-left-color: #dc3545; }
-        .action-settings { border-left-color: #6f42c1; }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <link rel="stylesheet" href="../css/activity_logs.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./js/sidebar.js"></script>
 </head>
 
 <body class="dashboard-container">
@@ -386,8 +79,8 @@ $logs = $logs_result ? $logs_result->fetch_all(MYSQLI_ASSOC) : [];
                 </li>
                 <li>
                     <a href="users.php">
-                        <i class="bi bi-people"></i>
-                        <span>Sessions</span>
+                        <i class="bi bi-phone"></i>
+                            <span>Devices</span>
                     </a>
                 </li>
                 <li class="active">
@@ -536,13 +229,7 @@ $logs = $logs_result ? $logs_result->fetch_all(MYSQLI_ASSOC) : [];
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Sidebar toggle functionality
-        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('collapsed');
-            document.querySelector('.main-content').classList.toggle('expanded');
-        });
         // Search functionality without highlighting
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('searchLogs');

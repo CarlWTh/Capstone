@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php';
+require_once '../config.php';
 checkAdminAuth(); 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
@@ -200,110 +200,10 @@ function generatePaginationUrl($page, $perPage = null, $preserveParams = true) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="/css/bottle-deposit.css">
-    <style>
-        /* Modern Pagination - Activity Logs Style */
-        .modern-pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 16px;
-            margin-top: 32px;
-            padding: 24px 0;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .modern-pagination .btn {
-            border: 2px solid #e9ecef;
-            background: white;
-            color: #495057;
-            border-radius: 12px;
-            padding: 12px 20px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .modern-pagination .btn:hover {
-            border-color: #007bff;
-            color: #007bff;
-            background: #f8f9ff;
-        }
-
-        .modern-pagination .btn.disabled,
-        .modern-pagination .btn:disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .pagination-info {
-            font-size: 0.9em;
-            color: #6c757d;
-            background: #f8f9fa;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-weight: 500;
-        }
-
-        .per-page-selector {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: #6c757d;
-            position: absolute;
-            right: 0;
-            background: #f8f9fa;
-            padding: 8px 16px;
-            border-radius: 12px;
-        }
-
-        .per-page-select {
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 14px;
-            color: #495057;
-            background: white;
-            cursor: pointer;
-            transition: border-color 0.2s ease;
-        }
-
-        .per-page-select:focus {
-            outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-        }
-
-        .pagination-wrapper {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-
-        @media (max-width: 768px) {
-            .modern-pagination {
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .per-page-selector {
-                position: static;
-                margin-bottom: 16px;
-            }
-            
-            .pagination-wrapper {
-                flex-direction: column;
-                gap: 16px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/bottle-deposit.css">
+    <link rel="stylesheet" href="../css/sidebar.css">
 </head>
 
 <body class="dashboard-container">
@@ -339,8 +239,8 @@ function generatePaginationUrl($page, $perPage = null, $preserveParams = true) {
                 </li>
                 <li>
                     <a href="users.php">
-                        <i class="bi bi-people"></i>
-                        <span>Sessions</span>
+                        <i class="bi bi-phone"></i>
+                            <span>Devices</span>
                     </a>
                 </li>
                 <li>
@@ -382,7 +282,7 @@ function generatePaginationUrl($page, $perPage = null, $preserveParams = true) {
             <div class="col-md-3">
                 <div class="deposit-stats-card deposit-stats-card-deposits">
                     <div class="deposit-stats-header">
-                        <i class="bi bi-collection header-icon" style="color: #007bff;"></i>
+                        <i class="bi bi-collection header-icon" style="color: #138496;"></i>
                         Total Deposits
                     </div>
                     <div class="deposit-stats-body">
@@ -409,7 +309,7 @@ function generatePaginationUrl($page, $perPage = null, $preserveParams = true) {
             <div class="col-md-3">
                 <div class="deposit-stats-card deposit-stats-card-bottles">
                     <div class="deposit-stats-header">
-                        <i class="bi bi-recycle header-icon" style="color: #28a745;"></i>
+                        <i class="bi bi-recycle header-icon" style="color: #ff6b35;"></i>
                         Total Bottles
                     </div>
                     <div class="deposit-stats-body">
@@ -479,7 +379,7 @@ function generatePaginationUrl($page, $perPage = null, $preserveParams = true) {
             <div class="col-md-3">
                 <div class="modern-filter-section">
                     <h5 class="filter-title">
-                        <i class="bi bi-funnel header-icon" style="color: #6f42c1;"></i>
+                        <i class="bi bi-funnel header-icon" style="color: #e55a2b;"></i>
                         Filter Period
                     </h5>
                     <form method="GET" action="bottle_deposits.php">
@@ -585,12 +485,12 @@ function generatePaginationUrl($page, $perPage = null, $preserveParams = true) {
                                     </strong>
                                 </td>
                                 <td>
-                                    <span class="badge" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 6px 12px; border-radius: 12px;">
+                                    <span class="badge" style="background: linear-gradient(135deg, #2c8f89 0%, #4ECDC4 100%); color: white; padding: 6px 12px; border-radius: 12px;">
                                         <?php echo number_format($stat['deposit_count']); ?>
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; padding: 6px 12px; border-radius: 12px;">
+                                    <span class="badge" style="background: linear-gradient(135deg, #e55a2b 0%, #ff6b35 100%); color: white; padding: 6px 12px; border-radius: 12px;">
                                         <?php echo number_format($stat['total_bottles']); ?>
                                     </span>
                                 </td>
@@ -754,7 +654,7 @@ function generatePaginationUrl($page, $perPage = null, $preserveParams = true) {
                         <div class="modal-body">
                             <div class="mb-4">
                                 <label for="bottle_count" class="form-label" style="color: #495057; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                                    <i class="bi bi-recycle" style="color: #28a745;"></i>
+                                    <i class="bi bi-recycle" style="color: #e55a2b;"></i>
                                     Number of Bottles
                                 </label>
                                 <input type="number" 

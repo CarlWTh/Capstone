@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php';
+require_once '../config.php';
 checkAdminAuth(); 
 
 $current_settings = [];
@@ -152,7 +152,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Settings - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/sidebar.css">
     <style>
         .settings-grid {
             display: grid;
@@ -337,8 +339,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </li>
                 <li>
                     <a href="users.php">
-                        <i class="bi bi-people"></i>
-                        <span>Sessions</span>
+                        <i class="bi bi-phone"></i>
+                            <span>Devices</span>
                     </a>
                 </li>
                 <li class="">
@@ -353,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <span>My Account</span>
                         </a>
                     </li>
-                <li>
+                <li class="active">
                     <a href="settings.php">
                         <i class="bi bi-gear"></i> 
                         <span>Settings</span>

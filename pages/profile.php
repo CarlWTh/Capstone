@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php';
+require_once '../config.php';
 checkAdminAuth();
 
 // Get current user's profile data
@@ -77,8 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Account - <?= SITE_NAME ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="/css/profile.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/profile.css">
+    <link rel="stylesheet" href="../css/sidebar.css">
 </head>
 
 <body class="dashboard-container">
@@ -114,8 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </li>
                 <li>
                     <a href="users.php">
-                        <i class="bi bi-people"></i>
-                        <span>Sessions</span>
+                        <i class="bi bi-phone"></i>
+                            <span>Devices</span>
                     </a>
                 </li>
                 <li>

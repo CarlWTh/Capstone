@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config.php';
+require_once '../config.php';
 
 if (!isset($_SESSION['reset_admin_id']) || !isset($_SESSION['reset_admin_email'])) {
     header("Location: forgot-password.php");
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Reset Password</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body class="login-body">
     <div class="login-container">

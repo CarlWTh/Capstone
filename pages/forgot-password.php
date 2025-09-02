@@ -1,10 +1,10 @@
 <?php
 session_start();
-require_once 'config.php'; 
+require_once '../config.php'; 
 
-require_once 'libraries/PHPMailer-master/src/Exception.php';
-require_once 'libraries/PHPMailer-master/src/PHPMailer.php';
-require_once 'libraries/PHPMailer-master/src/SMTP.php';
+require_once '../libraries/PHPMailer-master/src/Exception.php';
+require_once '../libraries/PHPMailer-master/src/PHPMailer.php';
+require_once '../libraries/PHPMailer-master/src/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -82,12 +82,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password - <?= SITE_NAME ?></title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="../css/forgot-password.css">
 </head>
-<body class="login-body">
-    <div class="login-container">
-        <form class="login-form" method="POST" action="forgot-password.php">
-            <h2>Forgot Admin Password</h2>
+<body class="forgot-body">
+    <div class="forgot-container">
+        <form class="forgot-form" method="POST" action="forgot-password.php">
+            <h2>Forgot Password</h2>
 
             <?php if (!empty($error)): ?>
                 <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
@@ -96,12 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (!empty($success)): ?>
                 <div class="success-message"><?php echo htmlspecialchars($success); ?></div>
             <?php else: ?>
-                <p>Enter your admin email to receive a verification code</p>
+                <p>Enter your email to receive a verification code</p>
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" name="email" required>
                 </div>
-                <button type="submit" class="login-button">Send Code</button>
+                <button type="submit" class="code-button">Send Code</button>
             <?php endif; ?>
 
             <p style="text-align: center; margin-top: 10px;">

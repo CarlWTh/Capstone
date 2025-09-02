@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config.php';
+require_once '../config.php';
 checkAdminAuth();
 
 if (!isset($_SESSION['admin_id'])) {
@@ -88,16 +88,16 @@ $internet_status = getInternetStatus();
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="./css/styles.css">
-    <link rel="stylesheet" href="./css/dashboard.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <script src="../js/sidebar.js"></script>
 </head>
-
 <body>
     <div class="dashboard-container">
         <div class="sidebar" id="sidebar">
@@ -132,8 +132,8 @@ $internet_status = getInternetStatus();
                     </li>
                     <li>
                         <a href="users.php">
-                            <i class="bi bi-people"></i>
-                            <span>Sessions</span>
+                            <i class="bi bi-phone"></i>
+                            <span>Devices</span>
                         </a>
                     </li>
                     <li>
@@ -344,15 +344,5 @@ $internet_status = getInternetStatus();
             </div>
         </div>
     </div>
-
-    <script>
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
-        });
-    </script>
 </body>
-
 </html>

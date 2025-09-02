@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config.php'; 
+require_once '../config.php'; 
 
 // Encryption configuration
 define('ENCRYPTION_KEY', 'your-secret-key-32-chars-long!!'); // Change this to a secure 32-character key
@@ -8,18 +8,14 @@ define('ENCRYPTION_METHOD', 'AES-256-CBC');
 define('COOKIE_NAME', 'remember_admin_token');
 define('COOKIE_EXPIRY', 30 * 24 * 60 * 60); // 30 days in seconds
 
-/**
- * Encrypt data for cookie storage
- */
+//Encrypt data for cookie storage
 function encryptData($data) {
     $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length(ENCRYPTION_METHOD));
     $encrypted = openssl_encrypt(json_encode($data), ENCRYPTION_METHOD, ENCRYPTION_KEY, 0, $iv);
     return base64_encode($encrypted . '::' . $iv);
 }
 
-/**
- * Decrypt data from cookie
- */
+//Decrypt data from cookie
 function decryptData($encryptedData) {
     $data = base64_decode($encryptedData);
     list($encrypted_data, $iv) = explode('::', $data, 2);
@@ -27,9 +23,7 @@ function decryptData($encryptedData) {
     return json_decode($decrypted, true);
 }
 
-/**
- * Set remember me cookie
- */
+//Set remember me cookie
 function setRememberMeCookie($admin_data) {
     $cookie_data = [
         'admin_id' => $admin_data['admin_id'],
@@ -56,9 +50,8 @@ function setRememberMeCookie($admin_data) {
     );
 }
 
-/**
- * Clear remember me cookie
- */
+//Clear remember me cookie
+
 function clearRememberMeCookie() {
     setcookie(
         COOKIE_NAME,
@@ -192,8 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - <?php echo SITE_NAME; ?></title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="../css/login.css">
 </head>
+
 <body class="login-body">
     <div class="login-container">
         <form class="login-form" method="POST" action="login.php">

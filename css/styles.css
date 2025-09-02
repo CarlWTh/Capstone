@@ -684,100 +684,11 @@ input[name="code"] {
     background-color: var(--bg-color);
 }
 
-/* Sidebar */
-.sidebar {
-    width: 250px;
-    background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary-color) 100%);
-    color: #fff;
-    transition: var(--transition);
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    z-index: 1000;
-    overflow-y: auto;
-}
-
-.sidebar.collapsed {
-    width: 70px;
-}
-
-.sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.logo h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #fff;
-    margin: 0;
-}
-
-.logo-short {
-    display: none;
-}
-
-.sidebar.collapsed .logo h1 {
-    display: none;
-}
-
-.sidebar.collapsed .logo-short {
-    display: block;
-    font-size: 1.25rem;
-    font-weight: 700;
-}
-
-.sidebar-toggle {
-    background: transparent;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    font-size: 1.25rem;
-    padding: 0;
-}
-
-.sidebar nav ul {
-    list-style: none;
-    padding: 1rem 0;
-}
-
-.sidebar nav li {
-    margin-bottom: 0.5rem;
-}
-
-.sidebar nav a {
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1.5rem;
-    transition: var(--transition);
-}
-
-.sidebar nav a:hover,
-.sidebar nav li.active a {
-    color: #fff;
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.sidebar nav a i {
-    margin-right: 1rem;
-    font-size: 1.25rem;
-}
-
-.sidebar.collapsed nav a span {
-    display: none;
-}
-
 /* Main Content */
 .main-content {
     flex: 1;
     padding: 2rem;
-    margin-left: 250px;
+    height: 100vh;
     transition: var(--transition);
 }
 
@@ -802,65 +713,6 @@ input[name="code"] {
 .main-header h2 i {
     margin-right: 0.75rem;
     color: var(--primary-color);
-}
-
-/* Profile dropdown */
-.profile-dropdown {
-    position: relative;
-}
-
-.dropdown-header {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-    background-color: #fff;
-    box-shadow: var(--shadow);
-}
-
-.avatar-img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 0.75rem;
-    object-fit: cover;
-}
-
-.dropdown-content {
-    position: absolute;
-    right: 0;
-    top: 100%;
-    background-color: #fff;
-    min-width: 180px;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    padding: 1rem 0;
-    z-index: 1000;
-    display: none;
-    margin-top: 0.5rem;
-}
-
-.dropdown-content a {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1.5rem;
-    color: var(--text-color);
-    text-decoration: none;
-    transition: var(--transition);
-}
-
-.dropdown-content a:hover {
-    background-color: rgba(0, 166, 152, 0.1);
-}
-
-.dropdown-content a i {
-    margin-right: 0.75rem;
-    color: var(--primary-color);
-}
-
-.show-dropdown {
-    display: block;
 }
 
 /* Cards */
@@ -1144,22 +996,6 @@ input[name="code"] {
         width: 100%;
     }
 
-    .sidebar {
-        width: 70px;
-    }
-
-    .sidebar .logo h1 {
-        display: none;
-    }
-
-    .sidebar .logo-short {
-        display: block;
-    }
-
-    .sidebar nav a span {
-        display: none;
-    }
-
     .main-content {
         margin-left: 70px;
         padding: 1.5rem;
@@ -1255,76 +1091,6 @@ input[name="code"] {
 
     .form-group input {
         font-size: 0.875rem;
-    }
-}
-
-/* Dark mode support - Optional */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg-color: #121212;
-        --card-bg: #1e1e1e;
-        --text-color: #ecf0f1;
-        --light-text: #bdc3c7;
-        --input-bg: #2c2c2c;
-        --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    }
-
-    .form-group input {
-        border-color: #444;
-        color: #fff;
-    }
-
-    .error-message {
-        background-color: rgba(231, 76, 60, 0.15);
-    }
-
-    .success-message {
-        background-color: rgba(46, 204, 113, 0.15);
-    }
-
-    .debug-info {
-        background-color: #2c2c2c;
-        border-color: #444;
-        color: #ddd;
-    }
-
-    .sidebar {
-        background: linear-gradient(180deg, #00776e 0%, #00a698 100%);
-    }
-
-    .card {
-        background-color: #1e1e1e;
-        border-color: #333;
-    }
-
-    .card-header {
-        border-bottom-color: #333;
-    }
-
-    .table th,
-    .table td {
-        border-bottom-color: #333;
-    }
-
-    .table-striped tbody tr:nth-of-type(odd) {
-        background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .table-hover tbody tr:hover {
-        background-color: rgba(0, 166, 152, 0.1);
-    }
-
-    .dropdown-header,
-    .dropdown-content {
-        background-color: #1e1e1e;
-    }
-
-    .dropdown-content a:hover {
-        background-color: rgba(0, 166, 152, 0.15);
-    }
-
-    .progress {
-        background-color: #333;
     }
 }
 
