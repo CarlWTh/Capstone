@@ -1,8 +1,8 @@
 <?php
-require_once '../config.php';
+require_once '../../private/config/config.php';
 checkAdminAuth();
 
-require_once '../helpers/devices_backend.php';
+
 ?>
 
 <!DOCTYPE html>

@@ -2,7 +2,7 @@
 session_start();
 require_once '../../private/config/config.php'; 
 checkAdminAuth();
-require_once '../private/helpers/dashboard_backend.php';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

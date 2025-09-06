@@ -1,7 +1,7 @@
 <?php
-require_once '../config.php';
+require_once '../../private/config/config.php';
 checkAdminAuth(); 
-require_once '../private/helpers/bottle_deposit_backend.php';
+
 ?>
 
 <!DOCTYPE html>
