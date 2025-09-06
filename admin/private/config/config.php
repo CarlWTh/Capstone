@@ -2,7 +2,7 @@
 define('DB_HOST', 'localhost');
 define('DB_USERNAME', 'root');
 define('DB_PASSWORD', '');
-define('DB_NAME', 'bottle_recycling_system'); 
+define('DB_NAME', 'bottle_recycling_system (2)'); 
 
 $conn = new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME);
 

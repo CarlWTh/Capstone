@@ -1,6 +1,6 @@
 <?php
-require_once '../config.php';
-checkAdminAuth(); 
+require_once __DIR__ . '/../config/config.php';
+checkAdminAuth();
 
 $current_settings = [];
 $settings_query = $conn->query("SELECT minutes_per_bottle, bandwidth_limit_kbps, maintenance_mode, auto_reboot_schedule FROM Settings LIMIT 1");

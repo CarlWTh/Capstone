@@ -1,6 +1,6 @@
 <?php
-require_once '../config.php';
-checkAdminAuth(); 
+require_once __DIR__ . '/../config/config.php';
+checkAdminAuth();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_deposit'])) {
     $bottleCount = (int) $_POST['bottle_count'];

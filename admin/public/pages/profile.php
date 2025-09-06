@@ -1,5 +1,6 @@
 <?php
 require_once '../../private/config/config.php';
+require_once '../../private/helpers/profile_backend.php';
 checkAdminAuth();
 
 
