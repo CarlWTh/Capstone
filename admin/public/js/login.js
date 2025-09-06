@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.querySelector('.login-form');
-    
+
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
 
@@ -17,12 +17,28 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const isAuthenticated = await authenticateUser(username, password);
-
-        if (isAuthenticated) {
-            window.location.href = 'dashboard.html';
-        } else {
-            showErrorMessage('Invalid username or password');
+        // Call backend for authentication
+        try {
+            const response = await fetch('../../../private/helpers/login_backend.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    remember: document.getElementById('remember') ? document.getElementById('remember').checked : false
+                })
+            });
+            const data = await response.json();
+            if (data.success && data.redirect) {
+                window.location.href = data.redirect;
+            } else if (data.error) {
+                showErrorMessage(data.error);
+            } else {
+                showErrorMessage('Invalid username or password');
+            }
+        } catch (err) {
+            showErrorMessage('An error occurred. Please try again.');
         }
     });
 
@@ -31,22 +47,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (existingError) {
             existingError.remove();
         }
-        
+
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
         errorDiv.textContent = message;
         errorDiv.style.color = '#e74c3c';
         errorDiv.style.marginBottom = '10px';
         errorDiv.style.textAlign = 'center';
-        
+
         const loginForm = document.querySelector('.login-form');
         loginForm.insertBefore(errorDiv, loginForm.firstChild);
-    }
-
-    async function authenticateUser(username, password) {
-        // Replace this with an actual API call to your server
-        const expectedPassword = 'admin123'; // Plain text password
-        console.log('Authenticating:', { username, password });
-        return username === 'admin' && password === expectedPassword;
     }
 });
