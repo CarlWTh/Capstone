@@ -1,10 +1,10 @@
 <?php
 session_start();
-require_once '../../private/config/config.php';  // Fixed path to config.php
+require_once __DIR__ . '/../config/config.php'; // Adjusted to go up from helpers to private, then into config
 
-require_once '../libraries/PHPMailer-master/src/Exception.php';
-require_once '../libraries/PHPMailer-master/src/PHPMailer.php';
-require_once '../libraries/PHPMailer-master/src/SMTP.php';
+require_once __DIR__ . '/../libraries/PHPMailer-master/src/Exception.php';
+require_once __DIR__ . '/../libraries/PHPMailer-master/src/PHPMailer.php';
+require_once __DIR__ . '/../libraries/PHPMailer-master/src/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;

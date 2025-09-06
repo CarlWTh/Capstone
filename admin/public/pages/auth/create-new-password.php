@@ -14,7 +14,7 @@ unset($_SESSION['reset_error'], $_SESSION['reset_success']);
 </head>
 <body class="login-body">
     <div class="login-container">
-        <form class="login-form" method="POST" action="process-new-password.php">
+        <form class="login-form" method="POST">
             <h2>Reset Your Password</h2>
 
             <?php if (!empty($error)): ?>

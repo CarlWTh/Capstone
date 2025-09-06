@@ -2,6 +2,7 @@
 session_start();
 require_once '../../private/config/config.php'; 
 checkAdminAuth();
+require_once '../private/helpers/dashboard_backend.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,14 +15,13 @@ checkAdminAuth();
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/sidebar.css">
     <script src="../js/sidebar.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="dashboard-container">
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <h1 id="siteName"><?php echo SITE_NAME; ?></h1>
+                    <h1><?= SITE_NAME ?></h1>
                     <span class="logo-short"></span>
                 </div>
                 <button class="sidebar-toggle" id="sidebarToggle">
@@ -49,7 +49,7 @@ checkAdminAuth();
                         </a>
                     </li>
                     <li>
-                        <a href="users.php">
+                        <a href="devices.php">
                             <i class="bi bi-phone"></i>
                             <span>Devices</span>
                         </a>
@@ -87,7 +87,7 @@ checkAdminAuth();
                 <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
             </div>
 
-            <div id="flashMessage"></div>
+            <?php displayFlashMessage(); ?>
 
             <div class="row">
                 <div class="col-md-3">
@@ -97,7 +97,7 @@ checkAdminAuth();
                                 <i class="bi bi-recycle stats-card-icon"></i>
                             </div>
                             <h5 class="stats-card-title">Total Deposits</h5>
-                            <h2 class="stats-card-value" id="totalDeposits">0</h2>
+                            <h2 class="stats-card-value"><?php echo number_format($stats['total_deposits']); ?></h2>
                         </div>
                         <div class="stats-card-footer">
                             <span class="stats-trend positive">
@@ -114,7 +114,7 @@ checkAdminAuth();
                                 <i class="bi bi-cup-straw stats-card-icon"></i>
                             </div>
                             <h5 class="stats-card-title">Total Bottles</h5>
-                            <h2 class="stats-card-value" id="totalBottles">0</h2>
+                            <h2 class="stats-card-value"><?php echo number_format($stats['total_bottles']); ?></h2>
                         </div>
                         <div class="stats-card-footer">
                             <span class="stats-trend positive">
@@ -131,7 +131,7 @@ checkAdminAuth();
                                 <i class="bi bi-ticket-perforated stats-card-icon"></i>
                             </div>
                             <h5 class="stats-card-title">Vouchers Issued</h5>
-                            <h2 class="stats-card-value" id="totalVouchers">0</h2>
+                            <h2 class="stats-card-value"><?php echo number_format($stats['total_vouchers']); ?></h2>
                         </div>
                         <div class="stats-card-footer">
                             <span class="stats-trend positive">
@@ -148,7 +148,7 @@ checkAdminAuth();
                                 <i class="bi bi-wifi stats-card-icon"></i>
                             </div>
                             <h5 class="stats-card-title">Active Sessions</h5>
-                            <h2 class="stats-card-value" id="activeSessions">0</h2>
+                            <h2 class="stats-card-value"><?php echo number_format($stats['active_sessions']); ?></h2>
                         </div>
                         <div class="stats-card-footer">
                             <span class="stats-trend positive">
@@ -170,9 +170,9 @@ checkAdminAuth();
                         </div>
                         <div class="internet-status-body">
                             <div class="internet-status-display">
-                                <div class="internet-status-badge" id="internetStatusBadge">
+                                <div class="internet-status-badge status-<?php echo $internet_status['status']; ?>">
                                     <span class="status-pulse"></span>
-                                    Internet is <span id="internetStatusText">UP</span>
+                                    Internet is <?php echo strtoupper($internet_status['status']); ?>
                                 </div>
                             </div>
                         </div>
@@ -192,44 +192,44 @@ checkAdminAuth();
                                     <i class="bi bi-geo-alt metric-icon"></i>
                                     IP Address
                                 </span>
-                                <span class="network-value" id="localIp"></span>
+                                <span class="network-value"><?php echo $internet_status['local_ip']; ?></span>
                             </div>
                             <div class="network-item">
                                 <span class="network-label">
                                     <i class="bi bi-download metric-icon"></i>
                                     Download
                                 </span>
-                                <span class="network-value" id="downloadSpeed"></span>
+                                <span class="network-value"><?php echo $internet_status['download_speed']; ?> bytes/s</span>
                             </div>
                             <div class="network-item">
                                 <span class="network-label">
                                     <i class="bi bi-upload metric-icon"></i>
                                     Upload
                                 </span>
-                                <span class="network-value" id="uploadSpeed"></span>
+                                <span class="network-value"><?php echo $internet_status['upload_speed']; ?> KB/s</span>
                             </div>
                             <div class="network-item">
                                 <span class="network-label">
                                     <i class="bi bi-arrow-down-circle metric-icon"></i>
                                     Total Download
                                 </span>
-                                <span class="network-value" id="totalDownload"></span>
+                                <span class="network-value"><?php echo $internet_status['total_download']; ?> MB</span>
                             </div>
                             <div class="network-item">
                                 <span class="network-label">
                                     <i class="bi bi-arrow-up-circle metric-icon"></i>
                                     Total Upload
                                 </span>
-                                <span class="network-value" id="totalUpload"></span>
+                                <span class="network-value"><?php echo $internet_status['total_upload']; ?> MB</span>
                             </div>
                             <div class="network-item">
                                 <span class="network-label">
                                     <i class="bi bi-globe metric-icon"></i>
                                     Internet
                                 </span>
-                                <span class="status-indicator" id="internetStatusIndicator">
+                                <span class="status-indicator status-<?php echo $internet_status['status']; ?>">
                                     <span class="status-icon"></span>
-                                    <span id="internetStatusIndicatorText"></span>
+                                    <?php echo ucfirst($internet_status['status']); ?>
                                 </span>
                             </div>
                         </div>
@@ -249,11 +249,11 @@ checkAdminAuth();
                                     <i class="bi bi-clock-history metric-icon"></i>
                                     System Uptime
                                 </span>
-                                <span class="uptime-value" id="systemUptime"></span>
+                                <span class="uptime-value"><?php echo $internet_status['uptime_days']; ?>d <?php echo $internet_status['uptime_hours']; ?>h <?php echo $internet_status['uptime_minutes']; ?>m</span>
                             </div>
                             <div class="temperature-display">
                                 <i class="bi bi-thermometer-half" style="font-size: 1.5rem; margin-bottom: 8px; opacity: 0.9;"></i>
-                                <div class="temperature-value" id="systemTemperature"></div>
+                                <div class="temperature-value"><?php echo $internet_status['temperature']; ?>°C</div>
                                 <div class="temperature-label">System Temperature</div>
                             </div>
                         </div>
@@ -262,64 +262,5 @@ checkAdminAuth();
             </div>
         </div>
     </div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    fetch('dashboard_backend.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById('flashMessage').innerHTML = '<div class="alert alert-danger">' + data.error + '</div>';
-                return;
-            }
-            // Set site name
-            document.getElementById('siteName').textContent = data.site_name;
-
-            // Stats
-            document.getElementById('totalDeposits').textContent = Number(data.stats.total_deposits).toLocaleString();
-            document.getElementById('totalBottles').textContent = Number(data.stats.total_bottles).toLocaleString();
-            document.getElementById('totalVouchers').textContent = Number(data.stats.total_vouchers).toLocaleString();
-            document.getElementById('activeSessions').textContent = Number(data.stats.active_sessions).toLocaleString();
-
-            // Internet Status
-            let status = data.internet_status.status;
-            document.getElementById('internetStatusBadge').className = 'internet-status-badge status-' + status;
-            document.getElementById('internetStatusText').textContent = status.toUpperCase();
-
-            document.getElementById('localIp').textContent = data.internet_status.local_ip;
-            document.getElementById('downloadSpeed').textContent = data.internet_status.download_speed + ' bytes/s';
-            document.getElementById('uploadSpeed').textContent = data.internet_status.upload_speed + ' KB/s';
-            document.getElementById('totalDownload').textContent = data.internet_status.total_download + ' MB';
-            document.getElementById('totalUpload').textContent = data.internet_status.total_upload + ' MB';
-
-            document.getElementById('internetStatusIndicator').className = 'status-indicator status-' + status;
-            document.getElementById('internetStatusIndicatorText').textContent = status.charAt(0).toUpperCase() + status.slice(1);
-
-            document.getElementById('systemUptime').textContent = 
-                data.internet_status.uptime_days + 'd ' +
-                data.internet_status.uptime_hours + 'h ' +
-                data.internet_status.uptime_minutes + 'm';
-
-            document.getElementById('systemTemperature').textContent = data.internet_status.temperature + '°C';
-
-            // Popup
-            if (data.should_show_popup) {
-                Swal.fire({
-                    title: 'Security Reminder',
-                    text: 'To secure your account, we recommend changing your username and password. Additionally, add an email for your forgot password.',
-                    icon: 'info',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#04aba0',
-                    showCancelButton: true,
-                    cancelButtonText: 'Change Now',
-                    cancelButtonColor: '#6c757d'
-                }).then((result) => {
-                    if (result.isDismissed && result.dismiss === Swal.DismissReason.cancel) {
-                        window.location.href = 'profile.php';
-                    }
-                });
-            }
-        });
-});
-</script>
 </body>
 </html>

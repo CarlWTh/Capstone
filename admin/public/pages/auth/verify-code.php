@@ -1,5 +1,6 @@
 <?php
-require_once '../../../private/config/config.php'; 
+require_once '../../../private/config/config.php';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,16 +12,22 @@ require_once '../../../private/config/config.php';
 </head>
 <body class="login-body">
     <div class="login-container">
-        <form class="login-form" id="verifyForm" autocomplete="off">
+        <form class="login-form" method="POST">
             <h2>Verify Your Admin Email</h2>
-            <div id="error-message" class="error-message" style="display:none;"></div>
-            <div id="success-message" class="success-message" style="display:none;"></div>
-            <p>Enter the 6-digit code sent to your email.</p>
+
+            <?php if (!empty($error)): ?>
+                <div class="error-message"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
+            <?php if (!empty($resend_message)): ?>
+                <div class="success-message"><?= htmlspecialchars($resend_message) ?></div>
+            <?php endif; ?>
+
+            <p>Enter the 6-digit code sent to <strong><?= htmlspecialchars($email) ?></strong></p>
+
             <div class="form-group">
                 <input
                     type="text"
                     name="verification_code"
-                    id="verification_code"
                     placeholder="123456"
                     required
                     pattern="\d{6}"
@@ -28,76 +35,14 @@ require_once '../../../private/config/config.php';
                     autocomplete="off"
                 >
             </div>
+
             <button type="submit" class="login-button">Verify Code</button>
+
             <div class="links">
-                <a href="#" id="resend-link">Resend Code</a>
+                <a href="verify-code.php?resend=true">Resend Code</a>
                 <a href="login.php">Back to Login</a>
             </div>
         </form>
     </div>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('verifyForm');
-        const errorDiv = document.getElementById('error-message');
-        const successDiv = document.getElementById('success-message');
-        const resendLink = document.getElementById('resend-link');
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            errorDiv.style.display = 'none';
-            successDiv.style.display = 'none';
-
-            const formData = new FormData(form);
-
-            fetch('verify-code-backend.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    successDiv.textContent = "Code verified! Redirecting...";
-                    successDiv.style.display = 'block';
-                    setTimeout(() => {
-                        window.location.href = data.redirect;
-                    }, 1000);
-                } else if (data.redirect) {
-                    window.location.href = data.redirect;
-                } else {
-                    errorDiv.textContent = data.message;
-                    errorDiv.style.display = 'block';
-                }
-            })
-            .catch(() => {
-                errorDiv.textContent = "An error occurred. Please try again.";
-                errorDiv.style.display = 'block';
-            });
-        });
-
-        resendLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            errorDiv.style.display = 'none';
-            successDiv.style.display = 'none';
-
-            fetch('verify-code-backend.php?resend=true')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    successDiv.textContent = data.message;
-                    successDiv.style.display = 'block';
-                } else if (data.redirect) {
-                    window.location.href = data.redirect;
-                } else {
-                    errorDiv.textContent = data.message;
-                    errorDiv.style.display = 'block';
-                }
-            })
-            .catch(() => {
-                errorDiv.textContent = "An error occurred. Please try again.";
-                errorDiv.style.display = 'block';
-            });
-        });
-    });
-    </script>
 </body>
 </html>

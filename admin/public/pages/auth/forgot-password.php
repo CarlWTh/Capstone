@@ -1,4 +1,6 @@
-<?php   require_once '../../../private/helpers/forgot-password-backend.php'; ?>
+<?php   
+require_once '../../../private/helpers/forgot-password-backend.php';
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -6,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password - <?= SITE_NAME ?></title>
-    <link rel="stylesheet" href="../css/forgot-password.css">
+    <link rel="stylesheet" href="../../css/forgot-password.css">
 </head>
 <body class="forgot-body">
     <div class="forgot-container">

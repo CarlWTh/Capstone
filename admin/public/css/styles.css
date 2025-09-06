@@ -210,7 +210,6 @@ body {
 .code-input,
 input[name="verification_code"],
 input[name="code"] {
-    width: 3rem;
     height: 3rem;
     text-align: center;
     font-size: 1.25rem;

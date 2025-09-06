@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once '../config.php';
+
+// ✅ Include PHPMailer
 require '../libraries/PHPMailer-master/src/Exception.php';
 require '../libraries/PHPMailer-master/src/PHPMailer.php';
 require '../libraries/PHPMailer-master/src/SMTP.php';
@@ -8,32 +10,36 @@ require '../libraries/PHPMailer-master/src/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-header('Content-Type: application/json');
 date_default_timezone_set('Asia/Manila');
 $conn->query("SET time_zone = '+08:00'");
 
-$response = ['success' => false, 'message' => ''];
-
-// Redirect if already logged in
+// ✅ Redirect if already logged in
 if (isset($_SESSION['admin_id'])) {
-    $response['redirect'] = 'dashboard.php';
-    echo json_encode($response);
+    header("Location: dashboard.php");
     exit();
 }
 
-// Set email from session or GET
+// ✅ Set email from session or GET
 if (!isset($_SESSION['reset_admin_email'])) {
     if (!empty($_GET['email'])) {
         $_SESSION['reset_admin_email'] = $_GET['email'];
     } else {
-        $response['redirect'] = 'forgot-password.php';
-        echo json_encode($response);
+        header("Location: forgot-password.php");
         exit();
     }
 }
-$email = $_SESSION['reset_admin_email'];
 
-// Handle Resend
+$email = $_SESSION['reset_admin_email'];
+$error = '';
+$resend_message = '';
+
+// ✅ Display flash message for resend
+if (isset($_SESSION['resend_message'])) {
+    $resend_message = $_SESSION['resend_message'];
+    unset($_SESSION['resend_message']);
+}
+
+// ✅ Handle Resend
 if (isset($_GET['resend']) && $_GET['resend'] === 'true') {
     $new_token = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
     $expires = date('Y-m-d H:i:s', time() + 3600);
@@ -43,6 +49,7 @@ if (isset($_GET['resend']) && $_GET['resend'] === 'true') {
     $stmt->execute();
     $stmt->close();
 
+    // Send the email
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
@@ -60,21 +67,21 @@ if (isset($_GET['resend']) && $_GET['resend'] === 'true') {
         $mail->Body    = "<p>Your new 6-digit code is: <strong>$new_token</strong></p><p>This code will expire in 1 hour.</p>";
         $mail->send();
 
-        $response['success'] = true;
-        $response['message'] = "A new verification code has been sent to your email.";
+        // ✅ Store message and redirect to avoid resubmission
+        $_SESSION['resend_message'] = "A new verification code has been sent to your email.";
+        header("Location: verify-code.php");
+        exit();
     } catch (Exception $e) {
-        $response['message'] = "Failed to send email. Mailer Error: {$mail->ErrorInfo}";
+        $error = "Failed to send email. Mailer Error: {$mail->ErrorInfo}";
     }
-    echo json_encode($response);
-    exit();
 }
 
-// Handle Form Submission (AJAX POST)
+// ✅ Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $verification_code = str_replace(' ', '', trim($_POST['verification_code'] ?? ''));
 
     if (empty($verification_code)) {
-        $response['message'] = "Please enter the verification code.";
+        $error = "Please enter the verification code.";
     } else {
         $stmt = $conn->prepare("SELECT admin_id, reset_token, reset_token_expires FROM Admin WHERE email = ?");
         $stmt->bind_param("s", $email);
@@ -88,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $not_expired = (strtotime($admin['reset_token_expires']) > time());
 
             if ($is_valid && $not_expired) {
+                // ✅ Create new secure token for password reset
                 $new_token = bin2hex(random_bytes(32));
                 $new_expiry = date('Y-m-d H:i:s', time() + 3600);
 
@@ -98,20 +106,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $_SESSION['reset_admin_id'] = $admin['admin_id'];
 
-                $response['success'] = true;
-                $response['redirect'] = "create-new-password.php?token=" . urlencode($new_token);
+                header("Location: create-new-password.php?token=" . urlencode($new_token));
+                exit();
             } else {
-                $response['message'] = "Invalid or expired verification code.";
+                $error = "Invalid or expired verification code.";
             }
         } else {
-            $response['message'] = "No verification request found for this email.";
+            $error = "No verification request found for this email.";
         }
         $stmt->close();
     }
-    echo json_encode($response);
-    exit();
 }
-
-$response['message'] = "Invalid request.";
-echo json_encode($response);
-exit();
+?>
