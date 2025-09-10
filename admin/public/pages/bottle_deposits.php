@@ -2,6 +2,8 @@
 require_once '../../private/config/config.php';
 require_once '../../private/helpers/bottle_deposit_backend.php';
 require_once '../../private/helpers/settings_backend.php';
+require_once '../../private/helpers/utils_backend.php';
+require_once '../../private/helpers/activity_logs_backend.php';
 checkAdminAuth();
 
 ?>

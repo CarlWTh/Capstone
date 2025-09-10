@@ -1,8 +1,5 @@
 <?php
-session_start();
-$error = isset($_SESSION['reset_error']) ? $_SESSION['reset_error'] : '';
-$success = isset($_SESSION['reset_success']) ? $_SESSION['reset_success'] : '';
-unset($_SESSION['reset_error'], $_SESSION['reset_success']);
+require_once '../../../private/helpers/process-new-password.php';
 ?>
 
 <!DOCTYPE html>

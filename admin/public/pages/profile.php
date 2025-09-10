@@ -171,63 +171,7 @@ checkAdminAuth();
     </div>
 
     <!-- Edit Profile Modal -->
-    <div class="modal" id="editProfileModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Edit Account Information</h3>
-                <button class="close edit-modal-close">&times;</button>
-            </div>
-            <form method="POST">
-                <input type="hidden" name="update_profile" value="1">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" value="<?= htmlspecialchars($profile['username']) ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" value="<?= htmlspecialchars($profile['email']) ?>" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary edit-modal-cancel">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Account</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Change Password Modal -->
-    <div class="modal" id="changePasswordModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Change Password</h3>
-                <button class="close password-modal-close">&times;</button>
-            </div>
-            <form method="POST">
-                <input type="hidden" name="change_password" value="1">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="modal_current_password">Current Password</label>
-                        <input type="password" id="modal_current_password" name="current_password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="modal_new_password">New Password</label>
-                        <input type="password" id="modal_new_password" name="new_password" required minlength="8">
-                        <small class="form-text">Password must be at least 8 characters long</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="modal_confirm_password">Confirm New Password</label>
-                        <input type="password" id="modal_confirm_password" name="confirm_password" required minlength="8">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary password-modal-cancel">Cancel</button>
-                    <button type="submit" class="btn btn-warning">Change Password</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    
 
     <script>
         function closeAllModals() {

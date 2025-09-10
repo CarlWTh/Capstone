@@ -1,11 +1,13 @@
 <?php
-session_start();
-require_once '../config.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once __DIR__ . '/../config/config.php';
 
 // ✅ Include PHPMailer
-require '../libraries/PHPMailer-master/src/Exception.php';
-require '../libraries/PHPMailer-master/src/PHPMailer.php';
-require '../libraries/PHPMailer-master/src/SMTP.php';
+require_once __DIR__ . '/../libraries/PHPMailer-master/src/Exception.php';
+require_once __DIR__ . '/../libraries/PHPMailer-master/src/PHPMailer.php';
+require_once __DIR__ . '/../libraries/PHPMailer-master/src/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;

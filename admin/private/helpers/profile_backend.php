@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/utils_backend.php';
+require_once __DIR__ . '/activity_logs_backend.php';
 checkAdminAuth();
 
 // Get current user's profile data
@@ -18,18 +20,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             redirectWithMessage('profile.php', 'error', 'Invalid email format.');
         } else {
-            $stmt = $conn->prepare("UPDATE Admin SET username = ?, email = ? WHERE admin_id = ?");
+            // Check if username or email already exists for another admin
+            $stmt = $conn->prepare("SELECT admin_id FROM Admin WHERE (username = ? OR email = ?) AND admin_id != ?");
             $stmt->bind_param("ssi", $username, $email, $_SESSION['admin_id']);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-            if ($stmt->execute()) {
-                logAdminActivity('Profile Update', "Updated profile information");
-                redirectWithMessage('profile.php', 'success', 'Profile updated successfully!');
+            if ($result->num_rows > 0) {
+                redirectWithMessage('profile.php', 'error', 'Username or email already exists.');
             } else {
-                if ($conn->errno == 1062) {
-                    redirectWithMessage('profile.php', 'error', 'Username or email already exists.');
+                $stmt = $conn->prepare("UPDATE Admin SET username = ?, email = ? WHERE admin_id = ?");
+                $stmt->bind_param("ssi", $username, $email, $_SESSION['admin_id']);
+
+                if ($stmt->execute()) {
+                    logAdminActivity('Profile Update', "Updated profile information");
+                    redirectWithMessage('profile.php', 'success', 'Profile updated successfully!');
                 } else {
                     redirectWithMessage('profile.php', 'error', 'Error updating profile: ' . $conn->error);
                 }
+                $stmt->close();
             }
         }
     } elseif (isset($_POST['change_password'])) {
@@ -48,21 +57,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("SELECT password_hash FROM Admin WHERE admin_id = ?");
             $stmt->bind_param("i", $_SESSION['admin_id']);
             $stmt->execute();
-            $current_hash = $stmt->get_result()->fetch_assoc()['password_hash'];
+            $result = $stmt->get_result();
 
-            if (!password_verify($current_password, $current_hash)) {
-                redirectWithMessage('profile.php', 'error', 'Current password is incorrect.');
-            } else {
-                $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
-                $stmt = $conn->prepare("UPDATE Admin SET password_hash = ? WHERE admin_id = ?");
-                $stmt->bind_param("si", $new_hash, $_SESSION['admin_id']);
+            if ($result->num_rows === 1) {
+                $row = $result->fetch_assoc();
+                if (password_verify($current_password, $row['password_hash'])) {
+                    $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
+                    $stmt = $conn->prepare("UPDATE Admin SET password_hash = ? WHERE admin_id = ?");
+                    $stmt->bind_param("si", $new_hash, $_SESSION['admin_id']);
 
-                if ($stmt->execute()) {
-                    logAdminActivity('Password Change', "Changed account password");
-                    redirectWithMessage('profile.php', 'success', 'Password changed successfully!');
+                    if ($stmt->execute()) {
+                        logAdminActivity('Password Change', "Changed account password");
+                        redirectWithMessage('profile.php', 'success', 'Password changed successfully!');
+                    } else {
+                        redirectWithMessage('profile.php', 'error', 'Error changing password: ' . $conn->error);
+                    }
+                    $stmt->close();
                 } else {
-                    redirectWithMessage('profile.php', 'error', 'Error changing password: ' . $conn->error);
+                    redirectWithMessage('profile.php', 'error', 'Current password is incorrect.');
                 }
+            } else {
+                redirectWithMessage('profile.php', 'error', 'User not found.');
             }
         }
     }

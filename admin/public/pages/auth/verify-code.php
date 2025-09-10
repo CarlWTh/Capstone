@@ -1,6 +1,6 @@
 <?php
 require_once '../../../private/config/config.php';
-
+require_once '../../../private/helpers/verify-code-backend.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
