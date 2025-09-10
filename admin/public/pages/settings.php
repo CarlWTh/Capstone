@@ -1,7 +1,8 @@
 <?php
 require_once '../../private/config/config.php';
 require_once '../../private/helpers/settings_backend.php';
-checkAdminAuth(); 
+require_once '../../private/helpers/utils_backend.php';
+checkAdminAuth();
 
 
 ?>

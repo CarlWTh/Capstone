@@ -1,6 +1,7 @@
 <?php
 require_once '../../private/config/config.php';
 require_once '../../private/helpers/devices_backend.php';
+require_once '../../private/helpers/utils_backend.php';
 checkAdminAuth();
 
 

@@ -1,6 +1,20 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
-checkAdminAuth();
+require_once __DIR__ . '/utils_backend.php';
+require_once __DIR__ . '/activity_logs_backend.php';
+
+function getMinutesPerBottle() {
+    global $conn;
+
+    $result = $conn->query("SHOW TABLES LIKE 'Settings'");
+    if ($result->num_rows === 0) {
+        error_log("Settings table not found. Returning default minutes_per_bottle.");
+        return 2;
+    }
+
+    $result = $conn->query("SELECT minutes_per_bottle FROM Settings LIMIT 1");
+    return ($result && $result->num_rows > 0) ? (float)$result->fetch_row()[0] : 2.0;
+}
 
 $current_settings = [];
 $settings_query = $conn->query("SELECT minutes_per_bottle, bandwidth_limit_kbps, maintenance_mode, auto_reboot_schedule FROM Settings LIMIT 1");
@@ -143,5 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         logAdminActivity('System Settings Update', 'Updated system configuration.');
     }
 }
+
 
 ?>

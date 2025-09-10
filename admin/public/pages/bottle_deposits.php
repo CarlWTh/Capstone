@@ -1,6 +1,7 @@
 <?php
 require_once '../../private/config/config.php';
 require_once '../../private/helpers/bottle_deposit_backend.php';
+require_once '../../private/helpers/settings_backend.php';
 checkAdminAuth();
 
 ?>
@@ -500,86 +501,8 @@ checkAdminAuth();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('collapsed');
-            document.querySelector('.main-content').classList.toggle('expanded');
-        });
-
-        // Modern filter button interactions
-        document.querySelectorAll('.modern-filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Remove active class from all buttons
-                document.querySelectorAll('.modern-filter-btn').forEach(b => b.classList.remove('active'));
-                
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                // Check the radio button
-                const radio = this.querySelector('input[type="radio"]');
-                if (radio) {
-                    radio.checked = true;
-                }
-                
-                // Show/hide custom date range
-                const customDateGroup = document.getElementById('custom_date_group');
-                if (radio && radio.value === 'custom') {
-                    customDateGroup.style.display = 'block';
-                } else {
-                    customDateGroup.style.display = 'none';
-                }
-            });
-        });
-
-        // Initialize filter state on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const activeRadio = document.querySelector('input[name="time_filter"]:checked');
-            if (activeRadio) {
-                const customDateGroup = document.getElementById('custom_date_group');
-                if (activeRadio.value === 'custom') {
-                    customDateGroup.style.display = 'block';
-                } else {
-                    customDateGroup.style.display = 'none';
-                }
-            }
-        });
-
-        // Pagination: Change items per page
-        function changePerPage(perPage) {
-            const urlParams = new URLSearchParams(window.location.search);
-            urlParams.set('per_page', perPage);
-            urlParams.set('page', '1'); // Reset to first page
-            window.location.search = urlParams.toString();
-        }
-
-        // Add smooth scrolling to pagination links
-        document.querySelectorAll('.modern-pagination .btn').forEach(link => {
-            if (link.href && !link.classList.contains('disabled')) {
-                link.addEventListener('click', function(e) {
-                    // Add loading state
-                    this.style.opacity = '0.7';
-                    this.style.pointerEvents = 'none';
-                    
-                    // Add a subtle loading indicator
-                    const originalContent = this.innerHTML;
-                    const isNext = this.innerHTML.includes('Next');
-                    const isPrev = this.innerHTML.includes('Previous');
-                    
-                    if (isNext) {
-                        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
-                    } else if (isPrev) {
-                        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
-                    }
-                    
-                    // Let the navigation proceed naturally after a brief delay
-                    setTimeout(() => {
-                        this.innerHTML = originalContent;
-                        this.style.opacity = '1';
-                        this.style.pointerEvents = 'auto';
-                    }, 300);
-                });
-            }
-        });
+    <script src ="../js/bottle-deposit.js">
+        
     </script>
 </body>
 
