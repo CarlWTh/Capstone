@@ -4,8 +4,9 @@ class SidebarController {
         this.sidebar = document.querySelector('.sidebar');
         this.mainContent = document.querySelector('.main-content');
         this.sidebarToggle = document.querySelector('.sidebar-toggle');
+        this.mobileSidebarToggle = document.querySelector('.mobile-sidebar-toggle');
         this.overlay = null;
-        
+
         this.init();
     }
     
@@ -16,6 +17,11 @@ class SidebarController {
         // Event listeners
         if (this.sidebarToggle) {
             this.sidebarToggle.addEventListener('click', () => this.toggleSidebar());
+        }
+
+        // Mobile toggle button listener
+        if (this.mobileSidebarToggle) {
+            this.mobileSidebarToggle.addEventListener('click', () => this.toggleMobileSidebar());
         }
         
         // Handle window resize

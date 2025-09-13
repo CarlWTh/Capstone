@@ -20,10 +20,15 @@ checkAdminAuth();
     <link rel="stylesheet" href="../css/sidebar.css">
     <link rel="stylesheet" href="../css/activity_logs.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="./js/sidebar.js"></script>
+    <script src="../js/sidebar.js"></script>
 </head>
 
 <body class="dashboard-container">
+    <!-- Mobile Sidebar Toggle Button -->
+    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
+
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">

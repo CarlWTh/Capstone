@@ -1,4 +1,4 @@
-<?php
+ <?php
 require_once '../../private/config/config.php';
 require_once '../../private/helpers/settings_backend.php';
 require_once '../../private/helpers/utils_backend.php';
@@ -167,8 +167,14 @@ checkAdminAuth();
             background: white;
         }
     </style>
+    <script src="../js/sidebar.js"></script>
 </head>
 <body class="dashboard-container">
+    <!-- Mobile Sidebar Toggle Button -->
+    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
+
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
@@ -200,8 +206,8 @@ checkAdminAuth();
                     </a>
                 </li>
                 <li>
-                    <a href="devices.php
-                        <i class="bi bi-phone"></i>
+                    <a href="devices.php">
+                            <i class="bi bi-phone"></i>
                             <span>Devices</span>
                     </a>
                 </li>

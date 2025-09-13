@@ -21,9 +21,15 @@ checkAdminAuth();
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/bottle-deposit.css">
     <link rel="stylesheet" href="../css/sidebar.css">
+    <script src="../js/sidebar.js"></script>
 </head>
 
 <body class="dashboard-container">
+    <!-- Mobile Sidebar Toggle Button -->
+    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
+
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">

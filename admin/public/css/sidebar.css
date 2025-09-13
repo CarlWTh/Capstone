@@ -340,26 +340,60 @@
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablet styles (768px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .sidebar {
+        width: 200px;
+    }
+
+    .sidebar.collapsed {
+        width: 60px;
+    }
+
+    .sidebar.collapsed + .main-content,
+    .main-content.sidebar-collapsed {
+        margin-left: 60px;
+    }
+
+    .main-content {
+        margin-left: 200px;
+    }
+
+    /* Adjust logo size for tablets */
+    .logo h1 {
+        font-size: 1.1rem;
+    }
+
+    /* Adjust nav text size */
+    .sidebar nav a span {
+        font-size: 0.9rem;
+    }
+}
+
+/* Mobile styles (up to 768px) */
 @media (max-width: 768px) {
     .sidebar {
-        width: 250px;
+        width: 280px;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
+        z-index: 1001;
     }
-    
+
     .sidebar.show {
         transform: translateX(0);
     }
-    
+
     .main-content {
         margin-left: 0;
+        padding-top: 60px; /* Space for mobile header */
     }
-    
+
     .sidebar.collapsed + .main-content,
     .main-content.sidebar-collapsed {
         margin-left: 0;
     }
-    
+
     /* Mobile overlay */
     .sidebar-overlay {
         display: none;
@@ -369,10 +403,93 @@
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
+        z-index: 1000;
+        backdrop-filter: blur(2px);
     }
-    
+
     .sidebar-overlay.show {
+        display: block;
+    }
+
+    /* Hide desktop toggle on mobile */
+    .sidebar .sidebar-toggle {
+        display: none;
+    }
+
+    /* Mobile header adjustments */
+    .sidebar-header {
+        padding: 1rem;
+    }
+
+    .logo h1 {
+        font-size: 1.2rem;
+    }
+
+    /* Ensure nav items are touch-friendly */
+    .sidebar nav a {
+        padding: 1rem 1.5rem;
+        min-height: 48px;
+    }
+
+    .sidebar nav a i {
+        font-size: 1.4rem;
+        width: 24px;
+    }
+}
+
+/* Small mobile (up to 480px) */
+@media (max-width: 480px) {
+    .sidebar {
+        width: 100vw;
+    }
+
+    .sidebar-header {
+        padding: 1.2rem;
+    }
+
+    .logo h1 {
+        font-size: 1.3rem;
+    }
+
+    .sidebar nav a {
+        padding: 1.2rem 1.5rem;
+    }
+
+    .sidebar nav a span {
+        font-size: 1rem;
+    }
+}
+
+/* Mobile toggle button in main content */
+.mobile-sidebar-toggle {
+    display: none;
+    background: linear-gradient(135deg, #2c8f89 0%, #4ECDC4 100%);
+    border: none;
+    color: white;
+    font-size: 1.25rem;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1002;
+}
+
+.mobile-sidebar-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-sidebar-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Show mobile toggle on mobile screens */
+@media (max-width: 768px) {
+    .mobile-sidebar-toggle {
         display: block;
     }
 }

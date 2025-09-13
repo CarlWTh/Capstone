@@ -20,6 +20,11 @@ checkAdminAuth();
     <script src="../js/sidebar.js"></script>
 </head>
 <body>
+    <!-- Mobile Sidebar Toggle Button -->
+    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
+
     <div class="dashboard-container">
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
